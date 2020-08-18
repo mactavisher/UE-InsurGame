@@ -31,6 +31,10 @@ struct FTakeHitInfo
 {
 	GENERATED_USTRUCT_BODY()
 
+		/** the amount of damage actually applied,after game mode modify the damage */
+		UPROPERTY()
+		uint8 bIsDirtyData:1;
+
 	/** the amount of damage actually applied,after game mode modify the damage */
 	UPROPERTY()
 		int32 Damage;
@@ -79,16 +83,9 @@ struct FTakeHitInfo
 	UPROPERTY()
 		class AController* DamageInstigator;
 
-	/**
-	 * make suer every time the data we sent is a full bunch and not dirty,
-	 * because during game play ,same struct info may set across frame,each
-	 * time it property changes will trigger a replication
-	 */
-	UPROPERTY()
-		uint8 bIsDirtyData : 1;
-
 	FTakeHitInfo()
-		: Damage(0)
+		: bIsDirtyData(true)
+		, Damage(0)
 		, originalDamage(0)
 		, RelHitLocation(ForceInit)
 		, Momentum(ForceInit)
@@ -100,7 +97,6 @@ struct FTakeHitInfo
 		, bVictimAlreadyDead(false)
 		, bIsTeamDamage(false)
 		, DamageInstigator(NULL)
-		, bIsDirtyData(true)
 	{
 	}
 };
@@ -168,6 +164,10 @@ protected:
 	/** is this character suppressed by environment */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "States")
 		uint8 bIsSuppressed : 1;
+
+	/** cache take hit array */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "States")
+		TArray<FTakeHitInfo> CachedTakeHitArray;
 
 	/**  */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_WantsToSwitchFireMode, Category = "WeaponActions")
@@ -373,16 +373,22 @@ public:
 	/** handles Start fire request from player  */
 	virtual void HandleFireRequest();
 
+	/** handles stop fire request from player*/
 	virtual void HandleStopFireRequest();
 
+	/** handles equip weapons request from player */
 	virtual void HandleEquipWeaponRequest();
 
+	/** handles switch fire mode request from player */
 	virtual void HandleSwitchFireModeRequest();
 
+	/** handles move forward request from player,negative value means move backwards*/
 	virtual void HandleMoveForwardRequest(float Value);
 
+	/** handles move right request from player,negative value means move left*/
 	virtual void HandleMoveRightRequest(float Value);
 
+	/** handles crouch request from player*/
 	virtual void HandleCrouchRequest();
 
 	virtual void HandleStartSprintRequest();

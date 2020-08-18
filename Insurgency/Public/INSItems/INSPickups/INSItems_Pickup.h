@@ -13,5 +13,4 @@ UCLASS()
 class INSURGENCY_API AINSItems_Pickup : public AINSItems
 {
 	GENERATED_UCLASS_BODY()
-	
 };

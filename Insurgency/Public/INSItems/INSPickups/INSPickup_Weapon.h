@@ -12,7 +12,7 @@ class AINSItems_Pickup;
 class USkeletalMeshComponent;
 
 /**
- *
+ *  weapon pickup
  */
 UCLASS()
 class INSURGENCY_API AINSPickup_Weapon : public AINSItems_Pickup
@@ -99,12 +99,15 @@ public:
 	/** optimized version of ReplicatedMovent info  */
 	virtual void GatherCurrentMovement()override;
 
+	/** set the visual skin mesh for the skeletal mesh component */
 	virtual void SetSkinMeshComp(USkeletalMeshComponent* NewVisualMeshComp) { VisualMeshComp = NewVisualMeshComp; }
 
+	
 	UFUNCTION()
 	virtual void OnRep_VisualMesh();
 
 	FORCEINLINE virtual USkinnedMeshComponent* GetVisualMeshComp()const { return VisualMeshComp; }
+
 	/** destroy this weapon pick up when nobody touches it for a period of time */
 	UFUNCTION()
 	virtual void DestroyThisWeaponPickup();

@@ -41,38 +41,6 @@ struct FWeaponSocketNames {
 	}
 };
 
-/** weapon attachment slot */
-USTRUCT(BlueprintType)
-struct FWeaponAttachmentSlot {
-
-	GENERATED_USTRUCT_BODY()
-
-		/** attachment slot where this attachment attach to  */
-		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AttachmentSlot")
-		FName AttachmentSlotName;
-
-	
-	//UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AttachmentSlot")
-	//	TSubclassOf<ABFWeaponAttachmentBase> AttachmentClass;
-
-	
-	//UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "AttachmentInstance")
-	//	ABFWeaponAttachmentBase* AttachmentInstance;
-
-	/** is this attachment slot currently be occupied?  */
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "AttachmentInstance")
-		uint8 bisOccupied : 1;
-
-	/** is this attachment slot currently be occupied?  */
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "AttachmentInstance")
-		uint8 bisAvailable : 1;
-
-	/** Default values */
-	FWeaponAttachmentSlot() {
-		bisOccupied = false;
-		bisAvailable = true;
-	}
-};
 
 /**
  * 

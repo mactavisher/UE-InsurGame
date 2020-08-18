@@ -31,11 +31,10 @@
 
 #define ECC_Penetrate                                              ECC_EngineTraceChannel1
 
-	/** ~~--------------------------------------------------------------
-	   define INS Game Types-------------------------------------------*/
+/** ~~--------------------------------------------------------------
+   define INS Game Types-------------------------------------------*/
 
-
-	   /** specify a character' gender,can be assigned via blueprint */
+/** specify a character' gender,can be assigned via blueprint */
 UENUM(BlueprintType)
 enum class ECharacterGender :uint8
 {

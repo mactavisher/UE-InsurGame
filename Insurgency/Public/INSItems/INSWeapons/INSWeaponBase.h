@@ -27,7 +27,7 @@ struct FWeaponConfigData
 {
 	GENERATED_USTRUCT_BODY()
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
 		int32 AmmoPerClip;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
@@ -46,39 +46,6 @@ struct FWeaponConfigData
 		float BaseDamage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
-		float AltReloadTime;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
-		float AltDryReloadTime;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
-		float AltEquipingTime;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
-		float AltUnequipingTime;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
-		float ForeGripReloadTime;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
-		float ForeGripDryReloadTime;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
-		float ForeGripEquipingTime;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
-		float ForeGripUnequipingTime;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
-		float WeaponBoredTime;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
-		float FireModeSwitchingTime;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
-		float MuzzleLightTime;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
 		float MuzzleSpeed;
 
 public:
@@ -89,17 +56,6 @@ public:
 		, ZoomingInTime(0.15f)
 		, ZoomingOutTime(0.1f)
 		, BaseDamage(20.f)
-		, AltReloadTime(4.25f)
-		, AltDryReloadTime(4.93f)
-		, AltEquipingTime(1.5f)
-		, AltUnequipingTime(1.2f)
-		, ForeGripReloadTime(AltReloadTime)
-		, ForeGripDryReloadTime(AltDryReloadTime)
-		, ForeGripEquipingTime(AltUnequipingTime)
-		, ForeGripUnequipingTime(AltUnequipingTime)
-		, WeaponBoredTime(20.f)
-		, FireModeSwitchingTime(0.5f)
-		, MuzzleLightTime(TimeBetweenShots * 0.8f)
 		, MuzzleSpeed(40000.f)
 	{
 	}
@@ -110,6 +66,58 @@ public:
 		TimeBetweenShots = TimeBetweenShots;
 	}
 };
+
+UENUM(BlueprintType)
+enum class EWeaponAttachmentType :uint8
+{
+	SCOPE                         UMETA(DisplayName = "Scope"),
+	UNDERBARREL                       UMETA(DisplayName = "UnderBarrel"),
+	MUZZLE                       UMETA(DisplayName = "Muzzle"),
+	LEFTRAIL                       UMETA(DisplayName = "LeftRail"),
+	RIGHTRAIL                       UMETA(DisplayName = "RightRail"),
+};
+
+
+
+/** weapon attachment slot */
+USTRUCT(BlueprintType)
+struct FWeaponAttachmentSlot {
+
+	GENERATED_USTRUCT_BODY()
+
+	/**attachment class */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AttachmentClass")
+		TSubclassOf<AActor> WeaponAttachementClass;
+
+	/** attachment instance */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AttachmentInstance")
+		class AActor* WeaponAttachmentInstance;
+
+	/** attachment instance */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Availablility")
+		uint8 bIsAvailable : 1;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "AttachmentType")
+		EWeaponAttachmentType WeaponAttachmentType;
+
+public:
+	/** return the class of The weapon class Attachment that will be used in this Attachment Slot */
+	class AActor* GetWeaponAttachmentInstance()const { return WeaponAttachmentInstance; }
+
+	/** return  Attachment instance that is used in this Attachment Slot */
+	UClass* GetWeaponAttachmentClass()const { return WeaponAttachementClass; }
+
+	/** return the Attachment type of the attachment slot */
+	EWeaponAttachmentType GetAttachmentType()const { return WeaponAttachmentType; }
+
+	FWeaponAttachmentSlot()
+		:WeaponAttachementClass(nullptr)
+		, WeaponAttachmentInstance(nullptr)
+		, bIsAvailable(false)
+	{
+	}
+};
+
 
 /**
  *
@@ -128,10 +136,10 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWeaponFinishReloadSignature);
 UCLASS()
 class INSURGENCY_API AINSWeaponBase : public AINSItems
 {
-    GENERATED_UCLASS_BODY()
+	GENERATED_UCLASS_BODY()
 
 		/** stores available fire modes to switch between */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
 		TArray<EWeaponFireMode> AvailableFireModes;
 
 	/** current selected(active) fire mode */
@@ -187,15 +195,15 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 		uint8 bEnableAutoReload : 1;
 
 	/** if enable ,weapon will reload automatically when current clip ammo hit 0 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated,Category = "Ammo")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Ammo")
 		uint8 bDryReload : 1;
 
 	/** if enable ,weapon will reload automatically when current clip ammo hit 0 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_AimWeapon, Category = "Aim")
 		uint8 bisAiming : 1;
 
-	UPROPERTY(VisibleAnywhere,BlueprintReadWrite,Replicated,ReplicatedUsing=OnRep_Equipping,Category="WeaponActions")
-	    uint8 bWantsToEquip:1;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_Equipping, Category = "WeaponActions")
+		uint8 bWantsToEquip : 1;
 
 	/** modify weapon IK To adjust weapon position */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "IKControl")
@@ -246,20 +254,20 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 		AINSCharacter* OwnerCharacter;
 
 	/** Max weapon spread value*/
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="WeaponSpread")
-	   float WeaponSpreadMax;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSpread")
+		float WeaponSpreadMax;
 
 	/** spread interpolate speed */
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="WeaponSpread")
-	   float WeaponSpreadInterpSpeed;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSpread")
+		float WeaponSpreadInterpSpeed;
 
 	/** current used weapon Spread */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSpread")
-	   float CurrentWeaponSpread;
+		float CurrentWeaponSpread;
 
 	/** current used weapon Spread */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "WeaponSpread")
-	   float BaseWeaponSpread;
+		float BaseWeaponSpread;
 
 	/** current used weapon Spread */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSpread")
@@ -269,8 +277,23 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSpread")
 		float RecoilHorizontallyFactor;
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="IKControll")
-	    FVector BaseHandsIk;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControll")
+		FVector BaseHandsIk;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponAttachments")
+		FWeaponAttachmentSlot ScopeSlot;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponAttachments")
+		FWeaponAttachmentSlot UnderBarrelSlot;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponAttachments")
+		FWeaponAttachmentSlot LeltRailSlot;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponAttachments")
+		FWeaponAttachmentSlot RightRailSlot;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponAttachments")
+		FWeaponAttachmentSlot MuzzleSlot;
 
 #if WITH_EDITORONLY_DATA
 	uint8 bShowDebugTrace : 1;
@@ -403,7 +426,7 @@ protected:
 		virtual void OnRep_CurrentFireMode();
 
 	UFUNCTION()
-	    virtual void OnRep_Equipping();
+		virtual void OnRep_Equipping();
 
 	/** current clip ammo Rep notify ,only relevant to owner  */
 	UFUNCTION()

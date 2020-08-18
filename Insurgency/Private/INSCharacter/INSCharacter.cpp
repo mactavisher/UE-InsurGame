@@ -17,6 +17,7 @@
 #include "INSItems\INSPickups\INSPickup_Weapon.h"
 #include "INSComponents\INSWeaponMeshComponent.h"
 #include "Kismet\GameplayStatics.h"
+#include "Net/RepLayout.h"
 #include "INSCharacter\INSCharacter.h"
 
 DEFINE_LOG_CATEGORY(LogINSCharacter);
@@ -40,6 +41,7 @@ AINSCharacter::AINSCharacter(const FObjectInitializer&ObjectInitializer) :Super(
 	INSCharacterMovementComp = CastChecked<UINSCharacterMovementComponent>(GetCharacterMovement());
 	CharacterAudioComp = ObjectInitializer.CreateDefaultSubobject<UINSCharacterAudioComponent>(this, TEXT("AudioComp"));
 	CharacterAudioComp->SetupAttachment(RootComponent);
+	CachedTakeHitArray.SetNum(10);
 #if WITH_EDITORONLY_DATA
 	bShowDebugTrace = true;
 #endif
@@ -60,6 +62,9 @@ void AINSCharacter::BeginPlay()
 void AINSCharacter::PreReplication(IRepChangedPropertyTracker & ChangedPropertyTracker)
 {
 	Super::PreReplication(ChangedPropertyTracker);
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
+		DOREPLIFETIME_ACTIVE_OVERRIDE(AINSCharacter, LastHitInfo, !LastHitInfo.bIsDirtyData);
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 }
 
 void AINSCharacter::PostInitializeComponents()
@@ -98,7 +103,7 @@ void AINSCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AINSCharacter, bIsDead);
-	DOREPLIFETIME(AINSCharacter, LastHitInfo);
+	DOREPLIFETIME_CONDITION(AINSCharacter, LastHitInfo, COND_Custom);
 	DOREPLIFETIME(AINSCharacter, CharacterCurrentStance);
 	DOREPLIFETIME(AINSCharacter, bIsAiming);
 	DOREPLIFETIME(AINSCharacter, bIsProne);
@@ -155,27 +160,29 @@ void AINSCharacter::OnRep_LastHitInfo()
 {
 	if (LastHitInfo.bIsDirtyData)
 	{
-		UE_LOG(LogINSCharacter, Warning, TEXT("received Characters's:%s Hit Info,but the hit info data is dirty ,ignore and abort!"));
+		UE_LOG(LogINSCharacter, Warning, TEXT("received Characters's:%s Dirty Hit Info!"));
 		return;
 	}
 	UE_LOG(LogINSCharacter, Warning, TEXT("received Characters's:%s Hit Info,start handle take hit logic!"));
 	//spawn blood hit Impact
 	const FVector BloodSpawnLocation = LastHitInfo.RelHitLocation;
-	const FRotator BloodSpawenRotation = FRotator(LastHitInfo.ShotDirPitch, LastHitInfo.ShotDirYaw, 0.f);
+	const float ShotDirPitchDecompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirPitch);
+	const float ShotDirYawDeCompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirYaw);
+	const FRotator BloodSpawenRotation = FRotator(ShotDirPitchDecompressed, ShotDirYawDeCompressed, 0.f);
 	const FTransform BloodSpawnTrans = FTransform(BloodSpawenRotation, BloodSpawnLocation, FVector::OneVector);
 	const int32 BloodParticlesSize = BloodParticles.Num();
 	const int32 randomIndex = FMath::RandHelper(BloodParticlesSize - 1);
 	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BloodParticles[randomIndex], BloodSpawnTrans);
 	UGameplayStatics::SpawnSoundAtLocation(this, BodyHitSound, LastHitInfo.RelHitLocation);
 	const uint8 RandInt = FMath::RandHelper(10);
-	if (RandInt%3==0)
+	if (RandInt % 3 == 0)
 	{
 		CastBloodDecal(BloodSpawnLocation, LastHitInfo.Momentum);
 	}
 	if (LastHitInfo.Damage > 0.f && !GetIsCharacterDead())
 	{
 		uint8 RamdonNum = FMath::RandHelper(7);
-		if (RamdonNum%3==0)
+		if (RamdonNum % 3 == 0)
 		{
 			if (LastHitInfo.bIsTeamDamage)
 			{
@@ -189,6 +196,7 @@ void AINSCharacter::OnRep_LastHitInfo()
 			}
 		}
 	}
+	CachedTakeHitArray.Add(LastHitInfo);
 }
 
 void AINSCharacter::OnRep_CurrentStance()
@@ -274,7 +282,7 @@ void AINSCharacter::ReceiveHit(class AController*const InstigatorPlayer, class A
 			// modify any damage according to game rules and other settings
 			if (GameMode)
 			{
-				GameMode->ModifyDamage(DamageTaken, InstigatorPlayer, this->GetController(),Hit.BoneName);
+				GameMode->ModifyDamage(DamageTaken, InstigatorPlayer, this->GetController(), Hit.BoneName);
 			}
 			if (PointDamageEventPtr)
 			{
@@ -288,11 +296,12 @@ void AINSCharacter::ReceiveHit(class AController*const InstigatorPlayer, class A
 				LastHitInfo.DamageType = DamageEvent.DamageTypeClass;
 				LastHitInfo.Momentum = DamageCauser->GetVelocity();
 				LastHitInfo.RelHitLocation = PointDamageEventPtr->HitInfo.ImpactPoint;
-				const FVector ShotDir = PointDamageEventPtr->HitInfo.ImpactNormal;
+				const FVector ShotDir = DamageCauser->GetActorForwardVector();
 				FRotator ShotRot = ShotDir.Rotation();
 				LastHitInfo.ShotDirPitch = FRotator::CompressAxisToByte(ShotRot.Pitch);
 				LastHitInfo.ShotDirYaw = FRotator::CompressAxisToByte(ShotRot.Yaw);
 				LastHitInfo.bIsDirtyData = false;
+				FTakeHitInfo ReplicatedHitInfo = LastHitInfo;
 				if (GetNetMode() == ENetMode::NM_Standalone || GetNetMode() == ENetMode::NM_ListenServer)
 				{
 					OnRep_LastHitInfo();
@@ -440,7 +449,7 @@ void AINSCharacter::SpawnWeaponPickup()
 			nullptr,
 			ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
 		FVector WeaponLocation = CurrentWeapon->GetActorLocation();
-		FTransform PickupSpawnTransform(CurrentWeapon->GetActorRotation(),WeaponLocation + FVector(0.f, 0.f, 50.f),FVector::OneVector);
+		FTransform PickupSpawnTransform(CurrentWeapon->GetActorRotation(), WeaponLocation + FVector(0.f, 0.f, 50.f), FVector::OneVector);
 		if (WeaponPickup)
 		{
 			WeaponPickup->SetActualWeaponClass(CurrentWeapon->GetClass());
