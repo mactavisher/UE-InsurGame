@@ -124,6 +124,11 @@ void AINSWeaponBase::FireWeapon()
 	}
 }
 
+void AINSWeaponBase::InspectWeapon()
+{
+
+}
+
 void AINSWeaponBase::SpawnProjectile(FVector SpawnLoc, FVector SpawnDir, float TimeBetweenShots)
 {
 	FTransform ProjectileSpawnTransform;

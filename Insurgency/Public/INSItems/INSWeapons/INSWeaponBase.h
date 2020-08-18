@@ -277,28 +277,36 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSpread")
 		float RecoilHorizontallyFactor;
 
+	/** base hand IK position */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControll")
 		FVector BaseHandsIk;
 
+	/** ~~--------------------------------------------------------------
+       pre_defined weapon attachment slots-------------------------------------------*/
+
+	/** Scope attachment slot on this weapon */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponAttachments")
 		FWeaponAttachmentSlot ScopeSlot;
 
+	/** under Barrel attachment slot on this weapon*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponAttachments")
 		FWeaponAttachmentSlot UnderBarrelSlot;
 
+	/** under Barrel attachment slot on this weapon*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponAttachments")
-		FWeaponAttachmentSlot LeltRailSlot;
+		FWeaponAttachmentSlot LeftRailSlot;
 
+	/** under Barrel attachment slot on this weapon*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponAttachments")
 		FWeaponAttachmentSlot RightRailSlot;
 
+	/** under Barrel attachment slot on this weapon*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponAttachments")
 		FWeaponAttachmentSlot MuzzleSlot;
 
 #if WITH_EDITORONLY_DATA
 	uint8 bShowDebugTrace : 1;
 #endif
-
 
 	/** muzzle light timer */
 	UPROPERTY()
@@ -326,32 +334,43 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 public:
 
 	//~ begin weapon delegate signatures
+
+	/** weapon fires a single shot delegate */
 	UPROPERTY(BlueprintAssignable, Category = "WeaponEvents")
 		FOnWeaponFireSignature OnWeaponEachFire;
 
+	/** weapon switches it's fire mode delegate */
 	UPROPERTY(BlueprintAssignable, Category = "WeaponEvents")
 		FOnWeaponStarSwitchFireModeSignature OnWeaponSwitchFireMode;
 
+	/** weapon reload delegate */
 	UPROPERTY(BlueprintAssignable, Category = "WeaponEvents")
 		FOnWeaponStartReloadSignature OnWeaponStartReload;
 
+	/** weapon start equip delegate */
 	UPROPERTY(BlueprintAssignable, Category = "WeaponEvents")
 		FOnWeaponStartEquipSignature OnWeaponStartEquip;
 
+	/** character with weapon enters idle state delegate */
 	UPROPERTY(BlueprintAssignable, Category = "WeaponEvents")
 		FOnWeaponEnterIdleSignature OnWeaponEnterIdle;
 
+	/** character with weapon leaves idle state delegate */
 	UPROPERTY(BlueprintAssignable, Category = "WeaponEvents")
 		FOnWeaponOutIdleSignature OnWeaponOutIdle;
 
+	/** character start weapon aim delegate */
 	UPROPERTY(BlueprintAssignable, Category = "WeaponEvents")
 		FOnWeaponStartAimSignature OnWeaponAim;
 
+	/** character stop weapon aim delegate */
 	UPROPERTY(BlueprintAssignable, Category = "WeaponEvents")
 		FOnWeaponStopAimSignature OnStopWeaponAim;
 
+	/** weapon just finishes it's reloading delegate */
 	UPROPERTY(BlueprintAssignable, Category = "WeaponEvents")
 		FOnWeaponFinishReloadSignature OnFinishReloadWeapon;
+
 	//~ end  weapon delegate signatures
 
 protected:
@@ -384,7 +403,7 @@ protected:
 	/** handles semi-auto fire if available for this weapon */
 	virtual void InternalHandleSemiAutoFire();
 
-	/**  handles full auto fire if available for this weapon */
+	/** handles full auto fire if available for this weapon */
 	virtual void InternalHandleBurstFire();
 
 	/** adjust projectile make them spread */
@@ -513,6 +532,8 @@ public:
 
 	/** fires weapon once */
 	virtual void FireWeapon();
+
+	virtual void InspectWeapon();
 
 	/** spawns a projectile */
 	virtual void SpawnProjectile(FVector SpawnLoc, FVector SpawnDir, float TimeBetweenShots);

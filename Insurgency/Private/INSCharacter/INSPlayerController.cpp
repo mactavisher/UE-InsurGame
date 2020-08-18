@@ -394,6 +394,27 @@ void AINSPlayerController::SwitchFireMode()
 }
 
 
+void AINSPlayerController::InspecWeapon()
+{
+
+}
+
+void AINSPlayerController::ServerInspectWeapon_Implementation()
+{
+	if (GetLocalRole() == ROLE_Authority) {
+
+	}
+	else
+	{
+		InspecWeapon();
+	}
+}
+
+bool AINSPlayerController::ServerInspectWeapon_Validate()
+{
+	return true;
+}
+
 void AINSPlayerController::PickupWeapon(class AINSPickup_Weapon* NewWeaponPickup)
 {
 	if (GetLocalRole() == ROLE_Authority)

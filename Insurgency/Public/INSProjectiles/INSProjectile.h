@@ -242,7 +242,7 @@ protected:
 	/** called every frame*/
 	virtual void Tick(float DeltaSeconds)override;
 
-	/** called after all components being inited */
+	/** called after all components being initiated */
 	virtual void PostInitializeComponents()override;
 
 	virtual void PostNetReceiveVelocity(const FVector& NewVelocity)override;
@@ -276,6 +276,7 @@ public:
 	/** set owner weapon */
 	virtual void SetOwnerWeapon(class AINSWeaponBase* NewWeaponOwner) { this->OwnerWeapon = NewWeaponOwner; }
 
+	/** set instigator player that fires this projectile */
 	virtual void SetInstigatedPlayer(class AController* InsigatedPlayer) { InstigatorPlayer = InsigatedPlayer; }
 
 	/** set is fake projectile */

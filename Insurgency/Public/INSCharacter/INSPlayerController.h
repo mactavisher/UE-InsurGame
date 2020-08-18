@@ -139,6 +139,12 @@ public:
 	/** switch fire mode */
 	virtual void SwitchFireMode();
 
+	/** inspect weapon */
+	virtual void InspecWeapon();
+
+	UFUNCTION(Server,Unreliable,WithValidation)
+	virtual void ServerInspectWeapon();
+
 	virtual void PickupWeapon(class AINSPickup_Weapon* NewWeaponPickup);
 
 	UFUNCTION(Server, Unreliable, WithValidation)
