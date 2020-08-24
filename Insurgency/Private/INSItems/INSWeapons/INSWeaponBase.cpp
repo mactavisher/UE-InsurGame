@@ -211,14 +211,14 @@ void AINSWeaponBase::OnRep_CurrentWeaponState()
 		OnWeaponOutIdle.Broadcast();
 		OnWeaponSwitchFireMode.Broadcast(bForeGripEquipt);
 	}
-#if WITH_EDITOR&&!UE_BUILD_SHIPPING
-	if ((GetOwnerCharacter() && GetOwnerCharacter()->IsLocallyControlled()) || GetNetMode() == ENetMode::NM_Standalone || GetNetMode() == ENetMode::NM_ListenServer)
-	{
-		FString DebugMessage;
-		DebugMessage.Append("Current Weapon::").Append(GetName()).Append("Current State:").Append(GetWeaponReadableCurrentState());
-		GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::Green, DebugMessage);
-	}
-#endif
+// #if WITH_EDITOR&&!UE_BUILD_SHIPPING
+// 	if ((GetOwnerCharacter() && GetOwnerCharacter()->IsLocallyControlled()) || GetNetMode() == ENetMode::NM_Standalone || GetNetMode() == ENetMode::NM_ListenServer)
+// 	{
+// 		FString DebugMessage;
+// 		DebugMessage.Append("Current Weapon::").Append(GetName()).Append("Current State:").Append(GetWeaponReadableCurrentState());
+// 		GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::Green, DebugMessage);
+// 	}
+// #endif
 }
 
 void AINSWeaponBase::OnRep_AimWeapon()

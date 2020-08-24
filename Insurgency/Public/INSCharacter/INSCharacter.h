@@ -55,11 +55,11 @@ struct FTakeHitInfo
 	UPROPERTY()
 		TSubclassOf<UDamageType> DamageType;
 
-	/** shot direction pitch, manually compressed */
+	/** shot direction pitch, manually compressed and decompressed */
 	UPROPERTY()
 		uint8 ShotDirPitch;
 
-	/** shot direction yaw, manually compressed */
+	/** shot direction yaw, manually compressed and decompressed */
 	UPROPERTY()
 		uint8 ShotDirYaw;
 
@@ -361,6 +361,9 @@ public:
 	/** returns if this character is currently crouched */
 	inline virtual bool GetIsCrouched()const { return bIsCrouched; }
 
+	/** return the character's current health value */
+	inline virtual float GetCharacterCurrentHealth()const;
+
 	/** handles Reload request from player  */
 	virtual void HandleWeaponRealoadRequest();
 
@@ -408,6 +411,8 @@ public:
 	virtual void SetIsSuppressed(bool InState) { bIsSuppressed = InState; }
 
 	virtual void BecomeViewTarget(APlayerController* PC)override;
+
+	virtual bool GetIsLowHealth()const;
 
 	UFUNCTION()
 		virtual void OnDeath();

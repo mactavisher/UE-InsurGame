@@ -22,11 +22,11 @@ public:
 
 	/** character's default health value */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "HealthComponent")
-		float DefaultHealth;
+		uint8 DefaultHealth;
 
 	/** character's maximum health value */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "HealthComponent")
-		float MaximunHealth;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = "HealthComponent")
+		uint8 MaximunHealth;
 
 	/**low health percentage hit value when character is not in full health  */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "HealthComponent")

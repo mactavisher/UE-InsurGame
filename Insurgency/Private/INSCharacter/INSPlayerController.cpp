@@ -14,6 +14,7 @@
 #include "Net/UnrealNetwork.h"
 #include "INSCharacter/INSPlayerStateBase.h"
 #include "TimerManager.h"
+#include "INSHud/INSHUDBase.h"
 #include "INSCharacter/INSPlayerStateBase.h"
 #include "INSItems/INSPickups/INSPickup_Weapon.h"
 DEFINE_LOG_CATEGORY(LogAINSPlayerController);
@@ -490,6 +491,24 @@ bool AINSPlayerController::ServerEquipWeapon_Validate(class AINSWeaponBase* NewW
 	return true;
 }
 
+void AINSPlayerController::ReceiveEnterPickups(class AINSItems_Pickup* PickupItem)
+{
+	AINSHUDBase* PlayerHud = GetHUD<AINSHUDBase>();
+	if (PlayerHud)
+	{
+		PlayerHud->SetPickupItemInfo(PickupItem->GetItemDisplayIcon(),true);
+	}
+}
+
+void AINSPlayerController::ReceiveLeavePickups(class AINSItems_Pickup* PickupItem)
+{
+	AINSHUDBase* PlayerHud = GetHUD<AINSHUDBase>();
+	if (PlayerHud)
+	{
+		PlayerHud->SetPickupItemInfo(nullptr,false);
+	}
+}
+
 void AINSPlayerController::ClientShowThreaten_Implementation()
 {
 
@@ -540,7 +559,7 @@ bool AINSPlayerController::IsEnemyFor(class AActor* Other)
 	{
 		bool bIsOtherAEnemy = false;
 		const UClass* const OtherActorClass = Other->GetClass();
-		UE_LOG(LogAINSPlayerController, Warning, TEXT("Player %s has see something ,other actor class:%s"), *this->GetName(), *Other->GetName())
+		//UE_LOG(LogAINSPlayerController, Warning, TEXT("Player %s has see something ,other actor class:%s"), *this->GetName(), *Other->GetName())
 			if (OtherActorClass->IsChildOf(AINSPlayerCharacter::StaticClass()))
 			{
 				const AINSPlayerCharacter* const OtherPlayerCharacter = CastChecked<AINSPlayerCharacter>(Other);

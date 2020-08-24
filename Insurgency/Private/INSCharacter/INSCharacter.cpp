@@ -19,6 +19,13 @@
 #include "Kismet\GameplayStatics.h"
 #include "Net/RepLayout.h"
 #include "INSCharacter\INSCharacter.h"
+#ifndef GEngine
+#include "Engine/Engine.h"
+#endif // !GEngine
+#ifndef UCapsuleComponent
+#include "Components/CapsuleComponent.h"
+#endif // !UCapsuleComponent
+
 
 DEFINE_LOG_CATEGORY(LogINSCharacter);
 
@@ -38,6 +45,10 @@ AINSCharacter::AINSCharacter(const FObjectInitializer&ObjectInitializer) :Super(
 	CharacterCurrentStance = ECharacterStance::STAND;
 	NoiseEmmiterComp = ObjectInitializer.CreateDefaultSubobject<UPawnNoiseEmitterComponent>(this, TEXT("NoiseEmmiterComp"));
 	CharacterHealthComp = ObjectInitializer.CreateDefaultSubobject<UINSHealthComponent>(this, TEXT("HealthComp"));
+	if (CharacterHealthComp)
+	{
+		CharacterHealthComp->SetIsReplicated(true);
+	}
 	INSCharacterMovementComp = CastChecked<UINSCharacterMovementComponent>(GetCharacterMovement());
 	CharacterAudioComp = ObjectInitializer.CreateDefaultSubobject<UINSCharacterAudioComponent>(this, TEXT("AudioComp"));
 	CharacterAudioComp->SetupAttachment(RootComponent);
@@ -154,6 +165,8 @@ void AINSCharacter::CastBloodDecal(FVector HitLocation, FVector HitDir)
 void AINSCharacter::OnRep_Dead()
 {
 	GetINSCharacterMovement()->StopMovementImmediately();
+	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
 }
 
 void AINSCharacter::OnRep_LastHitInfo()
@@ -272,12 +285,13 @@ FORCEINLINE class UINSCharacterMovementComponent* AINSCharacter::GetINSCharacter
 
 void AINSCharacter::ReceiveHit(class AController*const InstigatorPlayer, class AActor* const DamageCauser, const FDamageEvent& DamageEvent, const FHitResult& Hit, float DamageTaken)
 {
-	if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
+	if (GetLocalRole() == ROLE_Authority)
 	{
-		float DamageBeforeModify = DamageTaken;
-		const FPointDamageEvent* const PointDamageEventPtr = (FPointDamageEvent*)&DamageEvent;
-		if (GetLocalRole() == ROLE_Authority)
+		if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
 		{
+			float DamageBeforeModify = DamageTaken;
+			const FPointDamageEvent* const PointDamageEventPtr = (FPointDamageEvent*)&DamageEvent;
+
 			AINSGameModeBase* const GameMode = GetWorld()->GetAuthGameMode<AINSGameModeBase>();
 			// modify any damage according to game rules and other settings
 			if (GameMode)
@@ -286,7 +300,7 @@ void AINSCharacter::ReceiveHit(class AController*const InstigatorPlayer, class A
 			}
 			if (PointDamageEventPtr)
 			{
-				LastHitInfo.bIsDirtyData = true;
+				//LastHitInfo.bIsDirtyData = true;
 				LastHitInfo.bIsTeamDamage = GameMode->GetIsTeamDamage(InstigatorPlayer, GetController());
 				LastHitInfo.originalDamage = DamageBeforeModify;
 				LastHitInfo.Damage = GetIsCharacterDead() ? 0.f : DamageTaken;
@@ -309,7 +323,20 @@ void AINSCharacter::ReceiveHit(class AController*const InstigatorPlayer, class A
 				TakeDamage(DamageTaken, DamageEvent, InstigatorPlayer, DamageCauser);
 			}
 		}
+#if WITH_EDITOR&&!UE_BUILD_SHIPPING
+		if (IsLocallyControlled())
+		{
+			FString DebugMessage;
+			DebugMessage.Append("you are taking damage, damage token: ").Append(FString::FromInt(LastHitInfo.Damage));
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, DebugMessage);
+		}
+#endif
 	}
+}
+
+float AINSCharacter::GetCharacterCurrentHealth() const
+{
+	return GetCharacterHealthComp()->GetCurrentHealth();
 }
 
 void AINSCharacter::HandleWeaponRealoadRequest()
@@ -477,6 +504,11 @@ bool AINSCharacter::GetIsSuppressed() const
 void AINSCharacter::BecomeViewTarget(APlayerController* PC)
 {
 	Super::BecomeViewTarget(PC);
+}
+
+bool AINSCharacter::GetIsLowHealth() const
+{
+	return GetCharacterHealthComp()->CheckIsLowHealth();
 }
 
 void AINSCharacter::OnDeath()

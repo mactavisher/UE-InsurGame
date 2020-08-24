@@ -9,6 +9,9 @@
 #include "INSCharacter/INSPlayerController.h"
 #include "INSWidgets/INSWidget_CrossHair_Dot.h"
 #include "INSGameModes/INSGameStateBase.h"
+#ifndef GEngine
+#include "Engine/Engine.h"
+#endif
 
 AINSHUDBase::AINSHUDBase(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
 {
@@ -21,6 +24,7 @@ AINSHUDBase::AINSHUDBase(const FObjectInitializer& ObjectInitializer) :Super(Obj
 	CrossHairThreatenTintColor = FLinearColor::Red;
 	CrossHairCurrentTintColor = CrossHairDefaultTintColor;
 	bShowCrossHair = false;
+	bShowItemInfo = false;
 }
 
 void AINSHUDBase::BeginPlay()
@@ -53,6 +57,12 @@ void AINSHUDBase::DrawHUD()
 		}
 	}
 	DrawMyTeamInfo();
+	if (bShowItemInfo)
+	{
+		DrawPickupItemInfo();
+	}
+	DrawAmmoInfo();
+	DrawHealth();
 }
 
 void AINSHUDBase::DrawMyTeamInfo()
@@ -71,7 +81,7 @@ void AINSHUDBase::DrawMyTeamInfo()
 			case ETeamType::T:MyTeamName.Append("T"); break;
 			default: MyTeamName.Append("None"); break;
 			}
-			DrawText(MyTeamName, FLinearColor::White, Canvas->SizeX*0.1f, Canvas->SizeY*0.8f, GEngine->GetLargeFont(), 1.2f, false);
+			DrawText(MyTeamName, FLinearColor::White, Canvas->SizeX*0.1f, Canvas->SizeY*0.95f, GEngine->GetSmallFont(), 1.2f, false);
 		}
 	}
 }
@@ -165,6 +175,19 @@ void AINSHUDBase::DrawHitFeedBackIndicator()
 	FVector2D RightDownIndicatorEndCoordinate;
 }
 
+void AINSHUDBase::DrawPickupItemInfo()
+{
+	if (ItemTexture)
+	{
+		DrawTexture(ItemTexture, Canvas->ClipX / 2, Canvas->ClipY*0.8f
+			, Canvas->ClipX, Canvas->ClipY, ItemTexture->GetSizeX()
+			, ItemTexture->GetSizeY(), ItemTexture->GetSizeX()
+			, ItemTexture->GetSizeY());
+	}
+	FString DrawMessage("See pickupable Weapon");
+	DrawText(DrawMessage, FLinearColor::White, Canvas->ClipX / 0.4, Canvas->ClipY / 0.5f, GEngine->GetMediumFont(),1.f,false);
+}
+
 void AINSHUDBase::OnAimWeapon()
 {
 	if (DotCrossHairWidgetPtr)
@@ -247,10 +270,9 @@ void AINSHUDBase::DrawWaitingForRespawnMessage()
 	FString RespawnMessage;
 	RespawnMessage.Append("Waiting For Respawn....");
 	const AINSPlayerStateBase* const MyPlayerState = CastChecked<AINSPlayerStateBase>(GetINSOwingPlayerController()->PlayerState);
-	UFont* Font = GEngine->GetLargeFont();
 	RespawnMessage.Append(FString::FromInt(MyPlayerState->GetReplicatedRespawnRemainingTime()));
 	RespawnMessage.Append(" Seconds");
-	DrawText(RespawnMessage, FLinearColor::White, Canvas->SizeX*0.45f, Canvas->SizeY*0.8f, Font,1.f,false);
+	DrawText(RespawnMessage, FLinearColor::White, Canvas->SizeX*0.45f, Canvas->SizeY*0.8f, GEngine->GetSmallFont(),1.f,false);
 }
 
 void AINSHUDBase::DrawMatchPrepareMessage()
@@ -260,5 +282,37 @@ void AINSHUDBase::DrawMatchPrepareMessage()
 	const AINSGameStateBase* const CurrentGameState =GetWorld()->GetGameState<AINSGameStateBase>();
 	PrepareMessage.Append(FString::FromInt(CurrentGameState->GetReplicatedMatchPrepareRemainingTime()));
 	PrepareMessage.Append(" Seconds");
-	DrawText(PrepareMessage, FLinearColor::White, Canvas->SizeX*0.4f, Canvas->SizeY*0.2f,GEngine->GetLargeFont(),2.f,false);
+	DrawText(PrepareMessage, FLinearColor::White, Canvas->SizeX*0.4f, Canvas->SizeY*0.2f, GEngine->GetMediumFont(),1.f,false);
+}
+
+void AINSHUDBase::SetPickupItemInfo(UTexture2D* NewItemTexture, bool ShowItemsStatus)
+{
+	bShowItemInfo = ShowItemsStatus;
+	ItemTexture = ItemTexture;
+}
+
+void AINSHUDBase::DrawAmmoInfo()
+{
+	if (CurrentWeapon.Get())
+	{
+		FString AmmoMessage;
+		AmmoMessage.Append(FString::FromInt(CurrentWeapon.Get()->CurrentClipAmmo));
+		AmmoMessage.Append("/");
+		AmmoMessage.Append(FString::FromInt(CurrentWeapon.Get()->AmmoLeft));
+		DrawText(AmmoMessage, FLinearColor::White, Canvas->SizeX*0.9f, Canvas->SizeY*0.95f, GEngine->GetMediumFont(), 1.f, false);
+	}
+
+}
+
+void AINSHUDBase::DrawHealth()
+{
+	if (GetINSOwingPlayerController()->GetINSPlayerCharacter() && !GetINSOwingPlayerController()->GetINSPlayerCharacter()->GetIsCharacterDead())
+	{
+		FString AmmoMessage;
+		AmmoMessage.Append("HP:");
+		AmmoMessage.Append(FString::SanitizeFloat(GetINSOwingPlayerController()->GetINSPlayerCharacter()->GetCharacterCurrentHealth()));
+		const AINSPlayerCharacter*PlayerCharacter = GetINSOwingPlayerController()->GetINSPlayerCharacter();
+		FLinearColor HealthColor = PlayerCharacter->GetIsLowHealth() ? FLinearColor::Red : FLinearColor::White;
+		DrawText(AmmoMessage, HealthColor, Canvas->SizeX*0.9f, Canvas->SizeY*0.91f, GEngine->GetMediumFont(), 1.f, false);
+	}
 }

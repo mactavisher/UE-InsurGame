@@ -10,6 +10,7 @@
 class USphereComponent;
 class UTexture2D;
 class AINSPlayerController;
+class AINSPlayerCharacter;
 
 UCLASS()
 class INSURGENCY_API AINSItems : public AActor
@@ -17,9 +18,6 @@ class INSURGENCY_API AINSItems : public AActor
 	GENERATED_UCLASS_BODY()
 
 protected:
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "InventoryItems|Interact")
-		USphereComponent* InteractCollisionComp;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_bIsActive, Category = "InventoryItems|Status")
 		uint8 bIsActive : 1;
@@ -44,9 +42,9 @@ protected:
 
 	virtual void Tick(float DeltaTime) override;
 
-	virtual void NotifyCharacterEnterIventoryItem(class AINSPlayerCharacter* CharacterToNotify);
+	virtual void NotifyCharacterEnter(class AINSPlayerCharacter* CharacterToNotify);
 
-	virtual void NotifyCharacterLeaveInventoryItem(class AINSPlayerCharacter* CharacterToNotify);
+	virtual void NotifyCharacterLeave(class AINSPlayerCharacter* CharacterToNotify);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
 
@@ -79,11 +77,20 @@ public:
 
 	virtual void DisableTick();
 
+	virtual void OnRep_Owner()override;
+
 	virtual float GetInteractTime()const { return InteractTime; }
 
 	virtual FName GetItemDisplayName()const { return ItemDisplayName; }
 
 public:
-	/** return the current owner owner player */
-	virtual AINSPlayerController* GetOwnerPlayer();
+	/**
+	 * the owner we set will typically be controller,but it's may be an AIController,
+	 * so we provide a template here,return value might be null if class Type not compatible
+	 */
+	template<typename T>
+	T* GetOwnerPlayer() const
+	{
+		return Cast<T>(GetOwner());
+	}
 };

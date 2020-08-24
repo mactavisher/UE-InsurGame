@@ -4,59 +4,63 @@
 #include "INSItems/INSWeaponAttachments/INSWeaponAttachment.h"
 #include "INSItems/INSWeapons/INSWeaponBase.h"
 #include "GameFramework/PlayerController.h"
-#include "INSCharacter/INSCharacter.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "INSCharacter/INSPlayerController.h"
+#include "INSCharacter/INSPlayerCharacter.h"
 #include "Net/UnrealNetwork.h"
+#include "INSItems/INSWeapons/INSWeaponBase.h"
 
 AINSWeaponAttachment::AINSWeaponAttachment(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
 {
 	SetReplicates(true);
-	PrimaryActorTick.bCanEverTick = false;
-	PrimaryActorTick.SetTickFunctionEnable(false);
+	Mesh1p=ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this,TEXT("Mesh1pComp"));
+	Mesh3p = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("Mesh3pComp"));
+	Mesh1p->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Mesh3p->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Mesh1p->AlwaysLoadOnClient = true;
+	Mesh3p->AlwaysLoadOnServer = true;
+	Mesh1p->SetCollisionResponseToAllChannels(ECR_Ignore);
+	Mesh3p->SetCollisionResponseToAllChannels(ECR_Ignore);
+	ItemType = EItemType::WEAPONATTACHMENT;
 }
 
 void AINSWeaponAttachment::BeginPlay()
 {
 	Super::BeginPlay();
-
+	DisableTick();
 }
 
-void AINSWeaponAttachment::OnRep_OwnerWeapon()
+void AINSWeaponAttachment::OnRep_Owner()
 {
-
-}
-
-
-class AController* AINSWeaponAttachment::GetOwnerPlayer()
-{
-	if (WeaponOwner)
+	Super::OnRep_Owner();
+	class AINSPlayerController* const OwnerPlayer = GetOwnerPlayer<AINSPlayerController>();
+	const class AINSWeaponBase* PlayerCurrentWeapon = nullptr;
+	if (OwnerPlayer)
 	{
-		return WeaponOwner->GetOwnerCharacter()->GetController();
-	}
-	return nullptr;
-}
-
-class AController* AINSWeaponAttachment::GetOwingPlayer()
-{
-	if (WeaponOwner)
-	{
-		const AINSCharacter* const OwningCharacter = WeaponOwner->GetOwnerCharacter();
-		if (OwningCharacter)
+		if (OwnerPlayer->IsLocalController())
 		{
-			return OwningCharacter->GetController();
+			Mesh1p->SetHiddenInGame(false);
+			Mesh3p->SetHiddenInGame(true);
 		}
-		return nullptr;
+		PlayerCurrentWeapon = OwnerPlayer->GetINSPlayerCharacter()->GetCurrentWeapon();
 	}
-	return nullptr;
+	//we can't set the owner weapon to this current weapon yet,because this attachment may not equipped yet
 }
+
 
 void AINSWeaponAttachment::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(AINSWeaponAttachment, WeaponOwner);
 }
 
 void AINSWeaponAttachment::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+}
+
+
+void AINSWeaponAttachment::ReceiveAttachmentEquipped(class AINSWeaponBase* WeaponEuippedBy)
+{
+	this->WeaponOwner = WeaponEuippedBy;
 }
 

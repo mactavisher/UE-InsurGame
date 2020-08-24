@@ -8,7 +8,7 @@ public class Insurgency : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore","Json","JsonUtilities","AIModule","GameplayTasks" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore","Json","JsonUtilities","AIModule","GameplayTasks","Chaos"});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

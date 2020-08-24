@@ -82,7 +82,7 @@ void UINSCharacterAimInstance::UpdateTurnConditions()
 	if (GetOwningComponent() && CurrentViewMode == EViewMode::TPS)
 	{
 		const float DeltaYaw = OwnerPlayerCharacter->GetControlRotation().Yaw - GetOwningComponent()->GetForwardVector().Rotation().Yaw;
-		UE_LOG(LogINSCharacterAimInstance, Log, TEXT("DeltaYaw value with mesh and controll:%f"), DeltaYaw);
+		//UE_LOG(LogINSCharacterAimInstance, Log, TEXT("DeltaYaw value with mesh and controll:%f"), DeltaYaw);
 		if (DeltaYaw <= -80.f)
 		{
 			TPShouldTurnLeft90 = true;

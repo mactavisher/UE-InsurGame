@@ -91,7 +91,11 @@ struct FRepINSProjMovement
  * master class of weapon projectiles
  * when in a multi player mode,this projectile will be replicated to
  * all clients and besides,when this projectiles is replicated ,it will
- * spawn a client fake projectile to provide visuals
+ * spawn a client fake projectile to provide visuals,if use the replicated one
+ * the movement of this projectile may be choppy if velocity is not Replicated or
+ * quantized,so we can make a client fake projectile and init it just as the server
+ * version doses but from where we can optimize movement replication,and sync some
+ * data that drives this projectile movement replicated from server
  *
  */
 UCLASS(Abstract, Blueprintable)

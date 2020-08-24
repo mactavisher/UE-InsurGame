@@ -308,6 +308,9 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	uint8 bShowDebugTrace : 1;
 #endif
 
+	/** ~~--------------------------------------------------------------
+	   timer handles-------------------------------------------*/
+
 	/** muzzle light timer */
 	UPROPERTY()
 		FTimerHandle MuzzleLightTimerHandle;

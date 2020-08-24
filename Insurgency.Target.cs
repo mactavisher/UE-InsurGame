@@ -10,5 +10,12 @@ public class InsurgencyTarget : TargetRules
 		Type = TargetType.Game;
 		DefaultBuildSettings = BuildSettingsVersion.V2;
 		ExtraModuleNames.AddRange( new string[] { "Insurgency" } );
-	}
+        bCompileChaos = true;
+        bUseChaos = true;
+        bCompilePhysX = true;
+        bCompileAPEX = true;
+        bCompileNvCloth = true;
+        bCustomSceneQueryStructure = true;
+        BuildEnvironment = TargetBuildEnvironment.Unique;
+    }
 }

@@ -17,6 +17,7 @@
 #include "DrawDebugHelpers.h"
 #include "INSHud/INSHUDBase.h"
 #include "Components./CapsuleComponent.h"
+#include "Camera/CameraShake.h"
 
 AINSPlayerCharacter::AINSPlayerCharacter(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer.SetDefaultSubobjectClass<UINSCharSkeletalMeshComponent>(AINSPlayerCharacter::MeshComponentName))
 {
@@ -140,7 +141,7 @@ void AINSPlayerCharacter::SimulateViewTrace()
 	{
 		if (ViewTraceHit.GetActor()->GetClass()->IsChildOf(AINSPlayerCharacter::StaticClass()))
 		{
-			//UE_LOG(LogINSCharacter, Warning, TEXT("Threaten player:%s spoted"), *ViewTraceHit.GetActor()->GetName());
+			//UE_LOG(LogINSCharacter, Warning, TEXT("Threaten player:%s spotted"), *ViewTraceHit.GetActor()->GetName());
 			OnThreatenSpoted(ViewTraceHit.GetActor(), CastChecked<AINSPlayerCharacter>(ViewTraceHit.GetActor())->GetController());
 		}
 	}
@@ -269,10 +270,7 @@ void AINSPlayerCharacter::OnRep_IsCrouched()
 	Super::OnRep_IsCrouched();
 	Get1PAnimInstance()->SetCurrentStance(ECharacterStance::CROUCH);
 	Get3PAnimInstance()->SetCurrentStance(ECharacterStance::CROUCH);
-	if (GetController()->IsLocalPlayerController())
-	{
-		
-	}
+	
 }
 
 void AINSPlayerCharacter::OnRep_Sprint()
@@ -284,6 +282,15 @@ void AINSPlayerCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
 	SetupPlayerMesh();
+}
+
+void AINSPlayerCharacter::OnRep_LastHitInfo()
+{
+	Super::OnRep_LastHitInfo();
+	if (IsLocallyControlled()&&LastHitInfo.Damage>0)
+	{
+		GetINSPlayerController()->ClientPlayCameraShake(TakeHitCameraShake);
+	}
 }
 
 void AINSPlayerCharacter::UpdateCrouchEyeHeightSmoothly()

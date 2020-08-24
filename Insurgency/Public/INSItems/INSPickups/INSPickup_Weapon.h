@@ -14,7 +14,7 @@ class USkeletalMeshComponent;
 /**
  *  weapon pickup
  */
-UCLASS()
+UCLASS(Abstract,Blueprintable)
 class INSURGENCY_API AINSPickup_Weapon : public AINSItems_Pickup
 {
 	GENERATED_UCLASS_BODY()
@@ -51,7 +51,10 @@ protected:
 	TWeakObjectPtr<AController> ClaimedPlayer;
 
 public:
-	/** set the weapon pick up class  */
+	/**
+	 * set the weapon pick up class
+	 * @params WeaponClass the actual weapon class to spawn
+	 */
 	virtual void SetActualWeaponClass(UClass* WeaponClass) { ActualWeaponClass = WeaponClass; }
 
 	/** get the pick up weapon class */
@@ -68,6 +71,10 @@ public:
 
 	/** give this to a claimed player */
 	virtual void GiveThisToPlayer(class AController* NewClaimedPlayer);
+
+	virtual void NotifyCharacterEnter(class AINSPlayerCharacter* CharacterToNotify)override;
+
+	virtual void NotifyCharacterLeave(class AINSPlayerCharacter* CharacterToNotify)override;
 
 	/** begin play */
 	virtual void BeginPlay()override;
@@ -91,7 +98,7 @@ public:
 	inline virtual AController* GetClaimedPlayer();
 
 	/** set the visual mesh of this visual mesh comp */
-	virtual void SetViualMesh(USkeletalMesh* NewVisualMesh);
+	virtual void SetViualMesh(class USkeletalMesh* NewVisualMesh);
 
 	/** after OnRep_Movent called,sync transformation from server replicated transform info */
 	virtual void PostNetReceiveLocationAndRotation()override;
@@ -101,6 +108,9 @@ public:
 
 	/** set the visual skin mesh for the skeletal mesh component */
 	virtual void SetSkinMeshComp(USkeletalMeshComponent* NewVisualMeshComp) { VisualMeshComp = NewVisualMeshComp; }
+
+	/**  */
+	virtual void PostInitializeComponents()override;
 
 	
 	UFUNCTION()

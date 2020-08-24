@@ -6,11 +6,36 @@
 #include "INSItems/INSItems.h"
 #include "INSItems_Pickup.generated.h"
 
+class USphereComponent;
+class USkeletalMeshComponent;
+class UStaticMeshComponent;
+
 /**
- * 
+ * general item type for pick ups
+ * such as weapon pickups,or resources pick ups
  */
-UCLASS()
+UCLASS(Abstract,NotBlueprintType)
 class INSURGENCY_API AINSItems_Pickup : public AINSItems
 {
 	GENERATED_UCLASS_BODY()
+
+	/** interaction comp */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "InteractComp", meta = (AllowPrivateAccess = "true"))
+		USphereComponent* InteractionComp;
+
+	/** indicate this pick up will be auto picked up by player who get close enough to it */
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="Config")
+	    uint8 bAutoPickup:1;
+
+	/** handle when this pick up is overlapped with characters */
+	virtual void HandleOnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)override;
+
+	/** handles when when player leave this pick up */
+	virtual void HandleOnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)override;
+
+	/** give this to a claimed player */
+	virtual void GiveThisToPlayer(class AController* NewClaimedPlayer);
+
+	virtual void BeginPlay()override;
+
 };

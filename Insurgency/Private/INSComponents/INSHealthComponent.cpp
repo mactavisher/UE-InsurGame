@@ -4,14 +4,17 @@
 #include "INSComponents/INSHealthComponent.h"
 #include "TimerManager.h"
 #include "Engine/World.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values for this component's properties
 UINSHealthComponent::UINSHealthComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
-	MaximunHealth = 100.f;
+	MaximunHealth = 100;
 	DefaultHealth = MaximunHealth;
 	CurrentHealth = DefaultHealth;
+	LowHealthPercentage = 0.5f;
+	TimeBeforeHealthRestore = 5.f;
 }
 
 
@@ -37,8 +40,6 @@ void UINSHealthComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 			OwnerCharacter->SetIsSuppressed(false);
 		}
 	}
-
-	// ...
 }
 
 float UINSHealthComponent::GetCurrentHealth() const
@@ -48,11 +49,13 @@ float UINSHealthComponent::GetCurrentHealth() const
 
 void UINSHealthComponent::ReduceHealth(float ReduceAmount, class AActor* DamageCauser, class AController* DamageInstigator)
 {
-	CurrentHealth -= ReduceAmount;
-	FMath::Clamp<float>(CurrentHealth -= ReduceAmount, 0.f, 100);
-	if (CurrentHealth <= 0.f)
+	CurrentHealth -= FMath::CeilToInt(ReduceAmount);
+	if (CurrentHealth <= 0)
 	{
+		CurrentHealth = 0;
 		OnCharacterShouldDie.Broadcast();
+		GetWorld()->GetTimerManager().ClearTimer(HealthRestoreTimerHandle);
+		DisableComponentTick();
 	}
 	GetWorld()->GetTimerManager().ClearTimer(HealthRestoreTimerHandle);
 	GetWorld()->GetTimerManager().SetTimer(HealthRestoreTimerHandle, this, &UINSHealthComponent::ReGenerateHealth, 0.1f, true, TimeBeforeHealthRestore);
@@ -60,22 +63,28 @@ void UINSHealthComponent::ReduceHealth(float ReduceAmount, class AActor* DamageC
 
 void UINSHealthComponent::ReGenerateHealth()
 {
-
+	CurrentHealth += 1;
+	if (CurrentHealth >= MaximunHealth)
+	{
+		CurrentHealth = MaximunHealth;
+		GetWorld()->GetTimerManager().ClearTimer(HealthRestoreTimerHandle);
+	}
 }
 
 float UINSHealthComponent::GetHealthPercentage()
 {
-	return 0.f;
+	return CurrentHealth / MaximunHealth;
 }
 
 void UINSHealthComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
-
+	DOREPLIFETIME(UINSHealthComponent, MaximunHealth);
+	DOREPLIFETIME(UINSHealthComponent, CurrentHealth);
 }
 
 bool UINSHealthComponent::CheckIsLowHealth()
 {
-	return false;
+	return GetHealthPercentage() <= LowHealthPercentage;
 }
 
 void UINSHealthComponent::EnableComponentTick()

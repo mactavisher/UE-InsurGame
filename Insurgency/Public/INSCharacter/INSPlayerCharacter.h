@@ -57,6 +57,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "INSCharacter|CharacterMovement")
 		UINSCharSkeletalMeshComponent* CharacterMesh3P;
 
+	/** Player character's 3P mesh comp,only visible to non-owner player */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FeedBackEffects")
+		TSubclassOf<class UCameraShake> TakeHitCameraShake;
+
 
 
 protected:
@@ -88,6 +92,8 @@ protected:
 	virtual void OnRep_Sprint()override;
 
 	virtual void OnRep_PlayerState()override;
+
+	virtual void OnRep_LastHitInfo()override;
 
 	UFUNCTION()
 	virtual void UpdateCrouchEyeHeightSmoothly();

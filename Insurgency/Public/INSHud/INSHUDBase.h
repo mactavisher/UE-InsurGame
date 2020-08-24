@@ -67,11 +67,20 @@ class INSURGENCY_API AINSHUDBase : public AHUD
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "CrossHair")
 		FLinearColor CrossHairThreatenTintColor;
 
+	/** extra effect tint color ,for example , when contact with enemies */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Items")
+	uint8 bShowItemInfo:1;
+
+	/** extra effect tint color ,for example , when contact with enemies */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Items")
+	UTexture2D* ItemTexture;
+
 	/** current weapon the player equipped */
 	TWeakObjectPtr<AINSWeaponBase> CurrentWeapon;
 
 	/** last actor we see */
 	TWeakObjectPtr<AActor> LastSeenActor;
+	
 
 protected:
 	/************************************************************************/
@@ -112,6 +121,9 @@ protected:
 
 	/** draws a cross hair hit indicator when hits a target enemy */
 	virtual void DrawHitFeedBackIndicator();
+
+	/** draw pick up item info */
+	virtual void DrawPickupItemInfo();
 
 public:
 
@@ -156,5 +168,11 @@ public:
 	virtual void DrawWaitingForRespawnMessage();
 
 	virtual void DrawMatchPrepareMessage();
+
+	virtual void SetPickupItemInfo(UTexture2D* NewItemTexture,bool ShowItemsStatus);
+
+	virtual void DrawAmmoInfo();
+
+	virtual void DrawHealth();
 
 };

@@ -6,12 +6,12 @@
 #include "INSCharacter/INSPlayerController.h"
 #include "Engine/Texture2D.h"
 #include "Components/SphereComponent.h"
+#include "Insurgency/Public/INSCharacter/INSPlayerCharacter.h"
 
 // Sets default values
 AINSItems::AINSItems(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
 {
 	DisableTick();
-	InteractCollisionComp = ObjectInitializer.CreateDefaultSubobject<USphereComponent>(this, TEXT("InteractComp"));
 	bIsActive = true;
 	bIsWeapon = false;
 	ItemType = EItemType::NONE;
@@ -24,6 +24,7 @@ AINSItems::AINSItems(const FObjectInitializer& ObjectInitializer) :Super(ObjectI
 void AINSItems::BeginPlay()
 {
 	Super::BeginPlay();
+	/*
 	if (GetLocalRole() == ROLE_Authority)
 	{
 		InteractCollisionComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
@@ -37,23 +38,24 @@ void AINSItems::BeginPlay()
 		//clients no need to enable collision
 		InteractCollisionComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
+	*/
+	
 }
 
 // Called every frame
 void AINSItems::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
-void AINSItems::NotifyCharacterEnterIventoryItem(class AINSPlayerCharacter* CharacterToNotify)
+void AINSItems::NotifyCharacterEnter(class AINSPlayerCharacter* CharacterToNotify)
 {
-
+	//hook but do nothing by default
 }
 
-void AINSItems::NotifyCharacterLeaveInventoryItem(class AINSPlayerCharacter* CharacterToNotify)
+void AINSItems::NotifyCharacterLeave(class AINSPlayerCharacter* CharacterToNotify)
 {
-
+	//hook but do nothing by default
 }
 
 void AINSItems::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -63,32 +65,32 @@ void AINSItems::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetim
 
 void AINSItems::OnRep_bIsActive()
 {
-
+	//hook but do nothing by default
 }
 
 void AINSItems::HandleOnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	
+	//hook but do nothing by default
 }
 
 void AINSItems::HandleOnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
-
+	//hook but do nothing by default
 }
 
 void AINSItems::ReceiveDetectedBy(class AController* PlayerInstigator, class ACharacter* DetectPlayerCharacter)
 {
-
+	//hook but do nothing by default
 }
 
 void AINSItems::ReceiveInteractFinished(class AController* Player)
 {
-
+	//hook but do nothing by default
 }
 
 void AINSItems::ShowItemIcon(class AController* PlayerInstigator, class ACharacter* DetectPlayerCharacter)
 {
-
+	//hook but do nothing by default
 }
 
 void AINSItems::EnableTick()
@@ -103,8 +105,8 @@ void AINSItems::DisableTick()
 	PrimaryActorTick.SetTickFunctionEnable(false);
 }
 
-AINSPlayerController* AINSItems::GetOwnerPlayer()
+void AINSItems::OnRep_Owner()
 {
-	return CastChecked<AINSPlayerController>(GetOwner());
+	Super::OnRep_Owner();
 }
 

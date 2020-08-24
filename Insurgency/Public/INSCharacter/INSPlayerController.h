@@ -171,6 +171,10 @@ public:
 	UFUNCTION(Server, Reliable, WithValidation)
 		virtual void ServerEquipWeapon(class AINSWeaponBase* NewWeaponToEquip);
 
+	virtual void ReceiveEnterPickups(class AINSItems_Pickup* PickupItem);
+
+	virtual void ReceiveLeavePickups(class AINSItems_Pickup* PickupItem);
+
 	UPROPERTY()
 		FTimerHandle CharacterRespawnTimer;
 
