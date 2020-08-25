@@ -137,3 +137,13 @@ enum class EVoiceType :uint8 {
 	MANDOWN              UMETA(DisplayName = "Man down"),
 	FRIENDLYFIRE         UMETA(DisplayName = "Friendly Fire"),
 };
+
+UENUM(BlueprintType)
+enum class EWeaponAttachmentType :uint8
+{
+	SIGHT                             UMETA(DisplayName = "Sight"),
+	UNDERBARREL                       UMETA(DisplayName = "UnderBarrel"),
+	MUZZLE                            UMETA(DisplayName = "Muzzle"),
+	LEFTRAIL                          UMETA(DisplayName = "LeftRail"),
+	RIGHTRAIL                         UMETA(DisplayName = "RightRail"),
+};

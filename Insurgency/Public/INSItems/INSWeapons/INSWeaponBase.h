@@ -67,17 +67,14 @@ public:
 	}
 };
 
-UENUM(BlueprintType)
-enum class EWeaponAttachmentType :uint8
+namespace WeaponAttachmentSlotName
 {
-	SCOPE                         UMETA(DisplayName = "Scope"),
-	UNDERBARREL                       UMETA(DisplayName = "UnderBarrel"),
-	MUZZLE                       UMETA(DisplayName = "Muzzle"),
-	LEFTRAIL                       UMETA(DisplayName = "LeftRail"),
-	RIGHTRAIL                       UMETA(DisplayName = "RightRail"),
-};
-
-
+	  const FName Muzzle(TEXT("Muzzle"));	    // Muzzle slot name
+	  const FName Sight(TEXT("Sight"));		// Sight slot name
+	  const FName UnderBarrel(TEXT("UnderBarrel"));// UnderBarrel slot name
+	  const FName LeftRail(TEXT("LeftRail"));	// LeftRail slot name
+	  const FName rightRail(TEXT("rightRail"));	// rightRail slot name
+}
 
 /** weapon attachment slot */
 USTRUCT(BlueprintType)
@@ -85,8 +82,8 @@ struct FWeaponAttachmentSlot {
 
 	GENERATED_USTRUCT_BODY()
 
-	/**attachment class */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AttachmentClass")
+		/**attachment class */
+		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AttachmentClass")
 		TSubclassOf<AActor> WeaponAttachementClass;
 
 	/** attachment instance */
@@ -110,11 +107,33 @@ public:
 	/** return the Attachment type of the attachment slot */
 	EWeaponAttachmentType GetAttachmentType()const { return WeaponAttachmentType; }
 
-	FWeaponAttachmentSlot()
+	/** return the Attachment type of the attachment slot */
+	void  SetAttachmentType(EWeaponAttachmentType NewType)
+	{
+		WeaponAttachmentType = NewType;
+	}
+
+	FORCEINLINE FWeaponAttachmentSlot()
 		:WeaponAttachementClass(nullptr)
 		, WeaponAttachmentInstance(nullptr)
 		, bIsAvailable(false)
 	{
+	}
+	FORCEINLINE FWeaponAttachmentSlot(EWeaponAttachmentType WeaponAttachmentType)
+		:WeaponAttachementClass(nullptr)
+		, WeaponAttachmentInstance(nullptr)
+		, bIsAvailable(true)
+		, WeaponAttachmentType(WeaponAttachmentType)
+	{
+
+	}
+	FORCEINLINE FWeaponAttachmentSlot(EWeaponAttachmentType WeaponAttachmentType,bool IsAvailable)
+		:WeaponAttachementClass(nullptr)
+		, WeaponAttachmentInstance(nullptr)
+		, bIsAvailable(IsAvailable)
+		, WeaponAttachmentType(WeaponAttachmentType)
+	{
+
 	}
 };
 
@@ -122,7 +141,6 @@ public:
 /**
  *
  */
-
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWeaponFireSignature, bool, bHasForeGip, bool, bIsDry);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWeaponStartReloadSignature, bool, bHasForeGip, bool, bIsDry);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponStarSwitchFireModeSignature, bool, bHasForeGip);
@@ -138,8 +156,8 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 {
 	GENERATED_UCLASS_BODY()
 
-		/** stores available fire modes to switch between */
-		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+	/** stores available fire modes to switch between */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
 		TArray<EWeaponFireMode> AvailableFireModes;
 
 	/** current selected(active) fire mode */
@@ -167,7 +185,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 		int32 CurrentClipAmmo;
 
 	/** ammo left in pocket */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ammo")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Replicated, Category = "Ammo")
 		int32 AmmoLeft;
 
 	/** if enabled,fire will not consumes any ammo */
@@ -281,28 +299,10 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControll")
 		FVector BaseHandsIk;
 
-	/** ~~--------------------------------------------------------------
-       pre_defined weapon attachment slots-------------------------------------------*/
-
-	/** Scope attachment slot on this weapon */
+   
+	/** WeaponAttachment Slots */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponAttachments")
-		FWeaponAttachmentSlot ScopeSlot;
-
-	/** under Barrel attachment slot on this weapon*/
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponAttachments")
-		FWeaponAttachmentSlot UnderBarrelSlot;
-
-	/** under Barrel attachment slot on this weapon*/
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponAttachments")
-		FWeaponAttachmentSlot LeftRailSlot;
-
-	/** under Barrel attachment slot on this weapon*/
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponAttachments")
-		FWeaponAttachmentSlot RightRailSlot;
-
-	/** under Barrel attachment slot on this weapon*/
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponAttachments")
-		FWeaponAttachmentSlot MuzzleSlot;
+	 TMap<FName,FWeaponAttachmentSlot> WeaponAttachementSlots;
 
 #if WITH_EDITORONLY_DATA
 	uint8 bShowDebugTrace : 1;
@@ -311,7 +311,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	/** ~~--------------------------------------------------------------
 	   timer handles-------------------------------------------*/
 
-	/** muzzle light timer */
+	   /** muzzle light timer */
 	UPROPERTY()
 		FTimerHandle MuzzleLightTimerHandle;
 
@@ -538,6 +538,12 @@ public:
 
 	virtual void InspectWeapon();
 
+	virtual void PreInitializeComponents()override;
+
+	virtual void InitWeaponAttachmentSlots();
+
+	virtual void GetWeaponAttachmentSlotStruct(FName SlotName,FWeaponAttachmentSlot& OutWeaponAttachmentSlot);
+
 	/** spawns a projectile */
 	virtual void SpawnProjectile(FVector SpawnLoc, FVector SpawnDir, float TimeBetweenShots);
 
@@ -578,6 +584,4 @@ public:
 	inline virtual FVector GetAdjustADSHandsIk()const { return AdjustADSHandsIK; }
 
 	virtual void SetAdjustADSHandsIk(FVector NewIKPosition) { AdjustADSHandsIK = NewIKPosition; }
-
-
 };

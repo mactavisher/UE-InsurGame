@@ -328,6 +328,7 @@ void AINSPlayerCharacter::SetupPlayerMesh()
 			CharacterMesh3P->SetSkeletalMesh(TerroristDefaultMesh.Mesh3p);
 		}
 	}
+	CharacterSetupFinished.Broadcast();
 }
 
 void AINSPlayerCharacter::ReceiveFriendlyFire(class AINSPlayerController* InstigatorPlayer, float DamageTaken)

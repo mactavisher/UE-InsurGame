@@ -129,6 +129,32 @@ void AINSWeaponBase::InspectWeapon()
 
 }
 
+void AINSWeaponBase::PreInitializeComponents()
+{
+	Super::PreInitializeComponents();
+	InitWeaponAttachmentSlots();
+}
+
+void AINSWeaponBase::InitWeaponAttachmentSlots()
+{
+	WeaponAttachementSlots.Add(WeaponAttachmentSlotName::Muzzle, FWeaponAttachmentSlot(EWeaponAttachmentType::MUZZLE, true));
+	WeaponAttachementSlots.Add(WeaponAttachmentSlotName::Sight, FWeaponAttachmentSlot(EWeaponAttachmentType::SIGHT, true));
+	WeaponAttachementSlots.Add(WeaponAttachmentSlotName::UnderBarrel, FWeaponAttachmentSlot(EWeaponAttachmentType::UNDERBARREL, true));
+	WeaponAttachementSlots.Add(WeaponAttachmentSlotName::LeftRail, FWeaponAttachmentSlot(EWeaponAttachmentType::LEFTRAIL, true));
+	WeaponAttachementSlots.Add(WeaponAttachmentSlotName::rightRail, FWeaponAttachmentSlot(EWeaponAttachmentType::RIGHTRAIL, true));
+}
+
+void AINSWeaponBase::GetWeaponAttachmentSlotStruct(FName SlotName, FWeaponAttachmentSlot& OutWeaponAttachmentSlot)
+{
+	FWeaponAttachmentSlot* TargetAttachmentSlot = WeaponAttachementSlots.Find(SlotName);
+	if (!TargetAttachmentSlot)
+	{
+		UE_LOG(LogINSWeapon, Warning, TEXT("Weapon Slot Named %s Not found!"));
+		return;
+	}
+	OutWeaponAttachmentSlot = *TargetAttachmentSlot;
+}
+
 void AINSWeaponBase::SpawnProjectile(FVector SpawnLoc, FVector SpawnDir, float TimeBetweenShots)
 {
 	FTransform ProjectileSpawnTransform;
@@ -623,6 +649,7 @@ void AINSWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AINSWeaponBase, bDryReload);
 	DOREPLIFETIME(AINSWeaponBase, bWantsToEquip);
 	DOREPLIFETIME_CONDITION(AINSWeaponBase, CurrentClipAmmo, COND_OwnerOnly);
+	DOREPLIFETIME_CONDITION(AINSWeaponBase, AmmoLeft, COND_OwnerOnly);
 }
 
 
@@ -944,4 +971,3 @@ bool AINSWeaponBase::ServerFinishSwitchFireMode_Validate()
 {
 	return true;
 }
-

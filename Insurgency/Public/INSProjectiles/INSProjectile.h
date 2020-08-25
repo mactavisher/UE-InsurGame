@@ -96,7 +96,6 @@ struct FRepINSProjMovement
  * quantized,so we can make a client fake projectile and init it just as the server
  * version doses but from where we can optimize movement replication,and sync some
  * data that drives this projectile movement replicated from server
- *
  */
 UCLASS(Abstract, Blueprintable)
 class INSURGENCY_API AINSProjectile : public AActor

@@ -138,6 +138,8 @@ public:
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStartSprintSignature);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStopSprintSignature);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FCharacterMeshSetupFinishedSignature);
+
 UCLASS()
 class INSURGENCY_API AINSCharacter : public ACharacter
 {
@@ -239,6 +241,9 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintAssignable)
 		FOnStartSprintSignature OnStopSprint;
+
+	UPROPERTY(VisibleAnywhere, BlueprintAssignable)
+		FCharacterMeshSetupFinishedSignature CharacterSetupFinished;
 
 	/** Decal materials. provide blood spray on buildings such as wall*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "WeaponRef")
@@ -394,10 +399,13 @@ public:
 	/** handles crouch request from player*/
 	virtual void HandleCrouchRequest();
 
+	/** handles sprint request from player*/
 	virtual void HandleStartSprintRequest();
 
+	/** handles stop sprint request from player*/
 	virtual void HandleStopSprintRequest();
 
+	/** callback when character crouched or un-crouched */
 	virtual void OnRep_IsCrouched()override;
 
 	virtual void SpawnWeaponPickup();

@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Insurgency/Public/INSItems/INSItems.h"
+#include "Insurgency/Insurgency.h"
 #include "INSWeaponAttachment.generated.h"
 
 class AINSWeaponBase;
@@ -15,7 +16,7 @@ class USkeletalMeshComponent;
  * such as grip,scope etc.
  * each weapon attachment will modify weapon's properties or behavior
  */
-UCLASS(Abstract,Blueprintable)
+UCLASS(Abstract, Blueprintable)
 class INSURGENCY_API AINSWeaponAttachment : public AINSItems
 {
 	GENERATED_UCLASS_BODY()
@@ -28,8 +29,12 @@ protected:
 		USkeletalMeshComponent* Mesh3p;
 
 	/** weapon that own this attachment */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = "WeaponOwner")
-	 AINSWeaponBase* WeaponOwner;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "WeaponOwner")
+		AINSWeaponBase* WeaponOwner;
+
+	/** in which slot can this attachment attach to, e.g. underBarrel,muzzle */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+		TArray<EWeaponAttachmentType> CompatibleSlots;
 
 
 protected:
