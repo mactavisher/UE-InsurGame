@@ -99,14 +99,17 @@ struct FTakeHitInfo
 /** mapped bone and damage modifier  */
 USTRUCT(BlueprintType)
 struct FBoneDamageModifier {
+
 	GENERATED_USTRUCT_BODY()
 
 protected:
+
 	/** collection of bone mapped damage modifier,could be assigned via blueprint */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BoneDamageMap")
 		TMap<FName, float> BoneMappedDamageModifier;
 
 public:
+
 	/**
 	 * convenient bone mapped damage modifier querier
 	 *

@@ -15,6 +15,7 @@ USTRUCT(BlueprintType)
 struct FDrawPlayerKilledInfo
 {
 	GENERATED_USTRUCT_BODY()
+
 		friend class AINSHUDBase;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
@@ -54,51 +55,69 @@ public:
 	}
 };
 
+/**
+ * helper struct to track screen drawing a hit feed back indicator
+ */
 USTRUCT(BlueprintType)
 struct FDrawHitFeedBackIndicatorInfo
 {
 	GENERATED_USTRUCT_BODY()
+
 		friend class AINSHUDBase;
 
+	/** center potion of the canvas */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
 		FVector2D CenterScreen;
 
+	/** Left up start part coordinate */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
 		FVector2D LeftUpBegin;
 
+	/** Left up end part coordinate */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
 		FVector2D LeftUpEnd;
 
+	/** right up start part coordinate */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
 		FVector2D RightUpBegin;
 
+	/** right end part coordinate */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
 		FVector2D RightUpEnd;
 
+	/** Left down start part coordinate */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
 		FVector2D LeftDownBegin;
 
+	/** Left down end part coordinate */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
 		FVector2D LeftDownEnd;
 
+	/** right down start part coordinate */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
 		FVector2D RightDownBegin;
 
+	/** right down end part coordinate */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
 		FVector2D RightDownEnd;
 
+	/** time elapsed since last time we active drawing */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
 		float DrawTimeEclapsed;
 
+	/** Draw Color */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DrawMessage")
 		FLinearColor DrawColor;
 
+	/** line length */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DrawMessage")
 		float LineLength;
 
+	/** Base off-set value to center of the screen */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DrawMessage")
 		float BaseLineOffSet;
 
+	/** is drawing */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
 		uint8 bShowHitFeedBackIndicator : 1;
 
@@ -106,12 +125,18 @@ public:
 	FDrawHitFeedBackIndicatorInfo()
 		: DrawTimeEclapsed(0.f)
 		, DrawColor(FLinearColor::White)
+#if WITH_EDITOR&&!UE_BUILD_SHIPPING
 		, LineLength(5.f)
 		, BaseLineOffSet(30.f)
+#endif
 		, bShowHitFeedBackIndicator(false)
 	{
 	}
 
+	/**
+	 * @desc given a point coordinate and calculate the coordinate of each part During each draw frame
+	 * @Param PivotPoint  Pivot
+	 */
 	void CalculateCoord(FVector2D PivotPoint)
 	{
 		CenterScreen = PivotPoint;
@@ -124,16 +149,38 @@ public:
 			LeftDownBegin = CenterScreen + FVector2D(-BaseLineOffSet - LineLength, -BaseLineOffSet - LineLength);
 			LeftDownEnd = CenterScreen + FVector2D(-BaseLineOffSet, -BaseLineOffSet);
 			RightDownBegin = CenterScreen + FVector2D(BaseLineOffSet + LineLength, -BaseLineOffSet - LineLength);
-			RightDownEnd = CenterScreen + FVector2D(+BaseLineOffSet, -BaseLineOffSet);
+			RightDownEnd = CenterScreen + FVector2D(BaseLineOffSet, -BaseLineOffSet);
 		}
 	}
+
+	/**
+	 * @desc set the base distance to the center pivot
+	 * @Param NewOffSetValue  Distance Value
+	 */
+	void SetBaseLineOffSet(float NewOffSetValue)
+	{
+		BaseLineOffSet = NewOffSetValue;
+	}
+
+	/**
+	 * @desc set the line length be drawled
+	 * @Param NewLineLength  the line length will be drawled
+	 */
+	void SetLineLength(float NewLineLength)
+	{
+		LineLength = NewLineLength;
+	}
+
+	/** reset the drawing property be used */
 	void ResetDrawStatus()
 	{
 		bShowHitFeedBackIndicator = false;
 		DrawTimeEclapsed = 0.f;
 		DrawColor = FLinearColor::White;
+#if WITH_EDITOR&&!UE_BUILD_SHIPPING
 		LineLength = 5.f;
 		BaseLineOffSet = 30.f;
+#endif
 	}
 };
 
@@ -190,8 +237,8 @@ class INSURGENCY_API AINSHUDBase : public AHUD
 {
 	GENERATED_UCLASS_BODY()
 
-		/** a simple center dot texture drawn on screen as cross hair */
-		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Widgets")
+	/** a simple center dot texture drawn on screen as cross hair */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Widgets")
 		TSubclassOf<UINSWidget_CrossHair_Dot> DotCrossHairWidgetClass;
 
 	/** stores all the Widget instances that Managed by this HUD for later access purposes */
