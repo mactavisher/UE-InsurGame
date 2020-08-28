@@ -39,7 +39,7 @@ AINSGameModeBase::AINSGameModeBase(const FObjectInitializer& ObjectInitializer) 
 	DefaultRestartTime = 5.f;
 	bIsMatchPrepare = false;
 	bMatchPreparingFinished = false;
-	MatchPrepareTime = 10.f;
+	MatchPrepareTime = 3.f;
 	MatchPrepareRemainingTime = MatchPrepareTime;
 }
 
@@ -110,6 +110,7 @@ void AINSGameModeBase::PreInitializeComponents()
 		CurrentGameState->SetGameDefaultRespawnTime(DefaultRestartTime);
 		CurrentGameState->SetAllowFire(bAllowFire);
 		CurrentGameState->SetAllowMove(bAllowMove);
+		CurrentGameState->SetMatchPrepareRemainingTime(MatchPrepareTime);
 	}
 	UE_LOG(LogINSGameMode, Log, TEXT("PreInitializeComponents called"));
 }
@@ -163,6 +164,7 @@ void AINSGameModeBase::ModifyDamage(float& OutDamage, AController* PlayerInstiga
 		OutDamage = 0.f;
 	}
 	float originDamage = OutDamage;
+	bool bIsHeadShot = false;
 	//modify bone damage
 	AINSCharacter* const VictimCharacter = Victim->GetPawn() == nullptr ? nullptr : CastChecked<AINSCharacter>(Victim->GetPawn());
 	if (VictimCharacter)
@@ -172,6 +174,10 @@ void AINSGameModeBase::ModifyDamage(float& OutDamage, AController* PlayerInstiga
 		const float BoneDamageModifier = BoneDamageModifierStruct.GetBoneDamageModifier(BoneName);
 		const float ModifiedDamage = OutDamage * BoneDamageModifier;
 		OutDamage = ModifiedDamage;
+		if (BoneName.ToString().Contains("Head", ESearchCase::IgnoreCase))
+		{
+			bIsHeadShot = true;
+		}
 		UE_LOG(LogINSCharacter, Warning, TEXT("character %s hit with bone:%s,damage modifier values is:%f,Modified damage value is %f"), *GetName(), *BoneName.ToString(), BoneDamageModifier, ModifiedDamage);
 	}
 	//modify team damage
@@ -188,11 +194,24 @@ void AINSGameModeBase::ModifyDamage(float& OutDamage, AController* PlayerInstiga
 			OutDamage = 0.f;
 		}
 	}
+// 	if (VictimCharacter->GEt()&&OutDamage>0.f)
+// 	{
+// 		int32 Score = FMath::CeilToInt(OutDamage) + bIsHeadShot ? 100 : 0;
+// 		if (bIsTeamDamage)
+// 		{
+// 			Score = -FMath::CeilToInt(Score/2);
+// 		}
+// 		ConfirmKill(PlayerInstigator, Victim,Score,bIsTeamDamage);
+// 	}
 }
 
-void AINSGameModeBase::ConfirmKill(AController* Killer, AController* Victim)
+void AINSGameModeBase::ConfirmKill(AController* Killer, AController* Victim,int32 KillerScore, bool bIsTeamDamage)
 {
-
+	AINSGameStateBase* GS = GetGameState<AINSGameStateBase>();
+	if (GS)
+	{
+		GS->OnPlayerKilled(Killer, Victim,KillerScore,bIsTeamDamage);
+	}
 }
 
 void AINSGameModeBase::GetInGameTeams(TMap<FString, AINSTeamInfo*>& OutTeams)

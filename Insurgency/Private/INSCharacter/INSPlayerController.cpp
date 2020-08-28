@@ -12,6 +12,7 @@
 #include "GameFramework/SpectatorPawn.h"
 #include "Engine/World.h"
 #include "Net/UnrealNetwork.h"
+#include "Engine/NetDriver.h"
 #include "INSCharacter/INSPlayerStateBase.h"
 #include "TimerManager.h"
 #include "INSHud/INSHUDBase.h"
@@ -394,6 +395,37 @@ void AINSPlayerController::SwitchFireMode()
 	}
 }
 
+
+void AINSPlayerController::ReceiveGameKills(class APlayerState* Killer, APlayerState* Victim, int32 Score, bool bIsTeamDamage)
+{
+	//get the local machine player controller
+	AINSPlayerController* LocalPC = Cast<AINSPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(),0));
+	//if the killer is me
+	if (Killer->PlayerId == LocalPC->PlayerState->PlayerId)
+	{
+		AINSHUDBase* PlayerHud = GetHUD<AINSHUDBase>();
+		if (PlayerHud)
+		{
+			PlayerHud->SetStartDrawScore(true, Score);
+			PlayerHud->SetStartDrawHitFeedBack(FLinearColor::Red);
+		}
+	}
+}
+
+
+void AINSPlayerController::ClientReceiveCauseDamage_Implementation(class AController* Victim, float DamageAmount, bool bIsTeamDamage)
+{
+	AINSHUDBase* PlayerHud = GetHUD<AINSHUDBase>();
+	if (PlayerHud)
+	{
+		PlayerHud->SetStartDrawHitFeedBack(DamageAmount >= 30.f?FLinearColor::Yellow:FLinearColor::White);
+	}
+}
+
+bool AINSPlayerController::ClientReceiveCauseDamage_Validate(class AController* Victim, float DamageAmount, bool bIsTeamDamage)
+{
+	return true;
+}
 
 void AINSPlayerController::InspecWeapon()
 {

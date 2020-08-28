@@ -159,7 +159,7 @@ public:
 	virtual void SetAllowTeamDamage(bool bTeamDamageAllowed) { bAllowTeamDamage = bTeamDamageAllowed; }
 
 	/**confirms a player kill*/
-	virtual void ConfirmKill(class AController* Killer, class AController* Victim);
+	virtual void ConfirmKill(class AController* Killer, class AController* Victim,int32 KillerScore,bool bIsTeamDamage);
 
 	/**bTeamDamageAllowed getter*/
 	inline virtual bool GetAllowTeamDamage()const { return bAllowTeamDamage; }

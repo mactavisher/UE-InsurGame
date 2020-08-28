@@ -571,6 +571,10 @@ public:
 
 	inline virtual float GetWeaponCurrentSpread()const { return CurrentWeaponSpread; }
 
+	FORCEINLINE virtual EWeaponFireMode GetCurrentWeaponFireMode()const { return CurrentWeaponFireMode; }
+
+	virtual void SetWeaponCurrentFireMode(EWeaponFireMode NewFireMode) { this->CurrentWeaponFireMode = NewFireMode; }
+
 	virtual float GetWeaponAimTime()const { return AimTime; }
 
 	inline virtual float GetRecoilVerticallyFactor()const { return RecoilVerticallyFactor; }

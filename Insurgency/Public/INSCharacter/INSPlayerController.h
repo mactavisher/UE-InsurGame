@@ -183,6 +183,11 @@ public:
 	UFUNCTION(Client, Unreliable, WithValidation)
 		virtual void ClientShowThreaten();
 
+	virtual void ReceiveGameKills(class APlayerState* Killer, APlayerState* Victim, int32 Score, bool bIsTeamDamage);
+
+	UFUNCTION(Client, Unreliable, WithValidation)
+	virtual void ClientReceiveCauseDamage(class AController* Victim,float DamageAmount,bool bIsTeamDamage);
+
 public:
 	/** return possessed character  */
 	virtual AINSPlayerCharacter* GetINSPlayerCharacter();

@@ -33,7 +33,7 @@ struct FTakeHitInfo
 
 		/** the amount of damage actually applied,after game mode modify the damage */
 		UPROPERTY()
-		uint8 bIsDirtyData:1;
+		uint8 bIsDirtyData : 1;
 
 	/** the amount of damage actually applied,after game mode modify the damage */
 	UPROPERTY()
@@ -79,10 +79,6 @@ struct FTakeHitInfo
 	UPROPERTY()
 		uint8 bIsTeamDamage : 1;
 
-	/** player that instigate this damage  */
-	UPROPERTY()
-		class AController* DamageInstigator;
-
 	FTakeHitInfo()
 		: bIsDirtyData(true)
 		, Damage(0)
@@ -96,7 +92,6 @@ struct FTakeHitInfo
 		, bVictimDead(false)
 		, bVictimAlreadyDead(false)
 		, bIsTeamDamage(false)
-		, DamageInstigator(NULL)
 	{
 	}
 };
@@ -107,10 +102,11 @@ struct FBoneDamageModifier {
 	GENERATED_USTRUCT_BODY()
 
 protected:
-		/** collection of bone mapped damage modifier,could be assigned via blueprint */
-		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BoneDamageMap")
+	/** collection of bone mapped damage modifier,could be assigned via blueprint */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BoneDamageMap")
 		TMap<FName, float> BoneMappedDamageModifier;
 
+public:
 	/**
 	 * convenient bone mapped damage modifier querier
 	 *
@@ -120,7 +116,6 @@ protected:
 	 * if not found , will return 1.f,which means apply original damage,else will return the modifier with some random seed add to it
 	 *
 	 */
-public:
 	float GetBoneDamageModifier(FName BoneName)
 	{
 		float* BoneDamageModifier = nullptr;

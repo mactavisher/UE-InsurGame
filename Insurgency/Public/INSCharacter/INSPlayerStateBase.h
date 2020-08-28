@@ -36,11 +36,9 @@ public:
 	}
 };
 
-
 /**
- *
+ * Player state 
  */
-
 UCLASS()
 class INSURGENCY_API AINSPlayerStateBase : public APlayerState
 {
@@ -68,10 +66,18 @@ protected:
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="CachedDamageinfo")
 	   TArray<FCachedDamageInfo> CachedDamageInfos;
 
+	/** indicate how many plays does this player kill */
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Replicated, Category="Kills")
+	   int32 Kills;
+
+	/** indicate how many death happens on this player */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Deaths")
+	   int32 Death;
 
 protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps)const override;
 	virtual void OnRep_Score()override;
+	virtual void BeginPlay()override;
 
 	UFUNCTION()
 		virtual void OnRep_TeamInfo();
@@ -95,8 +101,20 @@ public:
 	virtual void SetWaitingForRespawn(bool NewState) { bIsWaitingForRespawn = NewState; }
 	virtual uint8 GetReplicatedRespawnRemainingTime()const { return ReplicatedRespawnRemainingTime; }
 	virtual void ReceiveHitInfo(const struct FTakeHitInfo TakeHitInfo);
+	inline int32 GetNumKills()const { return Kills; }
+	inline int32 GetNumDeaths()const { return Death; }
+	inline void AddKill(int32 KillNum = 1) { Kills += KillNum; }
+	inline void AddDeath() { Death += 1; };
+	inline float GetKDRation()const { return Kills / Death; }
+	virtual void PlayerScore(int32 ScoreToAdd);
+
 	UFUNCTION()
-		virtual void TickRespawnTime();
+	virtual void OnPlayerKill(class APlayerState* Killer, class APlayerState* Victim, int32 KillerScore, bool bIsTeamDamage);
+
+	UFUNCTION()
+		virtual void OnPlayerDamage(class APlayerState* Killer, class APlayerState* Victim, int32 DamagaCauserScore, bool bIsTeamDamage);
+	UFUNCTION()
+	virtual void TickRespawnTime();
 	virtual void Tick(float DeltaSeconds)override;
 	virtual void ReceivePlayerDeath(AINSPlayerController* DeadPlayer);
 };

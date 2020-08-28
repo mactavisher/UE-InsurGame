@@ -19,6 +19,7 @@
 #include "Kismet\GameplayStatics.h"
 #include "Net/RepLayout.h"
 #include "INSCharacter\INSCharacter.h"
+#include "INSGameModes/INSGameStateBase.h"
 #ifndef GEngine
 #include "Engine/Engine.h"
 #endif // !GEngine
@@ -107,6 +108,21 @@ float AINSCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, A
 {
 	Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
 	CharacterHealthComp->ReduceHealth(Damage, DamageCauser, EventInstigator);
+	if (GetIsCharacterDead())
+	{
+		AINSGameStateBase* GS = GetWorld()->GetGameState<AINSGameStateBase>();
+		if (GS&&LastHitInfo.Damage >0.f)
+		{
+			GS->OnPlayerKilled(EventInstigator, GetController(), FMath::CeilToInt(LastHitInfo.Damage), LastHitInfo.bIsTeamDamage);
+		}
+	}else
+	{
+		AINSGameStateBase* GS = GetWorld()->GetGameState<AINSGameStateBase>();
+		if (GS&&LastHitInfo.Damage > 0.f)
+		{
+			GS->OnPlayerDamaged(EventInstigator, GetController(), LastHitInfo.Damage, LastHitInfo.bIsTeamDamage);
+		}
+	}
 	return Damage;
 }
 
@@ -306,7 +322,6 @@ void AINSCharacter::ReceiveHit(class AController*const InstigatorPlayer, class A
 				LastHitInfo.Damage = GetIsCharacterDead() ? 0.f : DamageTaken;
 				LastHitInfo.DamageCauser = DamageCauser;
 				LastHitInfo.bVictimDead = GetIsCharacterDead();
-				LastHitInfo.DamageInstigator = InstigatorPlayer;
 				LastHitInfo.DamageType = DamageEvent.DamageTypeClass;
 				LastHitInfo.Momentum = DamageCauser->GetVelocity();
 				LastHitInfo.RelHitLocation = PointDamageEventPtr->HitInfo.ImpactPoint;
@@ -320,7 +335,7 @@ void AINSCharacter::ReceiveHit(class AController*const InstigatorPlayer, class A
 				{
 					OnRep_LastHitInfo();
 				}
-				TakeDamage(DamageTaken, DamageEvent, InstigatorPlayer, DamageCauser);
+				TakeDamage(LastHitInfo.Damage, DamageEvent, InstigatorPlayer, DamageCauser);
 			}
 		}
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING

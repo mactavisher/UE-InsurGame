@@ -25,6 +25,11 @@ AINSHUDBase::AINSHUDBase(const FObjectInitializer& ObjectInitializer) :Super(Obj
 	CrossHairCurrentTintColor = CrossHairDefaultTintColor;
 	bShowCrossHair = false;
 	bShowItemInfo = false;
+	DrawPlayerKillInfos.SetNum(5);
+	for (uint8 i = 0; i < 5; i++)
+	{
+		DrawPlayerKillInfos.Add(FDrawPlayerKilledInfo());
+	}
 }
 
 void AINSHUDBase::BeginPlay()
@@ -36,6 +41,7 @@ void AINSHUDBase::BeginPlay()
 void AINSHUDBase::DrawHUD()
 {
 	Super::DrawHUD();
+
 	//HUD cross hair
 	if (bUsingHudCrossHair&&CurrentWeapon.Get() && bShowCrossHair&&CurrentWeapon.Get()->GetWeaponCurrentState()!=EWeaponState::RELOADIND)
 	{
@@ -63,6 +69,10 @@ void AINSHUDBase::DrawHUD()
 	}
 	DrawAmmoInfo();
 	DrawHealth();
+	DrawWeaponFireMode();
+	DrawScore();
+	DrawHitFeedBackIndicator();
+	DrawTestInfo();
 }
 
 void AINSHUDBase::DrawMyTeamInfo()
@@ -165,14 +175,43 @@ void AINSHUDBase::DrawHudCrossHair()
 
 void AINSHUDBase::DrawHitFeedBackIndicator()
 {
-	FVector2D LeftUpIndicatorStartCoordinate(Canvas->SizeX / 2.f, Canvas->SizeY / 2.f);
-	FVector2D LeftUpIndicatorEndCoordinaet;
-	FVector2D LeftDownIndicatorStartCoordinate;
-	FVector2D leftDownIndicatorEndCoordinate;
-	FVector2D RightUpIndicatorStartCoordinate;
-	FVector2D RightUpIndicatorEndCoordinate;
-	FVector2D RightDownIndicatorStartCoordinate;
-	FVector2D RightDownIndicatorEndCoordinate;
+	if (DrawHitFeedBackInfo.bShowHitFeedBackIndicator)
+	{
+		DrawHitFeedBackInfo.CalculateCoord(FVector2D(Canvas->ClipX/2.f, Canvas->ClipY/2.f));
+		DrawLine(DrawHitFeedBackInfo.LeftUpBegin.X,
+			DrawHitFeedBackInfo.LeftUpBegin.Y,
+			DrawHitFeedBackInfo.LeftUpEnd.X,
+			DrawHitFeedBackInfo.LeftUpEnd.Y,
+			DrawHitFeedBackInfo.DrawColor,
+			2.f);
+
+		DrawLine(DrawHitFeedBackInfo.RightUpBegin.X,
+			DrawHitFeedBackInfo.RightUpBegin.Y,
+			DrawHitFeedBackInfo.RightUpEnd.X,
+			DrawHitFeedBackInfo.RightUpEnd.Y,
+			DrawHitFeedBackInfo.DrawColor,
+			2.f);
+
+		DrawLine(DrawHitFeedBackInfo.LeftDownBegin.X,
+			DrawHitFeedBackInfo.LeftDownBegin.Y,
+			DrawHitFeedBackInfo.LeftDownEnd.X,
+			DrawHitFeedBackInfo.LeftDownEnd.Y,
+			DrawHitFeedBackInfo.DrawColor,
+			2.f);
+
+		DrawLine(DrawHitFeedBackInfo.RightDownBegin.X,
+			DrawHitFeedBackInfo.RightDownBegin.Y,
+			DrawHitFeedBackInfo.RightDownEnd.X,
+			DrawHitFeedBackInfo.RightDownEnd.Y,
+			DrawHitFeedBackInfo.DrawColor,
+			2.);
+		DrawHitFeedBackInfo.BaseLineOffSet = DrawHitFeedBackInfo.BaseLineOffSet*0.7f;
+		if (DrawHitFeedBackInfo.BaseLineOffSet <= 6.f)
+		{
+			DrawHitFeedBackInfo.BaseLineOffSet = 6.f;
+			DrawHitFeedBackInfo.ResetDrawStatus();
+		}
+	}
 }
 
 void AINSHUDBase::DrawPickupItemInfo()
@@ -301,7 +340,6 @@ void AINSHUDBase::DrawAmmoInfo()
 		AmmoMessage.Append(FString::FromInt(CurrentWeapon.Get()->AmmoLeft));
 		DrawText(AmmoMessage, FLinearColor::White, Canvas->SizeX*0.9f, Canvas->SizeY*0.95f, GEngine->GetMediumFont(), 1.f, false);
 	}
-
 }
 
 void AINSHUDBase::DrawHealth()
@@ -315,4 +353,75 @@ void AINSHUDBase::DrawHealth()
 		FLinearColor HealthColor = PlayerCharacter->GetIsLowHealth() ? FLinearColor::Red : FLinearColor::White;
 		DrawText(AmmoMessage, HealthColor, Canvas->SizeX*0.9f, Canvas->SizeY*0.91f, GEngine->GetMediumFont(), 1.f, false);
 	}
+}
+
+
+void AINSHUDBase::SetStartDrawScore(bool NewDrawState, int32 InScoreForDrawing)
+{
+	//DrawScoreInfo.ResetDrawStatus();
+	DrawScoreStatus = NewDrawState;
+	DrawScoreInfo.ScoreToDraw = InScoreForDrawing;
+	
+}
+
+void AINSHUDBase::SetStartDrawHitFeedBack(FLinearColor NewDrawColor)
+{
+	DrawHitFeedBackInfo.ResetDrawStatus();
+	DrawHitFeedBackInfo.DrawColor = NewDrawColor;
+	DrawHitFeedBackInfo.bShowHitFeedBackIndicator = true;
+}
+
+void AINSHUDBase::DrawScore()
+{
+	if (DrawScoreStatus)
+	{
+		const float CurrentWorldTime = GetWorld()->GetTimeSeconds();
+		DrawScoreInfo.CurrentFrameScoreValue += FMath::CeilToInt(GetWorld()->GetDeltaSeconds()*DrawScoreInfo.DrawScoreInterpSpeed);
+		if (DrawScoreInfo.CurrentFrameScoreValue >= DrawScoreInfo.ScoreToDraw)
+		{
+			DrawScoreInfo.CurrentFrameScoreValue = DrawScoreInfo.ScoreToDraw;
+		}
+		DrawText(FString(TEXT("+")).Append(FString::FromInt(DrawScoreInfo.CurrentFrameScoreValue)), FLinearColor::Yellow, Canvas->SizeX*0.55f, Canvas->SizeY*0.50f, GEngine->GetSmallFont(), 1.f, false);
+		DrawScoreInfo.DrawTimeEclapsed += GetWorld()->GetDeltaSeconds();
+		DrawScoreInfo.DrawScoreInterpSpeed = DrawScoreInfo.DrawScoreInterpSpeed*0.8f;
+		if (DrawScoreInfo.DrawScoreInterpSpeed <= 1.f)
+		{
+			DrawScoreInfo.DrawScoreInterpSpeed = 1.f;
+		}
+		if (DrawScoreInfo.DrawTime <= DrawScoreInfo.DrawTimeEclapsed)
+		{
+			DrawScoreStatus = false;
+			DrawScoreInfo.ResetDrawStatus();
+		}
+	}
+
+}
+
+void AINSHUDBase::DrawWeaponFireMode()
+{
+	if (CurrentWeapon.Get()&&!GetINSOwingPlayerController()->GetINSPlayerCharacter()->GetIsCharacterDead())
+	{
+		FString FireMode;
+		EWeaponFireMode CurrentWeaponFireMode = CurrentWeapon->GetCurrentWeaponFireMode();
+		switch (CurrentWeaponFireMode)
+		{
+		case EWeaponFireMode::SEMI:FireMode.Append("Semi"); break;
+		case EWeaponFireMode::SEMIAUTO:FireMode.Append("Semi-Auto"); break;
+		case EWeaponFireMode::FULLAUTO:FireMode.Append("Full-Auto"); break;
+		default:
+			break;
+		}
+		DrawText(FireMode, FLinearColor::White, Canvas->SizeX*0.96f, Canvas->SizeY*0.96f, GEngine->GetSmallFont(), 1.f, false);
+	}
+}
+
+void AINSHUDBase::DrawTestInfo()
+{
+	DrawText(TEXT("Development Prototype Test"), FLinearColor::White, 10.f, 10.f, GEngine->GetSmallFont(), 1.f, false);
+}
+
+void AINSHUDBase::DrawPlayerKill(const class APlayerState* Killer, const class APlayerState* Vimtim)
+{
+	const uint8 Num = DrawPlayerKillInfos.Num();
+
 }

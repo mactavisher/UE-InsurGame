@@ -26,8 +26,8 @@ class INSURGENCY_API AINSTeamInfo : public AInfo
 		TArray<AINSPlayerController*> TeamMembers;
 
 	/** this team's score */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Scoring")
-		int32 Score;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Scoring")
+		float  TeamScore;
 
 protected:
 
@@ -58,5 +58,5 @@ public:
 	inline virtual bool isTeamFull();
 
 	/** add team score */
-	virtual void AddScore(int32 ScoreToAdd) { Score += ScoreToAdd; };
+	virtual void AddTeamScore(int32 ScoreToAdd) { TeamScore += FMath::CeilToFloat(ScoreToAdd); };
 };
