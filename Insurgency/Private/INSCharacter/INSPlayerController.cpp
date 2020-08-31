@@ -418,7 +418,14 @@ void AINSPlayerController::ClientReceiveCauseDamage_Implementation(class AContro
 	AINSHUDBase* PlayerHud = GetHUD<AINSHUDBase>();
 	if (PlayerHud)
 	{
-		PlayerHud->SetStartDrawHitFeedBack(DamageAmount >= 30.f?FLinearColor::Yellow:FLinearColor::White);
+		if (bIsTeamDamage)
+		{
+			PlayerHud->SetStartDrawHitFeedBack(FLinearColor::Blue);
+		}
+		else
+		{
+			PlayerHud->SetStartDrawHitFeedBack(DamageAmount >= 30.f ? FLinearColor::Yellow : FLinearColor::White);
+		}
 	}
 }
 

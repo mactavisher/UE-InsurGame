@@ -178,37 +178,31 @@ void AINSHUDBase::DrawHitFeedBackIndicator()
 	if (DrawHitFeedBackInfo.bShowHitFeedBackIndicator)
 	{
 		DrawHitFeedBackInfo.CalculateCoord(FVector2D(Canvas->ClipX/2.f, Canvas->ClipY/2.f));
-		DrawLine(DrawHitFeedBackInfo.LeftUpBegin.X,
-			DrawHitFeedBackInfo.LeftUpBegin.Y,
-			DrawHitFeedBackInfo.LeftUpEnd.X,
-			DrawHitFeedBackInfo.LeftUpEnd.Y,
+		DrawLine(DrawHitFeedBackInfo.LeftUpBegin.X,DrawHitFeedBackInfo.LeftUpBegin.Y,
+			DrawHitFeedBackInfo.LeftUpEnd.X,DrawHitFeedBackInfo.LeftUpEnd.Y,
 			DrawHitFeedBackInfo.DrawColor,
 			2.f);
 
-		DrawLine(DrawHitFeedBackInfo.RightUpBegin.X,
-			DrawHitFeedBackInfo.RightUpBegin.Y,
-			DrawHitFeedBackInfo.RightUpEnd.X,
-			DrawHitFeedBackInfo.RightUpEnd.Y,
+		DrawLine(DrawHitFeedBackInfo.RightUpBegin.X,DrawHitFeedBackInfo.RightUpBegin.Y,
+			DrawHitFeedBackInfo.RightUpEnd.X,DrawHitFeedBackInfo.RightUpEnd.Y,
 			DrawHitFeedBackInfo.DrawColor,
 			2.f);
 
-		DrawLine(DrawHitFeedBackInfo.LeftDownBegin.X,
-			DrawHitFeedBackInfo.LeftDownBegin.Y,
-			DrawHitFeedBackInfo.LeftDownEnd.X,
-			DrawHitFeedBackInfo.LeftDownEnd.Y,
+		DrawLine(DrawHitFeedBackInfo.LeftDownBegin.X,DrawHitFeedBackInfo.LeftDownBegin.Y,
+			DrawHitFeedBackInfo.LeftDownEnd.X,DrawHitFeedBackInfo.LeftDownEnd.Y,
 			DrawHitFeedBackInfo.DrawColor,
 			2.f);
 
-		DrawLine(DrawHitFeedBackInfo.RightDownBegin.X,
-			DrawHitFeedBackInfo.RightDownBegin.Y,
-			DrawHitFeedBackInfo.RightDownEnd.X,
-			DrawHitFeedBackInfo.RightDownEnd.Y,
+		DrawLine(DrawHitFeedBackInfo.RightDownBegin.X,DrawHitFeedBackInfo.RightDownBegin.Y,
+			DrawHitFeedBackInfo.RightDownEnd.X,DrawHitFeedBackInfo.RightDownEnd.Y,
 			DrawHitFeedBackInfo.DrawColor,
-			2.);
-		DrawHitFeedBackInfo.BaseLineOffSet = DrawHitFeedBackInfo.BaseLineOffSet*0.7f;
-		if (DrawHitFeedBackInfo.BaseLineOffSet <= 6.f)
+			2.f);
+
+		DrawHitFeedBackInfo.BaseLineOffSet = DrawHitFeedBackInfo.BaseLineOffSet*0.9f;
+
+		if (DrawHitFeedBackInfo.BaseLineOffSet <= 8.f)
 		{
-			DrawHitFeedBackInfo.BaseLineOffSet = 6.f;
+			DrawHitFeedBackInfo.BaseLineOffSet = 8.f;
 			DrawHitFeedBackInfo.ResetDrawStatus();
 		}
 	}

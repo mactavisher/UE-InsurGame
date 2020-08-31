@@ -110,51 +110,76 @@ struct FDrawHitFeedBackIndicatorInfo
 		FLinearColor DrawColor;
 
 	/** line length */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DrawMessage")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "DrawMessage")
 		float LineLength;
 
 	/** Base off-set value to center of the screen */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DrawMessage")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "DrawMessage")
 		float BaseLineOffSet;
 
+	/** Base off-set value to center of the screen */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "DrawMessage")
+		float LineOffSetInterpSpeed;
+
 	/** is drawing */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Controll")
 		uint8 bShowHitFeedBackIndicator : 1;
 
+	/** line calculate method,if false, will use rotate line instead of simple add  */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Controll")
+		uint8 bCoordinateSimpleAdd : 1;
+
 public:
+
 	FDrawHitFeedBackIndicatorInfo()
 		: DrawTimeEclapsed(0.f)
 		, DrawColor(FLinearColor::White)
-#if WITH_EDITOR&&!UE_BUILD_SHIPPING
-		, LineLength(5.f)
-		, BaseLineOffSet(30.f)
-#endif
+		, LineLength(6.5f)
+		, BaseLineOffSet(15.f)
+		, LineOffSetInterpSpeed(0.75f)
 		, bShowHitFeedBackIndicator(false)
+		, bCoordinateSimpleAdd(true)
 	{
 	}
 
 	/**
-	 * @desc given a point coordinate and calculate the coordinate of each part During each draw frame
+	 * @desc  given a point coordinate and rotate the vector with angle(degrees)
+	 * @param Pivot             pivot
+	 * @Param InVectorToRotate  InVectorToRotate
+	 * @Param Degrees           degrees to rotate
+	 */
+	void RotatePoint(const FVector2D& Pivot, FVector2D& InVectorToRotate, const float Degrees)
+	{
+		const float X1 = InVectorToRotate.X - Pivot.X;
+		const float Y1 = InVectorToRotate.Y - Pivot.Y;
+		const float X2 = (X1 * FMath::Cos(Degrees) - Y1 * FMath::Sin(Degrees));
+		const float Y2 = (X1 * FMath::Sin(Degrees) + Y1 * FMath::Cos(Degrees));
+		InVectorToRotate.Set(X2 + Pivot.X, Y2 + Pivot.Y);
+	}
+
+	/**
+	 * @desc  given a point coordinate and calculate the coordinate of each part During each draw frame
 	 * @Param PivotPoint  Pivot
 	 */
 	void CalculateCoord(FVector2D PivotPoint)
 	{
 		CenterScreen = PivotPoint;
-		if (!CenterScreen.IsZero())
+		if (CenterScreen.IsZero())
 		{
-			LeftUpBegin = CenterScreen + FVector2D(-BaseLineOffSet - LineLength, BaseLineOffSet + LineLength);
-			LeftUpEnd = CenterScreen + FVector2D(-BaseLineOffSet, BaseLineOffSet);
-			RightUpBegin = CenterScreen + FVector2D(BaseLineOffSet + LineLength, BaseLineOffSet + LineLength);
-			RightUpEnd = CenterScreen + FVector2D(BaseLineOffSet, BaseLineOffSet);
-			LeftDownBegin = CenterScreen + FVector2D(-BaseLineOffSet - LineLength, -BaseLineOffSet - LineLength);
-			LeftDownEnd = CenterScreen + FVector2D(-BaseLineOffSet, -BaseLineOffSet);
-			RightDownBegin = CenterScreen + FVector2D(BaseLineOffSet + LineLength, -BaseLineOffSet - LineLength);
-			RightDownEnd = CenterScreen + FVector2D(BaseLineOffSet, -BaseLineOffSet);
+			return;
 		}
+		LeftUpBegin = CenterScreen + FVector2D(-BaseLineOffSet - LineLength, BaseLineOffSet + LineLength);
+		LeftUpEnd = CenterScreen + FVector2D(-BaseLineOffSet, BaseLineOffSet);
+		RightUpBegin = CenterScreen + FVector2D(BaseLineOffSet + LineLength, BaseLineOffSet + LineLength);
+		RightUpEnd = CenterScreen + FVector2D(BaseLineOffSet, BaseLineOffSet);
+		LeftDownBegin = CenterScreen + FVector2D(-BaseLineOffSet - LineLength, -BaseLineOffSet - LineLength);
+		LeftDownEnd = CenterScreen + FVector2D(-BaseLineOffSet, -BaseLineOffSet);
+		RightDownBegin = CenterScreen + FVector2D(BaseLineOffSet + LineLength, -BaseLineOffSet - LineLength);
+		RightDownEnd = CenterScreen + FVector2D(BaseLineOffSet, -BaseLineOffSet);
 	}
 
 	/**
-	 * @desc set the base distance to the center pivot
+	 * @desc  set the base distance to the center pivot
 	 * @Param NewOffSetValue  Distance Value
 	 */
 	void SetBaseLineOffSet(float NewOffSetValue)
@@ -163,7 +188,7 @@ public:
 	}
 
 	/**
-	 * @desc set the line length be drawled
+	 * @desc  set the line length be drawled
 	 * @Param NewLineLength  the line length will be drawled
 	 */
 	void SetLineLength(float NewLineLength)
@@ -177,10 +202,9 @@ public:
 		bShowHitFeedBackIndicator = false;
 		DrawTimeEclapsed = 0.f;
 		DrawColor = FLinearColor::White;
-#if WITH_EDITOR&&!UE_BUILD_SHIPPING
-		LineLength = 5.f;
-		BaseLineOffSet = 30.f;
-#endif
+		LineLength = 6.5f;
+		BaseLineOffSet = 15.f;
+		LineOffSetInterpSpeed = 0.75f;
 	}
 };
 
@@ -188,6 +212,7 @@ USTRUCT(BlueprintType)
 struct FDrawPlayerScoreInfo
 {
 	GENERATED_USTRUCT_BODY()
+
 		friend class AINSHUDBase;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
@@ -237,8 +262,8 @@ class INSURGENCY_API AINSHUDBase : public AHUD
 {
 	GENERATED_UCLASS_BODY()
 
-	/** a simple center dot texture drawn on screen as cross hair */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Widgets")
+		/** a simple center dot texture drawn on screen as cross hair */
+		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Widgets")
 		TSubclassOf<UINSWidget_CrossHair_Dot> DotCrossHairWidgetClass;
 
 	/** stores all the Widget instances that Managed by this HUD for later access purposes */
