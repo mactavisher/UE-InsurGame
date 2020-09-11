@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 
 /** ~~--------------------------------------------------------------
-	define INS World Surface types -------------------------------------------*/
+	define INS World Surface types --------------------------------*/
 
 #define SurfaceType_Default                                        SurfaceType_Default
 #define SurfaceType_Dirt                                           SurfaceType1
@@ -47,7 +47,7 @@ UENUM(BlueprintType)
 enum class EViewMode :uint8
 {
 	FPS                         UMETA(DisplayName = "FPS"),
-	TPS                       UMETA(DisplayName = "TPS"),
+	TPS                         UMETA(DisplayName = "TPS"),
 };
 
 UENUM(BlueprintType)

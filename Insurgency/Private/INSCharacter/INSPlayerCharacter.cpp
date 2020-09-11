@@ -18,6 +18,10 @@
 #include "INSHud/INSHUDBase.h"
 #include "Components./CapsuleComponent.h"
 #include "Camera/CameraShake.h"
+/*#include "Kismet/KismetMathLibrary.h"*/
+#ifndef GEngine
+#include "Engine/Engine.h"
+#endif
 
 AINSPlayerCharacter::AINSPlayerCharacter(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer.SetDefaultSubobjectClass<UINSCharSkeletalMeshComponent>(AINSPlayerCharacter::MeshComponentName))
 {
@@ -32,7 +36,7 @@ AINSPlayerCharacter::AINSPlayerCharacter(const FObjectInitializer& ObjectInitial
 	CharacterMesh1P->CastShadow = false;
 	CharacterMesh1P->bReceivesDecals = false;
 	CharacterMesh1P->LightingChannels.bChannel1 = true;
-	CameraArmComp->TargetArmLength = 0.1f;
+	CameraArmComp->TargetArmLength = 0.f;
 	CameraArmComp->bUsePawnControlRotation = true;
 	CharacterMesh3P->SetupAttachment(RootComponent);
 	CharacterMesh3P->AlwaysLoadOnClient = true;
@@ -60,23 +64,13 @@ AINSPlayerCharacter::AINSPlayerCharacter(const FObjectInitializer& ObjectInitial
 void AINSPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	SetupPlayerMesh();
+	if (CharacterTeam)
+	{
+		SetupPlayerMesh();
+	}
+	SetupCharacterRenderings();
 	CharacterMesh1P->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	CharacterMesh1P->SetCollisionResponseToAllChannels(ECR_Ignore);
-	CharacterMesh3P->SetHiddenInGame(true);
-	CharacterMesh1P->SetHiddenInGame(true);
-	if (IsLocallyControlled())
-	{
-		CharacterMesh1P->SetHiddenInGame(false);
-	}
-	else
-	{
-		CharacterMesh3P->SetHiddenInGame(false);
-	}
-	CharacterMesh3P->CastShadow = true;
-	CharacterMesh1P->CastShadow = false;
-	CharacterMesh1P->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
-	CharacterMesh3P->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
 }
 
 void AINSPlayerCharacter::PostInitializeComponents()
@@ -93,7 +87,7 @@ void AINSPlayerCharacter::PostInitializeComponents()
 	}
 	//CharacterMesh3P->SetWorldLocationAndRotation(GetActorLocation(), GetActorRotation());
 	const float CapsuleHalfHeight = GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight();
-	CameraArmComp->AddRelativeLocation(FVector(20.f, 0.f, +CapsuleHalfHeight / 2.f+20.f));
+	CameraArmComp->AddRelativeLocation(FVector(20.f, 0.f, +CapsuleHalfHeight / 2.f + 20.f));
 	CharacterMesh1P->AddRelativeLocation(FVector(-5.f, -10.2f, -(BaseEyeHeight + 58.f)));
 }
 
@@ -167,7 +161,7 @@ void AINSPlayerCharacter::UpdateCrouchedEyeHeight(float DeltaTimeSeconds)
 
 AINSPlayerController* AINSPlayerCharacter::GetINSPlayerController()
 {
-	return CastChecked<AINSPlayerController>(GetController());
+	return CurrentPlayerController;
 }
 
 
@@ -194,38 +188,44 @@ void AINSPlayerCharacter::HandleStartSprintRequest()
 void AINSPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AINSPlayerCharacter, CharacterTeam);
 }
 
 void AINSPlayerCharacter::OnRep_CurrentWeapon()
 {
 	Super::OnRep_CurrentWeapon();
-	Get1PAnimInstance()->SetCurrentWeaponRef(CurrentWeapon);
-	Get3PAnimInstance()->SetCurrentWeaponRef(CurrentWeapon);
-	CurrentWeapon->WeaponMesh1PComp->AttachToComponent(CharacterMesh1P, FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("Bip01_Weapon1Socket"));
-	CurrentWeapon->WeaponMesh3PComp->AttachToComponent(CharacterMesh3P, FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("Bip01_Weapon1Socket"));
-	if (GetLocalRole() == ROLE_Authority)
+	if (CurrentWeapon)
 	{
-		CurrentWeapon->WeaponMesh1PComp->SetHiddenInGame(true);
-		CurrentWeapon->WeaponMesh3PComp->SetHiddenInGame(true);
-		if (GetNetMode() == ENetMode::NM_Standalone || GetNetMode() == ENetMode::NM_ListenServer)
-		{
-			CurrentWeapon->WeaponMesh1PComp->SetHiddenInGame(false);
-			CurrentWeapon->WeaponMesh3PComp->SetHiddenInGame(true);
-		}
+		CharacterEquipWeapon();
+		CurrentWeapon->SetWeaponMeshVisibility(GetIsMesh1pHidden(), GetIsMesh3pHidden());
 	}
-	if (IsLocallyControlled())
-	{
-		CurrentWeapon->WeaponMesh1PComp->SetHiddenInGame(false);
-		CurrentWeapon->WeaponMesh3PComp->SetHiddenInGame(true);
-	}
-	else if (!IsLocallyControlled())
-	{
-		CurrentWeapon->WeaponMesh1PComp->SetHiddenInGame(true);
-		CurrentWeapon->WeaponMesh3PComp->SetHiddenInGame(false);
-	}
-	
 }
 
+void AINSPlayerCharacter::CharacterEquipWeapon()
+{
+	if (CurrentWeapon)
+	{
+		Get1PAnimInstance()->SetCurrentWeaponRef(CurrentWeapon);
+		Get3PAnimInstance()->SetCurrentWeaponRef(CurrentWeapon);
+		CurrentWeapon->WeaponMesh1PComp->AttachToComponent(CharacterMesh1P, FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("Bip01_Weapon1Socket"));
+		CurrentWeapon->WeaponMesh3PComp->AttachToComponent(CharacterMesh3P, FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("Bip01_Weapon1Socket"));
+		CurrentWeapon->SetWeaponMeshVisibility(CharacterMesh1P->bHiddenInGame,CharacterMesh3P->bHiddenInGame);
+		//PlayerCameraComp->AttachToComponent(CurrentWeapon->WeaponMesh1PComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("M68Carryhandle"));
+		//PlayerCameraComp->AddRelativeLocation(FVector(-20.f, 0.f, 0.f));
+	}
+}
+
+void AINSPlayerCharacter::UpdateADSHandsIkOffset()
+{
+	if (GetPlayerCameraComp() && CurrentWeapon)
+	{
+// 		const FTransform CameraPosition = GetPlayerCameraComp()->GetComponentTransform();
+// 		FTransform WeaponSightTransform;
+// 		CurrentWeapon->GetADSSightTransform(WeaponSightTransform);
+// 		FTransform RelTrans = UKismetMathLibrary::MakeRelativeTransform(CameraPosition, WeaponSightTransform);
+// 		CurrentWeapon->SetAdjustADSHandsIk(FVector(-10.f,-3.75f,RelTrans.GetLocation().Z));
+	}
+}
 
 void AINSPlayerCharacter::OnDeath()
 {
@@ -259,7 +259,8 @@ void AINSPlayerCharacter::OnRep_Dead()
 	GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
 	CharacterAudioComp->SetVoiceType(EVoiceType::DIE);
 	CharacterAudioComp->PlayVoice();
-	if (GetLocalRole() == ROLE_AutonomousProxy)
+	CharacterMesh3P->AddImpulseAtLocation(LastHitInfo.Momentum*0.1f, LastHitInfo.RelHitLocation);
+	if (GetLocalRole() == ROLE_AutonomousProxy||GetLocalRole()==ROLE_Authority)
 	{
 		GetINSPlayerController()->OnCharacterDeath();
 	}
@@ -270,7 +271,6 @@ void AINSPlayerCharacter::OnRep_IsCrouched()
 	Super::OnRep_IsCrouched();
 	Get1PAnimInstance()->SetCurrentStance(ECharacterStance::CROUCH);
 	Get3PAnimInstance()->SetCurrentStance(ECharacterStance::CROUCH);
-	
 }
 
 void AINSPlayerCharacter::OnRep_Sprint()
@@ -281,15 +281,72 @@ void AINSPlayerCharacter::OnRep_Sprint()
 void AINSPlayerCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
-	SetupPlayerMesh();
+	if (GetLocalRole() == ROLE_AutonomousProxy)
+	{
+#if WITH_EDITOR&&!UE_BUILD_SHIPPING
+		FString DebugMessage;
+		DebugMessage.Append(TEXT("Charcter:"));
+		DebugMessage.Append(GetName());
+		DebugMessage.Append("'s PlayerState Replicated!");
+		GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, DebugMessage);
+#endif
+	}
 }
 
 void AINSPlayerCharacter::OnRep_LastHitInfo()
 {
 	Super::OnRep_LastHitInfo();
-	if (IsLocallyControlled()&&LastHitInfo.Damage>0)
+	if (IsLocallyControlled() && LastHitInfo.Damage > 0)
 	{
 		GetINSPlayerController()->ClientPlayCameraShake(TakeHitCameraShake);
+	}
+}
+
+void AINSPlayerCharacter::OnRep_Owner()
+{
+	//role may not need to check here , because controller doesn't exist on simulated clients
+	if (GetLocalRole() == ROLE_AutonomousProxy)
+	{
+		CurrentPlayerController = Cast<AINSPlayerController>(GetOwner());
+	}
+}
+
+void AINSPlayerCharacter::SetOwner(AActor* NewOwner)
+{
+	Super::SetOwner(NewOwner);
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		CurrentPlayerController = Cast<AINSPlayerController>(GetOwner());
+	}
+}
+
+void AINSPlayerCharacter::OnRep_CharacterTeam()
+{
+	if (CharacterTeam)
+	{
+		if (GetLocalRole() == ROLE_AutonomousProxy)
+		{
+#if WITH_EDITOR&&!UE_BUILD_SHIPPING
+			FString DebugMessage;
+			DebugMessage.Append(TEXT("Charcter:"));
+			DebugMessage.Append(GetName());
+			DebugMessage.Append("'s Team info Replicated!");
+			GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Green, DebugMessage);
+#endif
+		}
+		SetupPlayerMesh();
+		AINSPlayerController* PlayerController = Cast<AINSPlayerController>(GetController());
+		if (PlayerController)
+		{
+			if (GetINSPlayerController()->GetLocalRole() == ROLE_AutonomousProxy)
+			{
+				GetINSPlayerController()->ServerGetGameModeRandomWeapon();
+			}
+			if (GetINSPlayerController()->GetLocalRole() == ROLE_Authority)
+			{
+				GetINSPlayerController()->GetGameModeRandomWeapon();
+			}
+		}
 	}
 }
 
@@ -308,32 +365,119 @@ void AINSPlayerCharacter::UpdateCrouchEyeHeightSmoothly()
 	{
 		CurrentEyeHeight += 1.f;
 	}
-	
 }
 
 void AINSPlayerCharacter::SetupPlayerMesh()
 {
-	const AINSPlayerStateBase* const INSPlayerState = GetPlayerState<AINSPlayerStateBase>();
-	if (INSPlayerState)
+	if (CharacterTeam&&CharacterTeam->GetTeamType() == ETeamType::CT)
 	{
-		const AINSTeamInfo* PlayerTeam = INSPlayerState->GetPlayerTeam();
-		if (PlayerTeam&&PlayerTeam->GetTeamType() == ETeamType::CT)
+		CharacterMesh1P->SetSkeletalMesh(CTDefaultMesh.Mesh1p);
+		CharacterMesh3P->SetSkeletalMesh(CTDefaultMesh.Mesh3p);
+	}
+	if (CharacterTeam&&CharacterTeam->GetTeamType() == ETeamType::T)
+	{
+		CharacterMesh1P->SetSkeletalMesh(TerroristDefaultMesh.Mesh1p);
+		CharacterMesh3P->SetSkeletalMesh(TerroristDefaultMesh.Mesh3p);
+	}
+	SetupCharacterRenderings();
+}
+
+void AINSPlayerCharacter::SetupCharacterRenderings()
+{
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		if (GetNetMode() == ENetMode::NM_DedicatedServer)
 		{
-			CharacterMesh1P->SetSkeletalMesh(CTDefaultMesh.Mesh1p);
-			CharacterMesh3P->SetSkeletalMesh(CTDefaultMesh.Mesh3p);
+			CharacterMesh1P->SetHiddenInGame(true);
+			CharacterMesh3P->SetHiddenInGame(true);
+			CharacterMesh1P->SetComponentTickEnabled(false);
+			CharacterMesh3P->SetComponentTickEnabled(false);
+			CharacterMesh1P->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
+			CharacterMesh3P->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
+			CharacterMesh1P->SetCastShadow(false);
+			CharacterMesh1P->bCastDynamicShadow = false;
+			CharacterMesh3P->SetCastShadow(false);
+			CharacterMesh3P->bCastDynamicShadow = false;
 		}
-		if (PlayerTeam&&PlayerTeam->GetTeamType() == ETeamType::T)
+		else if (GetNetMode() == ENetMode::NM_ListenServer || GetNetMode() == ENetMode::NM_Standalone)
 		{
-			CharacterMesh1P->SetSkeletalMesh(TerroristDefaultMesh.Mesh1p);
-			CharacterMesh3P->SetSkeletalMesh(TerroristDefaultMesh.Mesh3p);
+			if (this == UGameplayStatics::GetPlayerCharacter(GetWorld(), 0))
+			{
+
+				CharacterMesh1P->SetHiddenInGame(false);
+				CharacterMesh3P->SetHiddenInGame(true);
+				CharacterMesh1P->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
+				CharacterMesh3P->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPose;
+				CharacterMesh1P->SetCastShadow(true);
+				CharacterMesh1P->bCastDynamicShadow = true;
+				CharacterMesh3P->SetCastShadow(true);
+				CharacterMesh3P->bCastDynamicShadow = true;
+			}
+			else
+			{
+				CharacterMesh1P->SetHiddenInGame(true);
+				CharacterMesh3P->SetHiddenInGame(false);
+				CharacterMesh1P->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
+				CharacterMesh3P->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
+				CharacterMesh1P->SetCastShadow(false);
+				CharacterMesh1P->bCastDynamicShadow = false;
+				CharacterMesh3P->SetCastShadow(true );
+				CharacterMesh3P->bCastDynamicShadow = true;
+			}
 		}
 	}
-	CharacterSetupFinished.Broadcast();
+	else if (GetLocalRole() == ROLE_AutonomousProxy)
+	{
+		CharacterMesh1P->SetHiddenInGame(false);
+		CharacterMesh3P->SetHiddenInGame(true);
+		CharacterMesh1P->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
+		CharacterMesh3P->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPose;
+		CharacterMesh1P->SetCastShadow(true);
+		CharacterMesh1P->bCastDynamicShadow = true;
+		CharacterMesh3P->SetCastShadow(true);
+		CharacterMesh3P->bCastDynamicShadow = true;
+	}
+	else if (GetLocalRole() == ROLE_SimulatedProxy)
+	{
+		CharacterMesh1P->SetHiddenInGame(true);
+		CharacterMesh3P->SetHiddenInGame(false);
+		CharacterMesh1P->SetComponentTickEnabled(false);
+		CharacterMesh1P->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
+		CharacterMesh3P->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
+		CharacterMesh1P->SetCastShadow(false);
+		CharacterMesh1P->bCastDynamicShadow = false;
+		CharacterMesh3P->SetCastShadow(true);
+		CharacterMesh3P->bCastDynamicShadow = true;
+	}
+}
+
+void AINSPlayerCharacter::SetCharacterTeam(class AINSTeamInfo* NewTeam)
+{
+	CharacterTeam = NewTeam;
+	if (ROLE_Authority)
+	{
+		OnRep_CharacterTeam();
+	}
+}
+
+bool AINSPlayerCharacter::GetIsMesh1pHidden() const
+{
+	return CharacterMesh1P->bHiddenInGame;
+}
+
+bool AINSPlayerCharacter::GetIsMesh3pHidden() const
+{
+	return CharacterMesh3P->bHiddenInGame;
 }
 
 void AINSPlayerCharacter::ReceiveFriendlyFire(class AINSPlayerController* InstigatorPlayer, float DamageTaken)
 {
 
+}
+
+FTransform AINSPlayerCharacter::GetPlayerCameraTransform() const
+{
+	return PlayerCameraComp->GetComponentTransform();
 }
 
 FORCEINLINE UINSCharacterAimInstance* AINSPlayerCharacter::Get1PAnimInstance()
@@ -352,7 +496,6 @@ void AINSPlayerCharacter::SetCurrentWeapon(class AINSWeaponBase* NewWeapon)
 	if (GetLocalRole() == ROLE_Authority)
 	{
 		OnRep_CurrentWeapon();
-		CurrentWeapon->StartEquipWeapon();
 	}
 }
 

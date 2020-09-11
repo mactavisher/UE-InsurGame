@@ -24,7 +24,7 @@ protected:
 
 	TWeakObjectPtr<AINSWeaponBase> RefrencedWeapon;
 
-	virtual void SetRefWeapon(AINSWeaponBase* WeaponRef) { RefrencedWeapon = WeaponRef; }
+	virtual void SetRefWeapon(AINSWeaponBase* WeaponRef);
 
 	virtual class AINSWeaponBase* GetRefWeapon()const { return RefrencedWeapon.Get(); }
 

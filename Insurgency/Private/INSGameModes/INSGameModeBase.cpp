@@ -39,7 +39,7 @@ AINSGameModeBase::AINSGameModeBase(const FObjectInitializer& ObjectInitializer) 
 	DefaultRestartTime = 5.f;
 	bIsMatchPrepare = false;
 	bMatchPreparingFinished = false;
-	MatchPrepareTime = 3.f;
+	MatchPrepareTime = 5.f;
 	MatchPrepareRemainingTime = MatchPrepareTime;
 }
 
@@ -77,7 +77,7 @@ void AINSGameModeBase::PostLogin(APlayerController* NewPlayer)
 	{
 		AINSPlayerStateBase* PlayerState = CastChecked<AINSPlayerStateBase>(NewPlayer->PlayerState);
 		SelectedTeam->AddPlayerToThisTeam(Player);
-		PlayerState->SetPlayerTeam(SelectedTeam);
+		Player->SetPlayerTeam(SelectedTeam);
 	}
 	UE_LOG(LogINSGameMode, Log, TEXT("Player %s Has Called postLogin"), *NewPlayer->GetName());
 }
@@ -194,15 +194,6 @@ void AINSGameModeBase::ModifyDamage(float& OutDamage, AController* PlayerInstiga
 			OutDamage = 0.f;
 		}
 	}
-// 	if (VictimCharacter->GEt()&&OutDamage>0.f)
-// 	{
-// 		int32 Score = FMath::CeilToInt(OutDamage) + bIsHeadShot ? 100 : 0;
-// 		if (bIsTeamDamage)
-// 		{
-// 			Score = -FMath::CeilToInt(Score/2);
-// 		}
-// 		ConfirmKill(PlayerInstigator, Victim,Score,bIsTeamDamage);
-// 	}
 }
 
 void AINSGameModeBase::ConfirmKill(AController* Killer, AController* Victim,int32 KillerScore, bool bIsTeamDamage)
@@ -233,13 +224,13 @@ bool AINSGameModeBase::GetIsTeamDamage(class AController* DamageInstigator, clas
 	return false;
 }
 
-UClass* AINSGameModeBase::GetRandomWeapon() const
+UClass* AINSGameModeBase::GetRandomGameModeWeaponClass() const
 {
-	const uint8 AvailableWeaponNum = AvailableWeaponsClasses.Num();
+	const uint8 AvailableWeaponNum = GameModeAvailableWeaponsClasses.Num();
 	if (AvailableWeaponNum > 0)
 	{
 		uint8 Ramdon = FMath::RandHelper(AvailableWeaponNum);
-		return AvailableWeaponsClasses[Ramdon];
+		return GameModeAvailableWeaponsClasses[Ramdon];
 	}
 	return nullptr;
 }
@@ -269,7 +260,6 @@ void AINSGameModeBase::Tick(float DeltaSeconds)
 
 void AINSGameModeBase::ScorePlayer(class AINSPlayerController* PlayerToScore, int32 Score)
 {
-
 }
 
 void AINSGameModeBase::CountDownMatchPrepare()

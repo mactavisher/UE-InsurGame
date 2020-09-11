@@ -25,6 +25,10 @@ AINSPickup_Weapon::AINSPickup_Weapon(const FObjectInitializer& ObjectInitializer
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
 	InteractionComp->SetHiddenInGame(false);
 #endif
+	VisualMeshComp->SetCollisionProfileName(TEXT("PickupAble"));
+	InteractionComp->SetCollisionProfileName(TEXT("Trigger"));
+	InteractionComp->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
+	InteractionComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 }
 
 void AINSPickup_Weapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -141,8 +145,6 @@ void AINSPickup_Weapon::GatherCurrentMovement()
 void AINSPickup_Weapon::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-	VisualMeshComp->GetBodyInstance()->SetCollisionProfileName(TEXT("PickupAble"));
-	InteractionComp->GetBodyInstance()->SetCollisionProfileName(TEXT("Trigger"));
 }
 
 void AINSPickup_Weapon::OnRep_VisualMesh()

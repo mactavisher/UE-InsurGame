@@ -4,6 +4,9 @@
 #include "INSAnimNotify/INSAnimNotify_FinishEquipping.h"
 #include "INSCharacter/INSPlayerCharacter.h"
 #include "INSItems/INSWeapons/INSWeaponBase.h"
+#ifndef  AINSPlayerController
+#include "INSCharacter/INSPlayerController.h"
+#endif
 #include "INSComponents/INSCharSkeletalMeshComponent.h"
 
 UINSAnimNotify_FinishEquipping::UINSAnimNotify_FinishEquipping()
@@ -18,30 +21,17 @@ void UINSAnimNotify_FinishEquipping::Notify(USkeletalMeshComponent* MeshComp, UA
 		UE_LOG(LogTemp, Warning, TEXT("AnimNotify::FinishEquipping Triggered but no owner,abort"));
 		return;
 	}
-	const UClass* const OwnerClass = Owner->GetClass();
-	UE_LOG(LogTemp, Log, TEXT("notify mesh comp's owner class name %s"), *OwnerClass->GetName());
-	const AINSCharacter* OwnerCharacter = nullptr;
-	AINSWeaponBase* OwnerWeapon = nullptr;
-	if (OwnerClass->IsChildOf(AINSCharacter::StaticClass()))
+	AINSPlayerController* OwnerPlayer = Cast<AINSPlayerController>(Owner->GetOwner());
+	if (OwnerPlayer)
 	{
-		OwnerCharacter = Cast<AINSCharacter>(Owner);
-		if (OwnerCharacter && OwnerCharacter->IsLocallyControlled())
+		if (OwnerPlayer->GetLocalRole() == ROLE_Authority&&OwnerPlayer->GetNetMode()!=ENetMode::NM_DedicatedServer)
 		{
-			OwnerWeapon = OwnerCharacter->GetCurrentWeapon();
-			if (OwnerWeapon)
-			{
-				OwnerWeapon->GetLocalRole() == ROLE_Authority ? OwnerWeapon->SetWeaponState(EWeaponState::IDLE) : OwnerWeapon->ServerSetWeaponState(EWeaponState::IDLE);
-				UE_LOG(LogTemp, Log, TEXT("weapon %s Finish FinishEquipping notify triggerd and Executed"), *OwnerWeapon->GetName());
-			}
+			OwnerPlayer->SetWeaponState(EWeaponState::IDLE);
+		}
+		if (OwnerPlayer->GetLocalRole() == ROLE_AutonomousProxy)
+		{
+			OwnerPlayer->ServerSetWeaponState(EWeaponState::IDLE);
 		}
 	}
-	else if (OwnerClass->IsChildOf(AINSWeaponBase::StaticClass()))
-	{
-		OwnerWeapon = Cast<AINSWeaponBase>(MeshComp->GetOwner());
-		if (OwnerWeapon && OwnerWeapon->GetIsOwnerLocal())
-		{
-			OwnerWeapon->FinishEquippingWeapon();
-			UE_LOG(LogTemp, Log, TEXT("weapon %s Finish FinishEquipping notify triggerd and Executed"), *OwnerWeapon->GetName());
-		}
-	}
+	
 }

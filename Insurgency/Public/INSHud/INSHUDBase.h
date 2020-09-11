@@ -328,26 +328,33 @@ class INSURGENCY_API AINSHUDBase : public AHUD
 	/** last actor we see */
 	TWeakObjectPtr<AActor> LastSeenActor;
 
+	/** tracking killing drawing */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "DrawPlayerKillList")
 		TArray<FDrawPlayerKilledInfo> DrawPlayerKillInfos;
 
+	/** tracking drawing a score indicator */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "DrawPlayerKillList")
 		FDrawPlayerScoreInfo DrawScoreInfo;
 
+	/** tracking hit feed back info indicator drawing */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "DrawPlayerKillList")
 		FDrawHitFeedBackIndicatorInfo DrawHitFeedBackInfo;
 
 
 protected:
-	/************************************************************************/
-	/* delegates                                                            */
-	/************************************************************************/
+	/** ~~--------------------------------------------------------------
+	  delegates                       --------------------------------*/
+
+	/** Aiming delegate */
 	FScriptDelegate WeaponAimDelegate;
 
+	/** Stop Aiming delegate */
 	FScriptDelegate WeaponStopAimDelegate;
 
+	/** Weapon reload delegate */
 	FScriptDelegate WeaponReloadDelegate;
 
+	/** Weapon Finish reload delegate */
 	FScriptDelegate WeaponFinishReloadDelegate;
 
 protected:
@@ -421,17 +428,25 @@ public:
 	/** cast and return insPlayercontroller type  */
 	inline AINSPlayerController* GetINSOwingPlayerController();
 
+	/** Draw waiting for re-spawn message */
 	virtual void DrawWaitingForRespawnMessage();
 
+	/** Draw match prepare message */
 	virtual void DrawMatchPrepareMessage();
 
+	/** draw a pickup able item info when you are able to interact with */
 	virtual void SetPickupItemInfo(UTexture2D* NewItemTexture, bool ShowItemsStatus);
 
+	/** draw current weapon ammo info */
 	virtual void DrawAmmoInfo();
 
+	/** draw player deaths */
 	virtual void DrawHealth();
 
+	/** set this HUD to start draw score */
 	virtual void SetStartDrawScore(bool NewDrawScoreState, int32 InScoreForDrawing);
+
+	/** set this HUD to start draw score */
 	virtual void SetStartDrawHitFeedBack(FLinearColor NewDrawColor);
 
 	virtual void DrawScore();

@@ -54,26 +54,26 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
 		FWeaponSocketNames WeaponSockets;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
-		FWeaponAttachmentSlot IronSightSlot;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
-		FWeaponAttachmentSlot ScopeSlot;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
-		FWeaponAttachmentSlot GripSlot;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
-		FWeaponAttachmentSlot SilencerSlot;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
-		FWeaponAttachmentSlot LeftSlot;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
-		FWeaponAttachmentSlot RightSlot;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
-		FWeaponAttachmentSlot UnderSlot;
+// 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
+// 		FWeaponAttachmentSlot ScopeSlot;
+// 
+// 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
+// 		FWeaponAttachmentSlot GripSlot;
+// 
+// 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
+// 		FWeaponAttachmentSlot SilencerSlot;
+// 
+// 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
+// 		FWeaponAttachmentSlot LeftSlot;
+// 
+// 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
+// 		FWeaponAttachmentSlot RightSlot;
+// 
+// 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
+// 		FWeaponAttachmentSlot UnderSlot;
+// 
+// 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
+// 		FWeaponAttachmentSlot IronSightSlot;
 protected:
 	virtual void BeginPlay()override;
 

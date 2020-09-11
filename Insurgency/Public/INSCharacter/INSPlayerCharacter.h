@@ -61,6 +61,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FeedBackEffects")
 		TSubclassOf<class UCameraShake> TakeHitCameraShake;
 
+	/** this Pawn's Team info */
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Replicated,ReplicatedUsing=OnRep_CharacterTeam, Category="Team")
+	   class AINSTeamInfo* CharacterTeam;
+
 
 
 protected:
@@ -83,6 +87,8 @@ protected:
 
 	virtual void OnRep_CurrentWeapon()override;
 
+	virtual void CharacterEquipWeapon();
+
 	virtual void OnDeath()override;
 
 	virtual void OnRep_Dead()override;
@@ -95,17 +101,24 @@ protected:
 
 	virtual void OnRep_LastHitInfo()override;
 
+	virtual void OnRep_Owner()override;
+
+	virtual void SetOwner(AActor* NewOwner)override;
+	UFUNCTION()
+	virtual void OnRep_CharacterTeam();
+
 	UFUNCTION()
 	virtual void UpdateCrouchEyeHeightSmoothly();
 
 public:
-
 
 	/** handles a friendly fire event */
 	virtual void ReceiveFriendlyFire(class AINSPlayerController* InstigatorPlayer, float DamageTaken);
 
 	/** return character camera comp */
 	FORCEINLINE virtual UCameraComponent* GetPlayerCameraComp()const { return PlayerCameraComp; }
+
+	virtual FTransform GetPlayerCameraTransform()const;
 
 	/** returns character's 3P mesh comp */
 	FORCEINLINE UINSCharSkeletalMeshComponent* GetCharacter3PMesh()const { return CharacterMesh3P; }
@@ -125,7 +138,10 @@ public:
 	/** Set INS player controller that currently possess this character */
 	virtual void SetINSPlayerController(class AINSPlayerController* NewPlayerController);
 
-	/** returns player controller if INS Type */
+	/**
+	 * @desc returns player controller if INS Type,this func should only be called on role authority or Autonomous
+	 *       since controller only exist on that 2 client roles
+	 */
 	inline virtual class AINSPlayerController* GetINSPlayerController();
 
 	/** handles a move forward request from player controller */
@@ -142,5 +158,33 @@ public:
 
 	/** performs a mesh set up when game starts or when player states updated */
 	virtual void SetupPlayerMesh();
+
+	/**
+	 * @desc set up character mesh renderings according to it's local role
+	 */
+	virtual void SetupCharacterRenderings();
+
+	/**
+	 * @desc set up character mesh renderings according to it's local role
+	 */
+	virtual void SetCharacterTeam(class AINSTeamInfo* NewTeam);
+
+	/**
+	 * @desc returns the character's team info
+	 */
+	virtual AINSTeamInfo* GetCharacterTeamInfo()const { return CharacterTeam; }
+
+	/**
+	 * return if Mesh1p is hidden in game currently
+	 */
+	inline bool GetIsMesh1pHidden()const;
+
+	/**
+	 * return if Mesh3p is hidden in game currently
+	 */
+	inline bool GetIsMesh3pHidden()const;
+
+	virtual void UpdateADSHandsIkOffset();
+
 
 };

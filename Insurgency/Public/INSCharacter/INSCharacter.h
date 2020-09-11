@@ -31,8 +31,8 @@ struct FTakeHitInfo
 {
 	GENERATED_USTRUCT_BODY()
 
-		/** the amount of damage actually applied,after game mode modify the damage */
-		UPROPERTY()
+	/** the amount of damage actually applied,after game mode modify the damage */
+	UPROPERTY()
 		uint8 bIsDirtyData : 1;
 
 	/** the amount of damage actually applied,after game mode modify the damage */
@@ -79,6 +79,10 @@ struct FTakeHitInfo
 	UPROPERTY()
 		uint8 bIsTeamDamage : 1;
 
+	/** is this damage caused by team */
+	UPROPERTY()
+		FName HitBoneName;
+
 	FTakeHitInfo()
 		: bIsDirtyData(true)
 		, Damage(0)
@@ -92,6 +96,7 @@ struct FTakeHitInfo
 		, bVictimDead(false)
 		, bVictimAlreadyDead(false)
 		, bIsTeamDamage(false)
+		, HitBoneName(NAME_None)
 	{
 	}
 };
@@ -113,8 +118,7 @@ public:
 	/**
 	 * convenient bone mapped damage modifier querier
 	 *
-	 * @params BoneName
-	 *   the bone name to query the modifier
+	 * @params BoneName the bone name to query the modifier
 	 *
 	 * if not found , will return 1.f,which means apply original damage,else will return the modifier with some random seed add to it
 	 *
@@ -265,7 +269,7 @@ protected:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	/** initialize properties in c++ side */
+	/** initialize properties in c++ side,after all components has been initialized */
 	virtual void PostInitializeComponents()override;
 
 	/** take momentum damage such as falling and knock by high speed things like cars */
@@ -406,14 +410,28 @@ public:
 	/** callback when character crouched or un-crouched */
 	virtual void OnRep_IsCrouched()override;
 
+	/** spawns a weapon pick up  */
 	virtual void SpawnWeaponPickup();
 
+	/**
+	 * @desc set is character is in a Aim State
+	 * @param     NewAimState   NewAimState to set
+	 */
 	virtual void SetIsAiming(bool NewAimState) { this->bIsAiming = NewAimState; }
 
+	/**
+	 * @desc set the character's current using weapon
+	 * @param     NewWeapon   NewWeapon to set
+	 */
 	virtual void SetCurrentWeapon(class AINSWeaponBase* NewWeapon);
 
+	/** return is this character is suppressed by environment */
 	virtual bool GetIsSuppressed()const;
 
+	/**
+	 * @desc set is character is suppressed
+	 * @param     InState   InState to set
+	 */
 	virtual void SetIsSuppressed(bool InState) { bIsSuppressed = InState; }
 
 	virtual void BecomeViewTarget(APlayerController* PC)override;

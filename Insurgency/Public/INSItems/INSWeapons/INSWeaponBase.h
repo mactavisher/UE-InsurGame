@@ -21,30 +21,37 @@ class AINSProjectileShell;
 
 INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogINSWeapon, Log, All);
 
-/** weapon ammo config data */
+/** weapon property config data */
 USTRUCT(BlueprintType)
 struct FWeaponConfigData
 {
 	GENERATED_USTRUCT_BODY()
 
-		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+	/** the maximum ammo can be hold in a single clip */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
 		int32 AmmoPerClip;
 
+	/**the max ammo can carry with this weapon */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
 		int32 MaxAmmo;
 
+	/** fire interval */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
 		float TimeBetweenShots;
 
+	/** time spent used to zoom in */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
 		float ZoomingInTime;
 
+	/** time spent used to zoom out */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
 		float ZoomingOutTime;
 
+	/** base damage of this weapon */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
 		float BaseDamage;
 
+	/** muzzle speed , used to init projectile initial velocity */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
 		float MuzzleSpeed;
 
@@ -67,13 +74,49 @@ public:
 	}
 };
 
+USTRUCT(BlueprintType)
+struct FWeaponSpreadData
+{
+	GENERATED_USTRUCT_BODY()
+
+		friend class AINSWeaponBase;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+		float DefaultWeaponSpread;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+		float DefaultWeaponSpreadMax;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+		float DefaultWeaponSpreadMin;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+		float CurrentWeaponSpread;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+		float CurrentWeaponSpreadMax;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+		float CurrentWeaponSpreadMin;
+
+	FWeaponSpreadData()
+		: DefaultWeaponSpread(2.f)
+		, DefaultWeaponSpreadMax(6.f)
+		, DefaultWeaponSpreadMin(2.f)
+		, CurrentWeaponSpread(DefaultWeaponSpread)
+		, CurrentWeaponSpreadMax(DefaultWeaponSpreadMax)
+		, CurrentWeaponSpreadMin(DefaultWeaponSpreadMin)
+	{
+	}
+};
+
 namespace WeaponAttachmentSlotName
 {
-	  const FName Muzzle(TEXT("Muzzle"));	    // Muzzle slot name
-	  const FName Sight(TEXT("Sight"));		// Sight slot name
-	  const FName UnderBarrel(TEXT("UnderBarrel"));// UnderBarrel slot name
-	  const FName LeftRail(TEXT("LeftRail"));	// LeftRail slot name
-	  const FName rightRail(TEXT("rightRail"));	// rightRail slot name
+	const FName Muzzle(TEXT("Muzzle"));	                // Muzzle slot name
+	const FName Sight(TEXT("Sight"));		                // Sight slot name
+	const FName UnderBarrel(TEXT("UnderBarrel"));         // UnderBarrel slot name
+	const FName LeftRail(TEXT("LeftRail"));	            // LeftRail slot name
+	const FName rightRail(TEXT("rightRail"));	            // rightRail slot name
 }
 
 /** weapon attachment slot */
@@ -82,9 +125,9 @@ struct FWeaponAttachmentSlot {
 
 	GENERATED_USTRUCT_BODY()
 
-		/**attachment class */
-		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AttachmentClass")
-		TSubclassOf<AActor> WeaponAttachementClass;
+	/**attachment class */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AttachmentClass")
+	    TSubclassOf<AActor> WeaponAttachementClass;
 
 	/** attachment instance */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AttachmentInstance")
@@ -94,6 +137,7 @@ struct FWeaponAttachmentSlot {
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Availablility")
 		uint8 bIsAvailable : 1;
 
+	/** Weapon attachment type */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "AttachmentType")
 		EWeaponAttachmentType WeaponAttachmentType;
 
@@ -113,22 +157,35 @@ public:
 		WeaponAttachmentType = NewType;
 	}
 
+	/**
+	 * init this struct by default
+	 */
 	FORCEINLINE FWeaponAttachmentSlot()
-		:WeaponAttachementClass(nullptr)
+		: WeaponAttachementClass(nullptr)
 		, WeaponAttachmentInstance(nullptr)
 		, bIsAvailable(false)
 	{
 	}
+
+	/**
+	 * @desc init this struct by passing a attachment type
+	 * @param WeaponAttachmentType set the attachment type of this attachment slot
+	 */
 	FORCEINLINE FWeaponAttachmentSlot(EWeaponAttachmentType WeaponAttachmentType)
-		:WeaponAttachementClass(nullptr)
+		: WeaponAttachementClass(nullptr)
 		, WeaponAttachmentInstance(nullptr)
 		, bIsAvailable(true)
 		, WeaponAttachmentType(WeaponAttachmentType)
 	{
-
 	}
-	FORCEINLINE FWeaponAttachmentSlot(EWeaponAttachmentType WeaponAttachmentType,bool IsAvailable)
-		:WeaponAttachementClass(nullptr)
+
+	/**
+	 * @desc   init this struct by passing a attachment type and Availability
+	 * @param  WeaponAttachmentType  set the attachment type of this attachment slot
+	 * @param  IsAvailable  set the Availability  of this attachment slot
+	 */
+	FORCEINLINE FWeaponAttachmentSlot(EWeaponAttachmentType WeaponAttachmentType, bool IsAvailable)
+		: WeaponAttachementClass(nullptr)
 		, WeaponAttachmentInstance(nullptr)
 		, bIsAvailable(IsAvailable)
 		, WeaponAttachmentType(WeaponAttachmentType)
@@ -185,7 +242,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 		int32 CurrentClipAmmo;
 
 	/** ammo left in pocket */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Replicated, Category = "Ammo")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Ammo")
 		int32 AmmoLeft;
 
 	/** if enabled,fire will not consumes any ammo */
@@ -273,19 +330,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 
 	/** Max weapon spread value*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSpread")
-		float WeaponSpreadMax;
-
-	/** spread interpolate speed */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSpread")
-		float WeaponSpreadInterpSpeed;
-
-	/** current used weapon Spread */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSpread")
-		float CurrentWeaponSpread;
-
-	/** current used weapon Spread */
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "WeaponSpread")
-		float BaseWeaponSpread;
+        FWeaponSpreadData WeaponSpreadData;
 
 	/** current used weapon Spread */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSpread")
@@ -299,10 +344,9 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControll")
 		FVector BaseHandsIk;
 
-   
 	/** WeaponAttachment Slots */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponAttachments")
-	 TMap<FName,FWeaponAttachmentSlot> WeaponAttachementSlots;
+		TMap<FName, FWeaponAttachmentSlot> WeaponAttachementSlots;
 
 #if WITH_EDITORONLY_DATA
 	uint8 bShowDebugTrace : 1;
@@ -416,7 +460,7 @@ protected:
 	virtual void CalculateAmmoAfterReload();
 
 	/** server,consumes a bullet on each shot ,default values is  1 */
-	virtual void ConsumeAmmo(int32 AmmoAmount = 1);
+	virtual void ConsumeAmmo();
 
 	/** replication support */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
@@ -462,6 +506,8 @@ protected:
 	UFUNCTION()
 		virtual void OnRep_AimWeapon();
 
+	virtual void OnRep_Owner()override;
+
 
 public:
 	/** returns pawn owner of this weapon,returns null if none */
@@ -483,6 +529,8 @@ public:
 	/**start equip this weapon  */
 	virtual void StartEquipWeapon();
 
+	virtual void SetWeaponMeshVisibility(bool WeaponMesh1pVisible, bool WeaponMesh3pVisible);
+
 	/**server,start equip this weapon  */
 	UFUNCTION(Server, Unreliable, WithValidation)
 		virtual void ServerStartEquipWeapon();
@@ -495,6 +543,8 @@ public:
 
 	/**check if can aim  */
 	virtual bool CheckCanAim();
+
+	virtual void SetOwner(AActor* NewOwner)override;
 
 	/** recoil Vertically when player fires */
 	virtual void UpdateRecoilVertically(float DeltaTimeSeconds, float RecoilAmount);
@@ -538,11 +588,15 @@ public:
 
 	virtual void InspectWeapon();
 
+	virtual void SetupWeaponMeshRenderings();
+
 	virtual void PreInitializeComponents()override;
 
 	virtual void InitWeaponAttachmentSlots();
 
-	virtual void GetWeaponAttachmentSlotStruct(FName SlotName,FWeaponAttachmentSlot& OutWeaponAttachmentSlot);
+	virtual void GetADSSightTransform(FTransform& OutTransform);
+
+	virtual void GetWeaponAttachmentSlotStruct(FName SlotName, FWeaponAttachmentSlot& OutWeaponAttachmentSlot);
 
 	/** spawns a projectile */
 	virtual void SpawnProjectile(FVector SpawnLoc, FVector SpawnDir, float TimeBetweenShots);
@@ -569,7 +623,7 @@ public:
 	/** return whether this weapon equip with a fore grip ,this will affect animation poses and recoil*/
 	inline virtual bool GetIsWeaponHasForeGrip()const { return bForeGripEquipt; }
 
-	inline virtual float GetWeaponCurrentSpread()const { return CurrentWeaponSpread; }
+	inline virtual float GetWeaponCurrentSpread()const { return WeaponSpreadData.CurrentWeaponSpread; }
 
 	FORCEINLINE virtual EWeaponFireMode GetCurrentWeaponFireMode()const { return CurrentWeaponFireMode; }
 
@@ -588,4 +642,9 @@ public:
 	inline virtual FVector GetAdjustADSHandsIk()const { return AdjustADSHandsIK; }
 
 	virtual void SetAdjustADSHandsIk(FVector NewIKPosition) { AdjustADSHandsIK = NewIKPosition; }
+
+	virtual FTransform GetSightsTransform()const;
+
+	UFUNCTION(BlueprintCallable,BlueprintPure)
+	virtual EWeaponState GetCurrentWeaponState()const {return CurrentWeaponState;}
 };

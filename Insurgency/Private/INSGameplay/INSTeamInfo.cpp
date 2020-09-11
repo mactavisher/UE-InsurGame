@@ -31,6 +31,20 @@ void AINSTeamInfo::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 	DOREPLIFETIME(AINSTeamInfo, ThisTeamType);
 }
 
+void AINSTeamInfo::SetTeamType(ETeamType NewTeamType)
+{
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		ThisTeamType = NewTeamType;
+		OnRep_TeamType();
+	}
+}
+
+void AINSTeamInfo::OnRep_TeamType()
+{
+	OnTeamTypeChange.Broadcast();
+}
+
 void AINSTeamInfo::AddPlayerToThisTeam(class AINSPlayerController* NewPlayer)
 {
 	if (!isTeamFull() && NewPlayer != nullptr)
@@ -41,7 +55,9 @@ void AINSTeamInfo::AddPlayerToThisTeam(class AINSPlayerController* NewPlayer)
 
 void AINSTeamInfo::SortPlayersByScore()
 {
-
+// 	StrArr.Sort([](const FString& A, const FString& B) {
+// 		return A.Len() > B.Len();
+// 	});
 }
 
 void AINSTeamInfo::RemovePlayer(class AINSPlayerController* PlayerToRemove)

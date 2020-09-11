@@ -90,7 +90,6 @@ protected:
 	UFUNCTION()
 		virtual void OnRep_RespawnRemainingTime();
 
-
 public:
 	virtual void SetPlayerTeam(class AINSTeamInfo* NewTeam);
 	virtual AINSTeamInfo* GetPlayerTeam()const { return PlayerTeam; }

@@ -13,13 +13,16 @@ class AINSPlayerController;
 /**
  *  Team Info class for Team Based Game Modes
  */
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FTeamTypeChangedSignature);
 UCLASS(Blueprintable)
 class INSURGENCY_API AINSTeamInfo : public AInfo
 {
 	GENERATED_UCLASS_BODY()
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = "Terrorist Team info")
-	    ETeamType ThisTeamType;
+	/** current team type */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_TeamType, Category = "TeamType")
+		ETeamType ThisTeamType;
 
 	/** uint8 that limit a team maximum member to 255 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Team")
@@ -29,6 +32,10 @@ class INSURGENCY_API AINSTeamInfo : public AInfo
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Scoring")
 		float  TeamScore;
 
+public:
+	UPROPERTY(BlueprintAssignable,Category="Events")
+		FTeamTypeChangedSignature OnTeamTypeChange;
+
 protected:
 
 	//~ Begin AActor Interface
@@ -36,13 +43,23 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
 	//~end AActor interface
 public:
-	/** assign  team type for this team */
-	virtual void SetTeamType(ETeamType NewTeamType) { this->ThisTeamType = NewTeamType; }
+	/**
+	 * @desc Set team type for this team
+	 * @params NewTeamType  New Team Type to Set
+	 */
+	virtual void SetTeamType(ETeamType NewTeamType);
 
 	/** return team type */
 	virtual ETeamType GetTeamType()const { return ThisTeamType; }
 
-	/** add a player into this team */
+	/** call back function when team type set or changed */
+	UFUNCTION()
+		virtual void OnRep_TeamType();
+
+	/**
+	 * @desc add a new player in this team
+     * @param NewPlayer  New Player to add in
+	 */
 	virtual void AddPlayerToThisTeam(class AINSPlayerController* NewPlayer);
 
 	/** get current team member size */
@@ -50,8 +67,11 @@ public:
 
 	/** Sort member players by their score */
 	virtual void SortPlayersByScore();
-    
-	/** remove a player from this team */
+
+	/**
+	 * @desc remove a player     from this Team
+	 * @param PlayerToRemove     player to remove from this team
+	 */
 	virtual void RemovePlayer(class AINSPlayerController* PlayerToRemove);
 
 	/** is team maximum members reached ? */

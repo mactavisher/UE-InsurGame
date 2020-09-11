@@ -12,6 +12,7 @@
 class UBlendSpace;
 class AINSCharacter;
 class AINSPlayerCharacter;
+class AINSPlayerController;
 class UCharacterMovementComponent;
 struct FAimAnim;
 
@@ -144,6 +145,9 @@ protected:
 	    FVector ADSHandIKEffector;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControl")
+		FVector CurrentHandIKEffector;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControl")
 		FVector WeaponIKLeftHandOffSetEffector;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControl")
@@ -161,14 +165,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AnimationMode")
 		float ADSAlpha;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Procedural")
-		float MaxPitchSway;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSway")
+	    float MaxWeaponSwayPitch;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Procedural")
-		float MaxYawSway;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSway")
+		float MaxWeaponSwayYaw;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Procedural")
-		float SwayScale;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSway")
+		float WeaponSwayRecoverySpeed;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSway")
+		float WeaponSwayScale;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AnimationMode")
 		EWeaponBasePoseType CurrentWeaponBaseType;
@@ -197,6 +204,9 @@ protected:
 protected:
 	UPROPERTY()
 		AINSCharacter* OwnerPlayerCharacter;
+
+	UPROPERTY()
+		AINSPlayerController* OwnerPlayerController;
 
 	UPROPERTY()
 		UCharacterMovementComponent* CharacterMovementComponent;

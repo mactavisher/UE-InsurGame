@@ -56,10 +56,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Bot")
 		TSubclassOf<ACharacter> BotCharacterClass;
 
-	/** default weapon class that will be used in this game */
-	UPROPERTY(EditAnywhere, NoClear, BlueprintReadOnly, Category = Classes)
-		TSubclassOf<AINSWeaponBase> DefaultWeaponClass;
-
 	/** team info class */
 	UPROPERTY(EditAnywhere, NoClear, BlueprintReadOnly, Category = Classes)
 		TSubclassOf<AINSTeamInfo> TeamInfoClass;
@@ -132,7 +128,7 @@ public:
 		FTimerHandle MatchPrepareTimer;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TestWeaponClasses")
-		TArray<TSubclassOf< AINSWeaponBase>> AvailableWeaponsClasses; 
+		TArray<TSubclassOf< AINSWeaponBase>> GameModeAvailableWeaponsClasses; 
 
 protected:
 	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
@@ -203,6 +199,6 @@ public:
 
 	virtual bool GetShouldDropWeaponWhenPlayerDead()const { return bShouldDropWeaponWhenPlayerDead; }
 
-	virtual  UClass* GetRandomWeapon()const;
+	virtual  UClass* GetRandomGameModeWeaponClass()const;
 
 };

@@ -255,8 +255,13 @@ protected:
 	/** Gather current INS Movement,override default FRepmentRep */
 	virtual void GatherCurrentMovement()override;
 
+	/** happens right before replication occurs,override some properties */
 	virtual void PreReplication(IRepChangedPropertyTracker & ChangedPropertyTracker)override;
 
+	/**
+	 * @desc override function, to support custom replicated properties
+     * @param OutLiftTimeProps   Replicated Property tracker
+	 */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
 	// ~End AActor interface
 

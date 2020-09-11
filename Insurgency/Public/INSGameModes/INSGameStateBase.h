@@ -166,7 +166,7 @@ public:
 	 * @desc   Server Only   set how much time we still have to wait before we can finish prepare state and actually can play
 	 * @param  PrepareTimeRemaining      the prepare time still remaining
 	 */
-	virtual void SetMatchPrepareRemainingTime(uint8 PrepareTimeRemaining) { ReplicatedMatchPrepareRemainingTime = PrepareTimeRemaining; }
+	virtual void SetMatchPrepareRemainingTime(uint8 PrepareTimeRemaining);
 
 	/** return the current game type */
 	inline virtual EGameType GetCurrentGameType()const { return CurrentGameType; }

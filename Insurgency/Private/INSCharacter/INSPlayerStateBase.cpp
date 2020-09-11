@@ -13,7 +13,9 @@
 #ifndef AINSHUDBase
 #include "INSHud/INSHUDBase.h"
 #endif
-
+#ifndef AINSTeamInfo
+#include "INSGameplay/INSTeamInfo.h"
+#endif
 AINSPlayerStateBase::AINSPlayerStateBase(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
 {
 	bIsWaitingForRespawn = false;
@@ -55,20 +57,12 @@ void AINSPlayerStateBase::BeginPlay()
 
 void AINSPlayerStateBase::OnRep_TeamInfo()
 {
-	/*GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, TEXT("Team info Replicated"));
-	AINSPlayerCharacter* const PlayerCharacter = GetPawn<AINSPlayerCharacter>();
-	if (PlayerCharacter)
-	{
-		PlayerCharacter->SetupPlayerMesh();
-	}*/
+
 }
 
 void AINSPlayerStateBase::OnRep_MyScore()
 {
-	//if (GetPawn()&& GetPawn()->IsLocallyControlled())
-	//{
-	//	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, FString::FromInt(MyScore));
-	//}
+	
 }
 
 void AINSPlayerStateBase::OnRep_RespawnRemainingTime()
@@ -76,9 +70,17 @@ void AINSPlayerStateBase::OnRep_RespawnRemainingTime()
 
 }
 
+
 void AINSPlayerStateBase::SetPlayerTeam(class AINSTeamInfo* NewTeam)
 {
-	PlayerTeam = NewTeam;
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		PlayerTeam = NewTeam; 
+		if (GetPawn()&&GetPawn()->GetClass()->IsChildOf(AINSPlayerCharacter::StaticClass()))
+		{
+			GetPawn<AINSPlayerCharacter>()->SetCharacterTeam(PlayerTeam);
+		}
+	}
 }
 
 void AINSPlayerStateBase::UpdateRepliatedRespawnRemaingTime()
@@ -93,40 +95,12 @@ void AINSPlayerStateBase::ReceiveHitInfo(const struct FTakeHitInfo TakeHitInfo)
 
 void AINSPlayerStateBase::PlayerScore(int32 ScoreToAdd)
 {
-// 	Score = Score + ScoreToAdd;
-// 	if (GetPawn() && GetPawn()->GetController()->GetClass()->IsChildOf(AINSPlayerController::StaticClass()))
-// 	{
-// 		AINSPlayerController* PC = Cast<AINSPlayerController>(GetPawn()->GetController());
-// 		if (PC->IsLocalController())
-// 		{
-// 			AINSHUDBase* PlayerHud = PC->GetHUD<AINSHUDBase>();
-// 			PlayerHud->SetStartDrawScore(true, ScoreToAdd);
-// 		}
-// 	}
+
 }
 
 void AINSPlayerStateBase::OnPlayerKill(class APlayerState* Killer, class APlayerState* Victim, int32 KillerScore, bool bIsTeamDamage)
 {
-// 	if (GetNetMode()!= ENetMode::NM_DedicatedServer)
-// 	{
-// 		UClass* KillerPawnClass = Killer->GetPawn() == nullptr ? nullptr : Killer->GetPawn()->GetClass();
-// 		if (KillerPawnClass&&KillerPawnClass->IsChildOf(AINSPlayerCharacter::StaticClass()))
-// 		{
-// 			AINSPlayerCharacter* Character = GetPawn<AINSPlayerCharacter>();
-// 			if (Character->GetController()&&Character->GetController()->IsLocalController())
-// 			{
-// 				AINSHUDBase* PlayerHud = Character->GetINSPlayerController()->GetHUD<AINSHUDBase>();
-// 				if (PlayerHud)
-// 				{
-// 					FString DebugMessage(TEXT("Player kill event happend:"));
-// 					DebugMessage.Append(Killer->GetName());
-// 					DebugMessage.Append(TEXT("Kills")).Append(Victim->GetName());
-// 					GEngine->AddOnScreenDebugMessage(-1, 5.0, FColor::Green, DebugMessage);
-// 					PlayerHud->SetStartDrawScore(true, KillerScore);
-// 				}
-// 			}
-// 		}
-// 	}
+
 }
 
 void AINSPlayerStateBase::OnPlayerDamage(class APlayerState* Killer, class APlayerState* Victim, int32 DamagaCauserScore, bool bIsTeamDamage)

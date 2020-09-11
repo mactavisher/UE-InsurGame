@@ -69,6 +69,11 @@ void AINSCharacter::BeginPlay()
 		DieDelegate.BindUFunction(this, TEXT("OnDeath"));
 		CharacterHealthComp->OnCharacterShouldDie.Add(DieDelegate);
 	}
+	// we don't need to attach the player sound comp in dedicated server
+	if (GetNetMode() == ENetMode::NM_DedicatedServer)
+	{
+		CharacterAudioComp->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+	}
 }
 
 void AINSCharacter::PreReplication(IRepChangedPropertyTracker & ChangedPropertyTracker)
@@ -291,7 +296,7 @@ void AINSCharacter::OnRep_Prone()
 
 void AINSCharacter::OnRep_CurrentWeapon()
 {
-
+	//SetOwner(GetOwner());
 }
 
 FORCEINLINE class UINSCharacterMovementComponent* AINSCharacter::GetINSCharacterMovement()
@@ -507,7 +512,10 @@ void AINSCharacter::SpawnWeaponPickup()
 void AINSCharacter::SetCurrentWeapon(class AINSWeaponBase* NewWeapon)
 {
 	this->CurrentWeapon = NewWeapon;
-	NewWeapon->SetOwnerCharacter(this);
+	if(CurrentWeapon)
+	{
+		CurrentWeapon->SetOwnerCharacter(this);
+	}
 }
 
 
@@ -540,7 +548,6 @@ void AINSCharacter::KilledBy(class AController* PlayerKilledMe, class AACtor* Ac
 void AINSCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
 }
 
 // Called to bind functionality to input

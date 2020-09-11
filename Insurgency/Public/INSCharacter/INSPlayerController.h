@@ -10,6 +10,7 @@
 #include "INSPlayerController.generated.h"
 
 class AINSWeaponBase;
+class AINSPlayerStateBase;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogAINSPlayerController, Log, All)
 
@@ -35,13 +36,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Default")
 		TSubclassOf<AINSWeaponBase> PlayerDefaultWeaponClass;
 
-	/** default weapon instance */
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Replicated, Category = "Default")
-		AINSWeaponBase* DefaultWeapon;
-
 	/** locally,is controlled pawn currently fires a weapon */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Player Action")
 		uint8 bPlayerFiring : 1;
+
+	/** cached Player State of INS Type */
+	UPROPERTY()
+		AINSPlayerStateBase* INSPlayerState;
+
+	/** default weapon instance */
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_PlayerTeam, Category = "Default")
+		AINSTeamInfo* PlayerTeam;
 
 protected:
 	/** possess a character */
@@ -49,6 +54,9 @@ protected:
 
 	/** un-possess a character */
 	virtual void OnUnPossess()override;
+
+	/** replication support */
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
 
 	/** set up player input bindings  */
 	virtual void SetupInputComponent()override;
@@ -59,6 +67,12 @@ protected:
 	/** perform move forward,negative value will move backward */
 	virtual void MoveForward(float Value);
 
+	/** crouch */
+	virtual void Crouch();
+
+	/** crouch */
+	virtual void UnCrouch();
+
 	/** Server,perform move right ,negative value will perform move left */
 	UFUNCTION(Server, Unreliable, WithValidation)
 		virtual void ServerMoveRight(float Value);
@@ -67,22 +81,14 @@ protected:
 	UFUNCTION(Server, Unreliable, WithValidation)
 		virtual void ServerMoveForward(float Value);
 
-	/** crouch */
-	virtual void Crouch();
-
 	/** server,crouch */
 	UFUNCTION(Server, Unreliable, WithValidation)
 		virtual void ServerCrouch();
-
-	/** crouch */
-	virtual void UnCrouch();
-
+	
 	/** server,crouch */
 	UFUNCTION(Server, Unreliable, WithValidation)
 		virtual void ServerUnCrouch();
 
-	/** replication support */
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
 public:
 
 	/** aim */
@@ -124,13 +130,13 @@ public:
 
 	virtual void Sprint();
 
-	UFUNCTION(Server,Unreliable,WithValidation)
-	virtual void ServerSprint();
+	UFUNCTION(Server, Unreliable, WithValidation)
+		virtual void ServerSprint();
 
 	virtual void StopSprint();
 
-	UFUNCTION(Server,Unreliable,WithValidation)
-	virtual void ServerStopSprint();
+	UFUNCTION(Server, Unreliable, WithValidation)
+		virtual void ServerStopSprint();
 
 	/** server,stop fire */
 	UFUNCTION(Server, Unreliable, WithValidation)
@@ -142,8 +148,9 @@ public:
 	/** inspect weapon */
 	virtual void InspecWeapon();
 
-	UFUNCTION(Server,Unreliable,WithValidation)
-	virtual void ServerInspectWeapon();
+	/** sync server state to inspect weapon */
+	UFUNCTION(Server, Unreliable, WithValidation)
+		virtual void ServerInspectWeapon();
 
 	virtual void PickupWeapon(class AINSPickup_Weapon* NewWeaponPickup);
 
@@ -155,6 +162,9 @@ public:
 		virtual void ServerSwitchFireMode();
 
 	virtual void BeginPlay()override;
+
+	UFUNCTION()
+		virtual void OnRep_PlayerTeam();
 
 	/** look up and down */
 	virtual void AddPitchInput(float Val)override;
@@ -171,6 +181,14 @@ public:
 	UFUNCTION(Server, Reliable, WithValidation)
 		virtual void ServerEquipWeapon(class AINSWeaponBase* NewWeaponToEquip);
 
+
+	virtual void SetWeaponState(EWeaponState NewState);
+
+	UFUNCTION(Server,Unreliable,WithValidation)
+	virtual void ServerSetWeaponState(EWeaponState NewState);
+
+
+
 	virtual void ReceiveEnterPickups(class AINSItems_Pickup* PickupItem);
 
 	virtual void ReceiveLeavePickups(class AINSItems_Pickup* PickupItem);
@@ -186,7 +204,7 @@ public:
 	virtual void ReceiveGameKills(class APlayerState* Killer, APlayerState* Victim, int32 Score, bool bIsTeamDamage);
 
 	UFUNCTION(Client, Unreliable, WithValidation)
-	virtual void ClientReceiveCauseDamage(class AController* Victim,float DamageAmount,bool bIsTeamDamage);
+		virtual void ClientReceiveCauseDamage(class AController* Victim, float DamageAmount, bool bIsTeamDamage);
 
 public:
 	/** return possessed character  */
@@ -197,7 +215,11 @@ public:
 		virtual FRotator GetLastRotationInput()const { return LastPlayerInputRot; };
 
 	/** return s default weapon */
-	virtual class AINSWeaponBase* GetDefaultWeapon();
+	virtual  void GetGameModeRandomWeapon();
+
+	/** return s default weapon */
+	UFUNCTION(Server,Unreliable,WithValidation)
+	virtual  void ServerGetGameModeRandomWeapon();
 
 	/** check to see if a give actor is consider as my enemy ,controllers typically*/
 	virtual bool IsEnemyFor(class AActor* Other);
@@ -208,7 +230,7 @@ public:
 	/** handle possessed Character death */
 	virtual void OnCharacterDeath();
 
-
+	virtual AINSPlayerStateBase* GetINSPlayerState();
 	virtual class AINSTeamInfo* GetMyTeamInfo();
 
 	virtual void ReceiveOverlapPickupItems(class AActor* PickupItems);
@@ -218,5 +240,41 @@ public:
 	UFUNCTION()
 		virtual void RespawnPlayer();
 
+	UFUNCTION()
+		virtual void  OnPlayerMeshSetupFinished();
+
+	/**
+	 * @desc add the player score
+	 * @param  Score      the score to add
+	 */
 	virtual void PlayerScore(int32 Score);
+
+	/**
+	 * rep_notify when player state is replicated to owner client noticed that player controllers DOSE NOT exist on simulated proxies,
+	 * so this func will only be called on owner client or server 
+	 */
+	virtual void OnRep_PlayerState()override;
+
+	/**
+	 * @desc set the player's belonging team
+	 * @param NewTeam New Team to set for this Player
+	 */
+	virtual void SetPlayerTeam(class AINSTeamInfo* NewTeam);
+
+	/**
+	 * override func called when player state get initiated
+	 * player team should not  be set via this,because player state is initiated before player's team set
+	 */
+	virtual void InitPlayerState()override;
+
+	/**
+	 * rep_notify when pawn is replicated to owner client noticed that player controllers DOSE NOT exist on simulated proxies,
+	 * so this func will only be called on owner client or server
+	 */
+	virtual void OnRep_Pawn()override;
+
+	/**
+	 * returns the player team info
+	 */
+	virtual class AINSTeamInfo* GetPlayerTeam()const { return PlayerTeam; }
 };

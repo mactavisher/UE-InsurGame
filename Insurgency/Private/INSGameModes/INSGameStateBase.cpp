@@ -98,6 +98,15 @@ void AINSGameStateBase::OnPlayerDamaged(class AController* DamageInstigtor, clas
 	}
 }
 
+void AINSGameStateBase::SetMatchPrepareRemainingTime(uint8 PrepareTimeRemaining)
+{
+	ReplicatedMatchPrepareRemainingTime = PrepareTimeRemaining;
+	if (GetNetMode() == ENetMode::NM_ListenServer || GetNetMode() == ENetMode::NM_Standalone)
+	{
+		OnRep_PreparingRemainingTime();
+	}
+}
+
 void AINSGameStateBase::OnRep_FinishePreparing()
 {
 

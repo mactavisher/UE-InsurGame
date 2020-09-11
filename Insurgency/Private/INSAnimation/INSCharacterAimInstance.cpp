@@ -9,6 +9,7 @@
 #include "Engine/Engine.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "INSItems/INSWeapons/INSWeaponBase.h"
+#include "Kismet/KismetMathLibrary.h"
 
 DEFINE_LOG_CATEGORY(LogINSCharacterAimInstance);
 
@@ -43,9 +44,10 @@ UINSCharacterAimInstance::UINSCharacterAimInstance(const FObjectInitializer& Obj
 	bIsAiming = false;
 	bIsTurning = false;
 	CurrentViewMode = EViewMode::FPS;
-	MaxPitchSway = 6.f;
-	MaxYawSway = 6.f;
-	SwayScale = 1.f;
+	MaxWeaponSwayPitch = 5.f;
+	MaxWeaponSwayYaw = MaxWeaponSwayPitch;
+	WeaponSwayRecoverySpeed = 40.f;
+	WeaponSwayScale = 10.f;
 	TPShouldTurnLeft90 = false;
 	CurrentStance = ECharacterStance::STAND;
 #if WITH_EDITORONLY_DATA
@@ -114,6 +116,20 @@ void UINSCharacterAimInstance::UpdateADSAlpha(float DeltaTimeSeconds)
 		{
 			ADSAlpha = 1.0f;
 		}
+		if (ADSAlpha==1.f&&CurrentWeaponRef)
+		{
+			if (ADSHandIKEffector.IsZero())
+			{
+				FTransform CameraTrans = Cast<AINSPlayerCharacter>(OwnerPlayerCharacter)->GetPlayerCameraTransform();
+				FTransform WeaponSightTrans = CurrentWeaponRef->GetSightsTransform();
+				FVector RelLoc = UKismetMathLibrary::MakeRelativeTransform(CameraTrans, WeaponSightTrans).GetLocation();
+				//FVector RelLoc = CameraTrans.GetLocation() - WeaponSightTrans.GetLocation();
+				ADSHandIKEffector = FVector(-10.f, RelLoc.Y, RelLoc.Z);
+			}
+			CurrentHandIKEffector.X = FMath::Clamp<float>(CurrentHandIKEffector.X + DeltaTimeSeconds*0.1f, CurrentHandIKEffector.X, ADSHandIKEffector.X);
+			CurrentHandIKEffector.Y = FMath::Clamp<float>(CurrentHandIKEffector.Y + DeltaTimeSeconds*0.1f, CurrentHandIKEffector.Y, ADSHandIKEffector.Y);
+			CurrentHandIKEffector.Z = FMath::Clamp<float>(CurrentHandIKEffector.Z + DeltaTimeSeconds*0.1f, CurrentHandIKEffector.Z, ADSHandIKEffector.Z);
+		}
 	}
 	else
 	{
@@ -122,6 +138,10 @@ void UINSCharacterAimInstance::UpdateADSAlpha(float DeltaTimeSeconds)
 		{
 			ADSAlpha = 0.f;
 		}
+		ADSHandIKEffector = FVector(ForceInit);
+		CurrentHandIKEffector.X = FMath::Clamp<float>(CurrentHandIKEffector.X - DeltaTimeSeconds*0.1f, 0.f, CurrentHandIKEffector.X);
+		CurrentHandIKEffector.Y = FMath::Clamp<float>(CurrentHandIKEffector.Y - DeltaTimeSeconds*0.1f, 0.f, CurrentHandIKEffector.Y);
+		CurrentHandIKEffector.Z = FMath::Clamp<float>(CurrentHandIKEffector.Z - DeltaTimeSeconds*0.1f, 0.f, CurrentHandIKEffector.Z);
 	}
 }
 
@@ -143,7 +163,7 @@ void UINSCharacterAimInstance::SetCurrentWeaponRef(class AINSWeaponBase* NewWeap
 void UINSCharacterAimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
-	if (OwnerPlayerCharacter && CharacterMovementComponent && !OwnerPlayerCharacter->GetIsCharacterDead())
+	if (OwnerPlayerCharacter && CharacterMovementComponent && !OwnerPlayerCharacter->GetIsCharacterDead() && OwnerPlayerCharacter->GetNetMode() != ENetMode::NM_DedicatedServer)
 	{
 		UpdatePredictFallingToLandAlpha();
 		UpdateDirection();
@@ -154,6 +174,10 @@ void UINSCharacterAimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		UpdateWeaponIkSwayRotation(DeltaSeconds);
 		UpdateStandStopMoveAlpha();
 		UpdateTurnConditions();
+		if (!OwnerPlayerController)
+		{
+			OwnerPlayerController = Cast<AINSPlayerController>(OwnerPlayerCharacter->GetController());
+		}
 		if (CurrentWeaponRef)
 		{
 			PlayWeaponBasePose(CurrentWeaponRef->GetIsWeaponHasForeGrip());
@@ -192,8 +216,14 @@ bool UINSCharacterAimInstance::CheckValid()
 {
 	if (OwnerPlayerCharacter == nullptr)
 	{
-		UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("Owner character not exist,can't play animations"));
+		/*UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("Owner character not exist,can't play animations"));*/
 		return false;
+	}
+	if (OwnerPlayerCharacter->GetNetMode() == ENetMode::NM_DedicatedServer)
+	{
+		UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("Owner character runs on Dedicated server,can't play animations"));
+		return false;
+
 	}
 	if (OwnerPlayerCharacter->GetIsCharacterDead())
 	{
@@ -252,12 +282,12 @@ void UINSCharacterAimInstance::FPPlayMoveAnimation()
 	}
 	if (bIsAiming&&Montage_IsPlaying(MoveMontage))
 	{
-		Montage_Stop(0.1f, MoveMontage);
+		Montage_Stop(0.2f, MoveMontage);
 		Montage_Play(AimMoveMontage);
 	}
 	if (!bIsAiming&&Montage_IsPlaying(AimMoveMontage))
 	{
-		Montage_Stop(0.1f, AimMoveMontage);
+		Montage_Stop(0.2f, AimMoveMontage);
 		Montage_Play(MoveMontage);
 	}
 }
@@ -322,7 +352,7 @@ void UINSCharacterAimInstance::UpdateHandsIk()
 	/*if (CurrentWeaponRef)
 	{
 		const FVector BaseHandsIkPostion = CurrentWeaponRef->GetBaseHandsIk();
-		const FVector 
+		const FVector
 	}*/
 }
 
@@ -370,72 +400,39 @@ void UINSCharacterAimInstance::UpdatePredictFallingToLandAlpha()
 
 void UINSCharacterAimInstance::UpdateWeaponIkSwayRotation(float deltaSeconds)
 {
-	if (CurrentViewMode == EViewMode::FPS)
+	if (CurrentViewMode == EViewMode::FPS&&OwnerPlayerController)
 	{
-		const class UClass* const CharacterClass = OwnerPlayerCharacter->GetClass();
-		if (CharacterClass->IsChildOf(AINSPlayerCharacter::StaticClass()))
+		const float RotYaw = OwnerPlayerController->GetInputAxisValue(TEXT("Turn"));
+		const float RotPitch = OwnerPlayerController->GetInputAxisValue(TEXT("LookUp"));
+		if (RotYaw == 0.f)
 		{
-			AINSPlayerCharacter* const PlayerCharacter = CastChecked<AINSPlayerCharacter>(OwnerPlayerCharacter);
-			if (PlayerCharacter && PlayerCharacter->GetController())
+			if (WeaponIKSwayRotation.Yaw > 0.f)
 			{
-				FRotator Rot = PlayerCharacter->GetINSPlayerController()->GetLastRotationInput();
-				const float DeltaYaw = Rot.Yaw;
-				const float DeltaPitch = Rot.Pitch;
-				if (DeltaYaw >= 1.5f)
-				{
-					WeaponIKSwayRotation.Yaw += 0.3f;
-					if (WeaponIKSwayRotation.Yaw >= MaxYawSway)
-					{
-						WeaponIKSwayRotation.Yaw = MaxYawSway;
-					}
-				}
-				if (DeltaYaw <= -1.5f)
-				{
-					WeaponIKSwayRotation.Yaw -= 0.3f;
-					if (WeaponIKSwayRotation.Yaw <= -MaxYawSway)
-					{
-						WeaponIKSwayRotation.Yaw = -MaxYawSway;
-					}
-				}
-				if (DeltaPitch >= 1.5f)
-				{
-					WeaponIKSwayRotation.Pitch += 0.3f;
-					if (WeaponIKSwayRotation.Pitch >= MaxPitchSway)
-					{
-						WeaponIKSwayRotation.Pitch = MaxPitchSway;
-					}
-				}
-				if (DeltaPitch <= -1.5f)
-				{
-					WeaponIKSwayRotation.Pitch -= 0.3f;
-					if (WeaponIKSwayRotation.Pitch <= -MaxPitchSway)
-					{
-						WeaponIKSwayRotation.Pitch = -MaxPitchSway;
-					}
-				}
-				if (DeltaPitch == 0.f)
-				{
-					if (WeaponIKSwayRotation.Pitch > 0.f)
-					{
-						FMath::Clamp<float>(WeaponIKSwayRotation.Pitch -= 0.5f, 0.f, MaxPitchSway);
-					}
-					if (WeaponIKSwayRotation.Pitch < 0.f)
-					{
-						FMath::Clamp<float>(WeaponIKSwayRotation.Pitch += 0.5f, -MaxPitchSway, 0.f);
-					}
-				}
-				if (DeltaYaw == 0.f)
-				{
-					if (WeaponIKSwayRotation.Yaw > 0.f)
-					{
-						FMath::Clamp<float>(WeaponIKSwayRotation.Yaw -= 0.4f, 0.f, MaxYawSway);
-					}
-					if (WeaponIKSwayRotation.Yaw < 0.f)
-					{
-						FMath::Clamp<float>(WeaponIKSwayRotation.Yaw += 0.4f, -MaxYawSway, 0.f);
-					}
-				}
+				WeaponIKSwayRotation.Yaw = FMath::Clamp<float>(WeaponIKSwayRotation.Yaw -= GetWorld()->GetDeltaSeconds()*WeaponSwayRecoverySpeed, 0.f, MaxWeaponSwayYaw);
 			}
+			if (WeaponIKSwayRotation.Yaw < 0.f)
+			{
+				WeaponIKSwayRotation.Yaw = FMath::Clamp<float>(WeaponIKSwayRotation.Yaw += GetWorld()->GetDeltaSeconds()*WeaponSwayRecoverySpeed, -MaxWeaponSwayYaw, 0.f);
+			}
+		}
+		else
+		{
+			WeaponIKSwayRotation.Yaw = FMath::Clamp<float>(WeaponIKSwayRotation.Yaw += GetWorld()->GetDeltaSeconds()*RotYaw*WeaponSwayScale, -MaxWeaponSwayYaw, MaxWeaponSwayYaw);
+		}
+		if (RotPitch == 0.f)
+		{
+			if (WeaponIKSwayRotation.Pitch > 0.f)
+			{
+				WeaponIKSwayRotation.Pitch = FMath::Clamp<float>(WeaponIKSwayRotation.Pitch -= GetWorld()->GetDeltaSeconds()*WeaponSwayRecoverySpeed, 0.f, MaxWeaponSwayPitch);
+			}
+			if (WeaponIKSwayRotation.Pitch < 0.f)
+			{
+				WeaponIKSwayRotation.Pitch = FMath::Clamp<float>(WeaponIKSwayRotation.Pitch += GetWorld()->GetDeltaSeconds()*WeaponSwayRecoverySpeed, -MaxWeaponSwayPitch, 0.f);
+			}
+		}
+		else
+		{
+			WeaponIKSwayRotation.Pitch = FMath::Clamp<float>(WeaponIKSwayRotation.Pitch -= GetWorld()->GetDeltaSeconds()*RotPitch*WeaponSwayScale, -MaxWeaponSwayPitch, MaxWeaponSwayPitch);
 		}
 	}
 }
@@ -657,7 +654,7 @@ void UINSCharacterAimInstance::PlayWeaponStartEquipAnim(bool bHasForeGrip)
 		Montage_Play(SelectedFPEquipMontage);
 		UE_LOG(LogINSCharacterAimInstance, Log, TEXT("character %s In FPS view mode Is playing weapon equip montage, montage Name is %s"), *OwnerPlayerCharacter->GetName(), *SelectedFPEquipMontage->GetName());
 	}
-	else if(CurrentViewMode==EViewMode::TPS)
+	else if (CurrentViewMode == EViewMode::TPS)
 	{
 		UAnimMontage* SelectedTPEquipMontage = nullptr;
 		if (bHasForeGrip)
@@ -793,15 +790,16 @@ void UINSCharacterAimInstance::SetIsAiming(bool IsAiming)
 {
 	if (bIsAiming)
 	{
-		SwayScale = 0.5f;
-
+		WeaponSwayScale = 2.f;
+		MaxWeaponSwayPitch *= 0.2f;
+		MaxWeaponSwayYaw *= 0.2f;
 	}
 	else
 	{
-		SwayScale = 1.f;
+		WeaponSwayScale = 5.f;
+		MaxWeaponSwayPitch = 5.f;
+		MaxWeaponSwayYaw = 5.f;
 	}
-	MaxPitchSway *= SwayScale;
-	MaxYawSway *= SwayScale;
 }
 
 void UINSCharacterAimInstance::UpdateWalkToStopAlpha()

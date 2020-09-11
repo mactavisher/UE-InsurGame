@@ -405,7 +405,7 @@ void AINSHUDBase::DrawWeaponFireMode()
 		default:
 			break;
 		}
-		DrawText(FireMode, FLinearColor::White, Canvas->SizeX*0.96f, Canvas->SizeY*0.96f, GEngine->GetSmallFont(), 1.f, false);
+		DrawText(FireMode, FLinearColor::White, Canvas->SizeX*0.95f, Canvas->SizeY*0.95f, GEngine->GetSmallFont(), 1.f, false);
 	}
 }
 

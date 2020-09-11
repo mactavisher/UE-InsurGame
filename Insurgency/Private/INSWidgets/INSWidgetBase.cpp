@@ -10,6 +10,11 @@ UINSWidgetBase::UINSWidgetBase(const FObjectInitializer& ObjectInitializer) :Sup
 	bShowWidget = true;
 }
 
+void UINSWidgetBase::SetRefWeapon(AINSWeaponBase* WeaponRef)
+{
+	RefrencedWeapon = WeaponRef;
+}
+
 void UINSWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
