@@ -27,8 +27,8 @@ struct FWeaponConfigData
 {
 	GENERATED_USTRUCT_BODY()
 
-	/** the maximum ammo can be hold in a single clip */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+		/** the maximum ammo can be hold in a single clip */
+		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
 		int32 AmmoPerClip;
 
 	/**the max ammo can carry with this weapon */
@@ -125,9 +125,9 @@ struct FWeaponAttachmentSlot {
 
 	GENERATED_USTRUCT_BODY()
 
-	/**attachment class */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AttachmentClass")
-	    TSubclassOf<AActor> WeaponAttachementClass;
+		/**attachment class */
+		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AttachmentClass")
+		TSubclassOf<AActor> WeaponAttachementClass;
 
 	/** attachment instance */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AttachmentInstance")
@@ -142,16 +142,25 @@ struct FWeaponAttachmentSlot {
 		EWeaponAttachmentType WeaponAttachmentType;
 
 public:
-	/** return the class of The weapon class Attachment that will be used in this Attachment Slot */
+	/**
+	 * @desc return the class of The weapon class Attachment that will be used in this Attachment Slot
+	 */
 	class AActor* GetWeaponAttachmentInstance()const { return WeaponAttachmentInstance; }
 
-	/** return  Attachment instance that is used in this Attachment Slot */
+	/**
+	 * @desc return  Attachment class  that is used in this Attachment Slot
+	 */
 	UClass* GetWeaponAttachmentClass()const { return WeaponAttachementClass; }
 
-	/** return the Attachment type of the attachment slot */
+	/**
+	 * @desc return the Attachment type of the attachment slot
+	 */
 	EWeaponAttachmentType GetAttachmentType()const { return WeaponAttachmentType; }
 
-	/** return the Attachment type of the attachment slot */
+	/**
+	 * @desc return the Attachment type of the attachment slot
+	   @param NewType  NewAttachmentType to set
+	 */
 	void  SetAttachmentType(EWeaponAttachmentType NewType)
 	{
 		WeaponAttachmentType = NewType;
@@ -207,14 +216,17 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWeaponOutIdleSignature);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWeaponStartAimSignature);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWeaponStopAimSignature);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWeaponFinishReloadSignature);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponClipEmptySignature,class AController*,OwnerPlayer);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWeaponClipAmmoLowSignature);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWeaponAmmoLeftZero);
 
 UCLASS()
 class INSURGENCY_API AINSWeaponBase : public AINSItems
 {
 	GENERATED_UCLASS_BODY()
 
-	/** stores available fire modes to switch between */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+		/** stores available fire modes to switch between */
+		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
 		TArray<EWeaponFireMode> AvailableFireModes;
 
 	/** current selected(active) fire mode */
@@ -330,7 +342,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 
 	/** Max weapon spread value*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSpread")
-        FWeaponSpreadData WeaponSpreadData;
+		FWeaponSpreadData WeaponSpreadData;
 
 	/** current used weapon Spread */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSpread")
@@ -418,6 +430,18 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "WeaponEvents")
 		FOnWeaponFinishReloadSignature OnFinishReloadWeapon;
 
+	/** weapon just finishes it's reloading delegate */
+	UPROPERTY(BlueprintAssignable, Category = "WeaponEvents")
+		FOnWeaponClipEmptySignature OnClipEmpty;
+
+	/** weapon just finishes it's reloading delegate */
+	UPROPERTY(BlueprintAssignable, Category = "WeaponEvents")
+		FOnWeaponClipAmmoLowSignature OnClipLow;
+
+	/** weapon just finishes it's reloading delegate */
+	UPROPERTY(BlueprintAssignable, Category = "WeaponEvents")
+		FOnWeaponAmmoLeftZero OnAmmoLeftEmpty;
+
 	//~ end  weapon delegate signatures
 
 protected:
@@ -435,7 +459,7 @@ protected:
 	/** cast projectile shell after each shoot */
 	virtual void CastShell();
 
-	/**perform a trace to detect hit actor and adjust projectile spawn rotation */
+	/** perform a trace to detect hit actor and adjust projectile spawn rotation */
 	virtual void SimulateScanTrace(FHitResult& Hit);
 
 	/** adjust projectile spawn rotation to hit center of the screen */
@@ -590,22 +614,50 @@ public:
 
 	virtual void SetupWeaponMeshRenderings();
 
+	/**
+	 * @desc called before any components get initialized
+	 */
 	virtual void PreInitializeComponents()override;
 
+	/**
+	 * @desc init and create default attachment slot that this weapon will possess by default
+	 */
 	virtual void InitWeaponAttachmentSlots();
 
+	/**
+	 * @desc   get ads sight transform
+	 * @params OutTransform calculate and produce the transform    
+	 */
 	virtual void GetADSSightTransform(FTransform& OutTransform);
 
+	/**
+	 * @desc  return specific weapon attachment slot by name
+	 * @param SlotName   the desired attachment Slot name
+	 * @param OutWeaponAttachmentSlot produces the slot
+	 */
 	virtual void GetWeaponAttachmentSlotStruct(FName SlotName, FWeaponAttachmentSlot& OutWeaponAttachmentSlot);
 
-	/** spawns a projectile */
+	/**
+	 * @desc  fire a projectile
+	 * @param SpawnLoc   World Location to spawn to projectile
+	 * @param SpawnDir   projectile spawn direction
+	 * @param TimeBetweenShots time between each shot
+	 */
 	virtual void SpawnProjectile(FVector SpawnLoc, FVector SpawnDir, float TimeBetweenShots);
 
-	/** server,spawns a projectile */
+	/**
+	 * @desc  called by autonomous proxy clients to fire a projectile
+	 * @param SpawnLoc   World Location to spawn to projectile
+	 * @param SpawnDir   projectile spawn direction
+	 * @param TimeBetweenShots time between each shot
+	 */
 	UFUNCTION(Server, Unreliable, WithValidation)
 		virtual void ServerSpawnProjectile(FVector SpawnLoc, FVector SpawnDir, float TimeBetweenShots);
 
-	/** set owner pawn of this weapon */
+	/**
+	 * @desc  set the character that own this weapon
+	 * @param NewOwnerCharacter   the character to set
+	 */
 	virtual void SetOwnerCharacter(class AINSCharacter* NewOwnerCharacter);
 
 	/** set this weapon current state */
@@ -645,6 +697,6 @@ public:
 
 	virtual FTransform GetSightsTransform()const;
 
-	UFUNCTION(BlueprintCallable,BlueprintPure)
-	virtual EWeaponState GetCurrentWeaponState()const {return CurrentWeaponState;}
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+		virtual EWeaponState GetCurrentWeaponState()const { return CurrentWeaponState; }
 };

@@ -6,7 +6,6 @@
 #include "GameFramework/PlayerController.h"
 #include "INSCharacter/INSPlayerCharacter.h"
 #include "INSGamePlay/INSTeamInfo.h"
-#include "INSItems/INSWeapons/INSWeaponBase.h"
 #include "INSPlayerController.generated.h"
 
 class AINSWeaponBase;
@@ -41,6 +40,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Player Action")
 		uint8 bPlayerFiring : 1;
 
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="ReloadWeapon")
+	   uint8 bAutoReload:1;
+
 	/** cached Player State of INS Type */
 	UPROPERTY()
 		AINSPlayerStateBase* INSPlayerState;
@@ -51,6 +53,10 @@ protected:
 
 	UPROPERTY(VisibleAnywhere,BlueprintReadWrite,Category="AmbientAudioComp", meta = (AllowPrivateAccess = "true"))
 	    UAudioComponent* AmbientAudioComp;
+
+	/** current weapon used by this player */
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Weapon")
+	   class AINSWeaponBase* CurrentWeapon;
 
 protected:
 	/** possess a character */
@@ -200,6 +206,15 @@ public:
 	UPROPERTY()
 		FTimerHandle CharacterRespawnTimer;
 
+	UFUNCTION()
+	virtual void OnWeaponAmmoLeftEmpty();
+
+	UFUNCTION()
+	virtual void OnWeaponClipAmmoLow();
+
+	UFUNCTION()
+	virtual void OnWeaponClipEmpty(class AController* WeaponOwnerPlayer);
+
 public:
 	/** owner client show a threaten indicator */
 	UFUNCTION(Client, Unreliable, WithValidation)
@@ -281,4 +296,15 @@ public:
 	 * returns the player team info
 	 */
 	virtual class AINSTeamInfo* GetPlayerTeam()const { return PlayerTeam; }
+
+	/**
+	 * @desc set the player's current weapon
+	 * @param NewWeapon New Weapon to set for this Player
+	 */
+	virtual void SetCurrentWeapon(class AINSWeaponBase* NewWeapon);
+
+	/**
+	 * @desc bind to subscribe current weapon events
+	 */
+	virtual void BindWeaponDelegate();
 };

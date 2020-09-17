@@ -126,14 +126,15 @@ public:
 	float GetBoneDamageModifier(FName BoneName)
 	{
 		float* BoneDamageModifier = nullptr;
+		float  BoneDamageRandomSeed = FMath::RandRange(1.0f, 1.5f);
 		BoneDamageModifier = BoneMappedDamageModifier.Find(BoneName);
 		if (BoneDamageModifier == nullptr)
 		{
-			return 1.f;
+			return 1.f*(*BoneDamageModifier);
 		}
 		else
 		{
-			return *(BoneDamageModifier)*FMath::RandRange(1.f, 1.3f);
+			return *(BoneDamageModifier)*BoneDamageRandomSeed;
 		}
 	}
 };
@@ -304,7 +305,7 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
 
 	/**
-	 * @desc calls when character landed,calculate falling damage
+	 * @desc  calls when character landed,calculate falling damage
 	 * @param Hit    HitResult When Landed
 	 */
 	virtual void Landed(const FHitResult& Hit)override;

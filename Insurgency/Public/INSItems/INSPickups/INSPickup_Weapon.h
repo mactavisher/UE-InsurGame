@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "INSItems/INSPickups/INSItems_Pickup.h"
+#include "INSItems/INSWeapons/INSWeaponBase.h"
 #include "INSPickup_Weapon.generated.h"
 
 class AINSWeaponBase;

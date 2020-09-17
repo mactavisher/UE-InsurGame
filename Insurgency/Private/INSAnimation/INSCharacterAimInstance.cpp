@@ -116,7 +116,7 @@ void UINSCharacterAimInstance::UpdateADSAlpha(float DeltaTimeSeconds)
 		{
 			ADSAlpha = 1.0f;
 		}
-		if (ADSAlpha==1.f&&CurrentWeaponRef)
+		if (ADSAlpha == 1.f&&CurrentWeaponRef)
 		{
 			if (ADSHandIKEffector.IsZero())
 			{
@@ -126,9 +126,9 @@ void UINSCharacterAimInstance::UpdateADSAlpha(float DeltaTimeSeconds)
 				//FVector RelLoc = CameraTrans.GetLocation() - WeaponSightTrans.GetLocation();
 				ADSHandIKEffector = FVector(-10.f, RelLoc.Y, RelLoc.Z);
 			}
-			CurrentHandIKEffector.X = FMath::Clamp<float>(CurrentHandIKEffector.X + DeltaTimeSeconds*0.1f, CurrentHandIKEffector.X, ADSHandIKEffector.X);
-			CurrentHandIKEffector.Y = FMath::Clamp<float>(CurrentHandIKEffector.Y + DeltaTimeSeconds*0.1f, CurrentHandIKEffector.Y, ADSHandIKEffector.Y);
-			CurrentHandIKEffector.Z = FMath::Clamp<float>(CurrentHandIKEffector.Z + DeltaTimeSeconds*0.1f, CurrentHandIKEffector.Z, ADSHandIKEffector.Z);
+			CurrentHandIKEffector.X = FMath::Clamp<float>(CurrentHandIKEffector.X + DeltaTimeSeconds * 0.1f,CurrentHandIKEffector.X,ADSHandIKEffector.X);
+			CurrentHandIKEffector.Y = FMath::Clamp<float>(CurrentHandIKEffector.Y + DeltaTimeSeconds * 0.1f, CurrentHandIKEffector.Y, ADSHandIKEffector.Y);
+			CurrentHandIKEffector.Z = FMath::Clamp<float>(CurrentHandIKEffector.Z + DeltaTimeSeconds * 0.1f, CurrentHandIKEffector.Z, ADSHandIKEffector.Z);
 		}
 	}
 	else
@@ -139,9 +139,9 @@ void UINSCharacterAimInstance::UpdateADSAlpha(float DeltaTimeSeconds)
 			ADSAlpha = 0.f;
 		}
 		ADSHandIKEffector = FVector(ForceInit);
-		CurrentHandIKEffector.X = FMath::Clamp<float>(CurrentHandIKEffector.X - DeltaTimeSeconds*0.1f, 0.f, CurrentHandIKEffector.X);
-		CurrentHandIKEffector.Y = FMath::Clamp<float>(CurrentHandIKEffector.Y - DeltaTimeSeconds*0.1f, 0.f, CurrentHandIKEffector.Y);
-		CurrentHandIKEffector.Z = FMath::Clamp<float>(CurrentHandIKEffector.Z - DeltaTimeSeconds*0.1f, 0.f, CurrentHandIKEffector.Z);
+		CurrentHandIKEffector.X = FMath::Clamp<float>(CurrentHandIKEffector.X - DeltaTimeSeconds * 0.1f, 0.f, CurrentHandIKEffector.X);
+		CurrentHandIKEffector.Y = FMath::Clamp<float>(CurrentHandIKEffector.Y - DeltaTimeSeconds * 0.1f, 0.f, CurrentHandIKEffector.Y);
+		CurrentHandIKEffector.Z = FMath::Clamp<float>(CurrentHandIKEffector.Z - DeltaTimeSeconds * 0.1f, 0.f, CurrentHandIKEffector.Z);
 	}
 }
 
@@ -181,7 +181,8 @@ void UINSCharacterAimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		if (CurrentWeaponRef)
 		{
 			PlayWeaponBasePose(CurrentWeaponRef->GetIsWeaponHasForeGrip());
-			if (bIsAiming&&CurrentWeaponAsstetsRef&&Montage_IsPlaying(CurrentWeaponAsstetsRef->IdleAnimFP.CharIdleMontage))
+			if (bIsAiming&&CurrentWeaponAsstetsRef&&
+				Montage_IsPlaying(CurrentWeaponAsstetsRef->IdleAnimFP.CharIdleMontage))
 			{
 				Montage_Stop(0.2f, CurrentWeaponAsstetsRef->IdleAnimFP.CharIdleMontage);
 			}
@@ -270,10 +271,14 @@ void UINSCharacterAimInstance::FPPlayMoveAnimation()
 	{
 		return;
 	}
-	UAnimMontage* CurrentMoveMontage = bIsAiming ? CurrentWeaponAsstetsRef->MoveAnim1P.AimMoveMontage : CurrentWeaponAsstetsRef->MoveAnim1P.MoveMontage;
+	UAnimMontage* CurrentMoveMontage = bIsAiming ?
+		CurrentWeaponAsstetsRef->MoveAnim1P.AimMoveMontage :
+		CurrentWeaponAsstetsRef->MoveAnim1P.MoveMontage;
+
 	UAnimMontage* AimMoveMontage = CurrentWeaponAsstetsRef->MoveAnim1P.AimMoveMontage;
 	UAnimMontage* MoveMontage = CurrentWeaponAsstetsRef->MoveAnim1P.MoveMontage;
 	const bool bIsPlaying1pMoveAnim = Montage_IsPlaying(CurrentMoveMontage);
+
 	//if no montage player currently, just play it
 	if (!bIsPlaying1pMoveAnim)
 	{
@@ -364,33 +369,46 @@ void UINSCharacterAimInstance::UpdatePredictFallingToLandAlpha()
 	const float FallingCalMinDistance = 30.f;
 	if (CharacterMovementComponent->IsFalling())
 	{
-		FCollisionQueryParams QueryParams;
-		QueryParams.AddIgnoredActor(OwnerPlayerCharacter);
-		const FVector CharacterCurrentLocation = OwnerPlayerCharacter->GetActorLocation();
-		const FVector TraceStartLocation = FVector(CharacterCurrentLocation.X, CharacterCurrentLocation.Y, CharacterCurrentLocation.Z - FMath::Abs(OwnerPlayerCharacter->BaseEyeHeight));
-		const FVector TraceEndLocation = TraceStartLocation + FVector::DownVector * FallingCalMinDistance;
-		FHitResult LandPredictHit(ForceInit);
-		GetWorld()->LineTraceSingleByChannel(LandPredictHit, TraceStartLocation, TraceEndLocation, ECollisionChannel::ECC_Visibility, QueryParams);
-		if (!LandPredictHit.bBlockingHit)
+		if (CurrentViewMode == EViewMode::TPS)
 		{
-			CustomNotIsFallingAlpha = 0.f;
-		}
-		else if (LandPredictHit.bBlockingHit)
-		{
-			const float Distance = FVector::Distance(TraceStartLocation, LandPredictHit.Location);
-			CustomNotIsFallingAlpha = (1 - (Distance / FallingCalMinDistance));
-			//if very close ,just set this to 1
-			if (CustomNotIsFallingAlpha >= 1 - KINDA_SMALL_NUMBER)
+			FCollisionQueryParams QueryParams;
+			QueryParams.AddIgnoredActor(OwnerPlayerCharacter);
+			const FVector CharacterCurrentLocation = OwnerPlayerCharacter->GetActorLocation();
+
+			const FVector TraceStartLocation = FVector(
+				CharacterCurrentLocation.X, 
+				CharacterCurrentLocation.Y, 
+				CharacterCurrentLocation.Z - FMath::Abs(OwnerPlayerCharacter->BaseEyeHeight));
+			const FVector TraceEndLocation = TraceStartLocation + FVector::DownVector * FallingCalMinDistance;
+
+			FHitResult LandPredictHit(ForceInit);
+			GetWorld()->LineTraceSingleByChannel(
+				LandPredictHit, 
+				TraceStartLocation, 
+				TraceEndLocation, 
+				ECollisionChannel::ECC_Visibility, 
+				QueryParams);
+			if (!LandPredictHit.bBlockingHit)
 			{
-				CustomNotIsFallingAlpha = 1.0f;
+				CustomNotIsFallingAlpha = 0.f;
 			}
-		}
+			else if (LandPredictHit.bBlockingHit)
+			{
+				const float Distance = FVector::Distance(TraceStartLocation, LandPredictHit.Location);
+				CustomNotIsFallingAlpha = (1 - (Distance / FallingCalMinDistance));
+				//if very close ,just set this to 1
+				if (CustomNotIsFallingAlpha >= 1 - KINDA_SMALL_NUMBER)
+				{
+					CustomNotIsFallingAlpha = 1.0f;
+				}
+			}
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
-		if (bShowDebugTrace)
-		{
-			DrawDebugLine(GetWorld(), TraceStartLocation, TraceEndLocation, FColor::Black, false, 0.1f);
-		}
+			if (bShowDebugTrace)
+			{
+				DrawDebugLine(GetWorld(), TraceStartLocation, TraceEndLocation, FColor::Black, false, 0.1f);
+			}
 #endif
+		}
 	}
 	else
 	{
@@ -472,9 +490,14 @@ void UINSCharacterAimInstance::PlayReloadAnim(bool bHasForeGrip, bool bIsDry)
 	{
 		return;
 	}
-	UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("character:%s received weapon:%s Start reload event"), *OwnerPlayerCharacter->GetName(), *CurrentWeaponRef->GetName());
+	UE_LOG(LogINSCharacterAimInstance, 
+		Warning, 
+		TEXT("character:%s received weapon:%s Start reload event"), 
+		*OwnerPlayerCharacter->GetName(), 
+		*CurrentWeaponRef->GetName());
 	bHasForeGrip = CurrentWeaponRef->bForeGripEquipt;
 	bIsDry = CurrentWeaponRef->bDryReload;
+
 	if (CurrentViewMode == EViewMode::FPS)
 	{
 		UAnimMontage* SelectedFPReloadMontage = nullptr;
@@ -496,11 +519,18 @@ void UINSCharacterAimInstance::PlayReloadAnim(bool bHasForeGrip, bool bIsDry)
 		}
 		if (!SelectedFPReloadMontage)
 		{
-			UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("character %s In FPS view mode Is trying to play Reload montage,but selectd reload Montage is missing,abort!!!"), *OwnerPlayerCharacter->GetName());
+			UE_LOG(LogINSCharacterAimInstance, 
+				Warning, 
+				TEXT("character %s In FPS view mode Is trying to play Reload montage,but selectd reload Montage is missing,abort!!!"),
+				*OwnerPlayerCharacter->GetName());
 			return;
 		}
 		Montage_Play(SelectedFPReloadMontage);
-		UE_LOG(LogINSCharacterAimInstance, Log, TEXT("character %s In FPS view mode Is  playing Reload montage,reload Montage Name is %s"), *OwnerPlayerCharacter->GetName(), *SelectedFPReloadMontage->GetName());
+		UE_LOG(LogINSCharacterAimInstance, 
+			Log, 
+			TEXT("character %s In FPS view mode Is  playing Reload montage,reload Montage Name is %s"),
+			*OwnerPlayerCharacter->GetName(),
+			*SelectedFPReloadMontage->GetName());
 	}
 	else if (CurrentViewMode == EViewMode::TPS)
 	{
@@ -523,11 +553,16 @@ void UINSCharacterAimInstance::PlayReloadAnim(bool bHasForeGrip, bool bIsDry)
 		}
 		if (!SelectedTPReloadMontage)
 		{
-			UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("character %s In TPS view mode Is trying to play Reload montage,but selectd reload Montage is missing,abort!!!"), *OwnerPlayerCharacter->GetName());
+			UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("character %s In TPS view mode Is trying to play Reload montage,but selectd reload Montage is missing,abort!!!"),
+				*OwnerPlayerCharacter->GetName());
 			return;
 		}
 		Montage_Play(SelectedTPReloadMontage);
-		UE_LOG(LogINSCharacterAimInstance, Log, TEXT("character %s In TPS view mode Is playing Reload montage,reload Montage Name is %s"), *OwnerPlayerCharacter->GetName(), *SelectedTPReloadMontage->GetName());
+		UE_LOG(LogINSCharacterAimInstance, 
+			Log, 
+			TEXT("character %s In TPS view mode Is playing Reload montage,reload Montage Name is %s"),
+			*OwnerPlayerCharacter->GetName(),
+			*SelectedTPReloadMontage->GetName());
 	}
 }
 
@@ -537,7 +572,9 @@ void UINSCharacterAimInstance::PlaySwitchFireModeAnim(bool bHasForeGrip)
 	{
 		return;
 	}
-	UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("character:%s received weapon:%s switch fire mode event"), *OwnerPlayerCharacter->GetName(), *CurrentWeaponRef->GetName());
+	UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("character:%s received weapon:%s switch fire mode event"),
+		*OwnerPlayerCharacter->GetName(),
+		*CurrentWeaponRef->GetName());
 	if (CurrentViewMode == EViewMode::FPS)
 	{
 		UAnimMontage* SelectedFPFireModeSwitchMontage = nullptr;
@@ -551,11 +588,14 @@ void UINSCharacterAimInstance::PlaySwitchFireModeAnim(bool bHasForeGrip)
 		}
 		if (!SelectedFPFireModeSwitchMontage)
 		{
-			UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("character %s In FPS view mode Is trying to play FireMode Switch montage,but selectd FireMode Switch montage is missing,abort!!!"), *OwnerPlayerCharacter->GetName());
+			UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("character %s In FPS view mode Is trying to play FireMode Switch montage,but selectd FireMode Switch montage is missing,abort!!!"),
+				*OwnerPlayerCharacter->GetName());
 			return;
 		}
 		Montage_Play(SelectedFPFireModeSwitchMontage);
-		UE_LOG(LogINSCharacterAimInstance, Log, TEXT("character %s In FPS view mode Is playing FireMode Switch montage,FireMode Switch montage Name is %s"), *OwnerPlayerCharacter->GetName(), *SelectedFPFireModeSwitchMontage->GetName());
+		UE_LOG(LogINSCharacterAimInstance, Log, TEXT("character %s In FPS view mode Is playing FireMode Switch montage,FireMode Switch montage Name is %s"),
+			*OwnerPlayerCharacter->GetName(),
+			*SelectedFPFireModeSwitchMontage->GetName());
 	}
 	else if (CurrentViewMode == EViewMode::TPS)
 	{
@@ -570,11 +610,14 @@ void UINSCharacterAimInstance::PlaySwitchFireModeAnim(bool bHasForeGrip)
 		}
 		if (!SelectedTPFireModeSwitchMontage)
 		{
-			UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("character %s In FPS view mode Is trying to play FireMode Switch montage,but selectd FireMode Switch montage is missing,abort!!!"), *OwnerPlayerCharacter->GetName());
+			UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("character %s In FPS view mode Is trying to play FireMode Switch montage,but selectd FireMode Switch montage is missing,abort!!!"),
+				*OwnerPlayerCharacter->GetName());
 			return;
 		}
 		Montage_Play(SelectedTPFireModeSwitchMontage);
-		UE_LOG(LogINSCharacterAimInstance, Log, TEXT("character %s In FPS view mode Is playing FireMode Switch montage,FireMode Switch montage Name is %s"), *OwnerPlayerCharacter->GetName(), *SelectedTPFireModeSwitchMontage->GetName());
+		UE_LOG(LogINSCharacterAimInstance, Log, TEXT("character %s In FPS view mode Is playing FireMode Switch montage,FireMode Switch montage Name is %s"),
+			*OwnerPlayerCharacter->GetName(),
+			*SelectedTPFireModeSwitchMontage->GetName());
 	}
 }
 
@@ -599,7 +642,8 @@ void UINSCharacterAimInstance::PlayWeaponBasePose(bool bHasForeGrip)
 		}
 		if (!SelectedBaseFPWeaponAnimMontage)
 		{
-			UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("character %s In FPS view mode Is trying to play weapon base pose montage,but selectd base pose  montage is missing,abort!!!"), *OwnerPlayerCharacter->GetName());
+			UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("character %s In FPS view mode Is trying to play weapon base pose montage,but selectd base pose  montage is missing,abort!!!"),
+				*OwnerPlayerCharacter->GetName());
 			return;
 		}
 		Montage_Play(SelectedBaseFPWeaponAnimMontage);
@@ -621,7 +665,8 @@ void UINSCharacterAimInstance::PlayWeaponBasePose(bool bHasForeGrip)
 		}
 		if (!SelectedBaseTPWeaponAnimMontage)
 		{
-			UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("character %s In TPS view mode Is trying to play weapon base pose montage,but selectd base pose  montage is missing,abort!!!"), *OwnerPlayerCharacter->GetName());
+			UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("character %s In TPS view mode Is trying to play weapon base pose montage,but selectd base pose  montage is missing,abort!!!"),
+				*OwnerPlayerCharacter->GetName());
 			return;
 		}
 		Montage_Play(SelectedBaseTPWeaponAnimMontage);
@@ -634,7 +679,9 @@ void UINSCharacterAimInstance::PlayWeaponStartEquipAnim(bool bHasForeGrip)
 	{
 		return;
 	}
-	UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("character:%s received weapon:%s start equip event"), *OwnerPlayerCharacter->GetName(), *CurrentWeaponRef->GetName());
+	UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("character:%s received weapon:%s start equip event"),
+		*OwnerPlayerCharacter->GetName(),
+		*CurrentWeaponRef->GetName());
 	if (CurrentViewMode == EViewMode::FPS)
 	{
 		UAnimMontage* SelectedFPEquipMontage = nullptr;
@@ -648,11 +695,15 @@ void UINSCharacterAimInstance::PlayWeaponStartEquipAnim(bool bHasForeGrip)
 		}
 		if (!SelectedFPEquipMontage)
 		{
-			UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("character %s In FPS view mode Is trying to play weapon equip montage,but selectd deploy montage is missing,abort!!!"), *OwnerPlayerCharacter->GetName());
+			UE_LOG(LogINSCharacterAimInstance, Warning,
+				TEXT("character %s In FPS view mode Is trying to play weapon equip montage,but selectd deploy montage is missing,abort!!!"),
+				*OwnerPlayerCharacter->GetName());
 			return;
 		}
 		Montage_Play(SelectedFPEquipMontage);
-		UE_LOG(LogINSCharacterAimInstance, Log, TEXT("character %s In FPS view mode Is playing weapon equip montage, montage Name is %s"), *OwnerPlayerCharacter->GetName(), *SelectedFPEquipMontage->GetName());
+		UE_LOG(LogINSCharacterAimInstance, Log, TEXT("character %s In FPS view mode Is playing weapon equip montage, montage Name is %s"),
+			*OwnerPlayerCharacter->GetName(),
+			*SelectedFPEquipMontage->GetName());
 	}
 	else if (CurrentViewMode == EViewMode::TPS)
 	{
@@ -667,11 +718,14 @@ void UINSCharacterAimInstance::PlayWeaponStartEquipAnim(bool bHasForeGrip)
 		}
 		if (!SelectedTPEquipMontage)
 		{
-			UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("character %s In FPS view mode Is trying to play weapon equip montage,but selectd deploy montage is missing,abort!!!"), *OwnerPlayerCharacter->GetName());
+			UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("character %s In FPS view mode Is trying to play weapon equip montage,but selectd deploy montage is missing,abort!!!"),
+				*OwnerPlayerCharacter->GetName());
 			return;
 		}
 		Montage_Play(SelectedTPEquipMontage);
-		UE_LOG(LogINSCharacterAimInstance, Log, TEXT("character %s In FPS view mode Is playing weapon equip montage, montage Name is %s"), *OwnerPlayerCharacter->GetName(), *SelectedTPEquipMontage->GetName());
+		UE_LOG(LogINSCharacterAimInstance, Log, TEXT("character %s In FPS view mode Is playing weapon equip montage, montage Name is %s"),
+			*OwnerPlayerCharacter->GetName(),
+			*SelectedTPEquipMontage->GetName());
 	}
 }
 

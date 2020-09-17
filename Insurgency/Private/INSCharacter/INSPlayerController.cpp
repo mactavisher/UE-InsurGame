@@ -6,6 +6,7 @@
 #include "INSCharacter/INSPlayerCameraManager.h"
 #include "Engine/Engine.h"
 #include "INSItems/INSWeapons/INSWeaponBase.h"
+#include "INSItems/INSWeapons/INSWeaponBase.h"
 #include "INSGameModes/INSGameModeBase.h"
 #include "INSGameModes/INSGameStateBase.h"
 #include "Kismet/GameplayStatics.h"
@@ -29,6 +30,7 @@ AINSPlayerController::AINSPlayerController(const FObjectInitializer& ObjectIniti
 	PlayerCameraManagerClass = AINSPlayerCameraManager::StaticClass();
 	bPlayerFiring = false;
 	AmbientAudioComp = ObjectInitializer.CreateDefaultSubobject<UAudioComponent>(this, TEXT("AmbientAudioComp"));
+	bAutoReload = true;
 }
 
 void AINSPlayerController::OnUnPossess()
@@ -131,6 +133,25 @@ void AINSPlayerController::InitPlayerState()
 void AINSPlayerController::OnRep_Pawn()
 {
 	Super::OnRep_Pawn();
+}
+
+void AINSPlayerController::SetCurrentWeapon(class AINSWeaponBase* NewWeapon)
+{
+	CurrentWeapon = NewWeapon;
+	if (CurrentWeapon)
+	{
+		BindWeaponDelegate();
+	}
+}
+
+void AINSPlayerController::BindWeaponDelegate()
+{
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->OnAmmoLeftEmpty.AddDynamic(this, &AINSPlayerController::OnWeaponAmmoLeftEmpty);
+		CurrentWeapon->OnClipLow.AddDynamic(this, &AINSPlayerController::OnWeaponClipAmmoLow);
+		CurrentWeapon->OnClipEmpty.AddDynamic(this, &AINSPlayerController::OnWeaponClipEmpty);
+	}
 }
 
 void AINSPlayerController::ServerMoveRight_Implementation(float Value)
@@ -613,6 +634,25 @@ void AINSPlayerController::ReceiveLeavePickups(class AINSItems_Pickup* PickupIte
 	if (PlayerHud)
 	{
 		PlayerHud->SetPickupItemInfo(nullptr, false);
+	}
+}
+
+void AINSPlayerController::OnWeaponAmmoLeftEmpty()
+{
+
+}
+
+void AINSPlayerController::OnWeaponClipAmmoLow()
+{
+
+}
+
+void AINSPlayerController::OnWeaponClipEmpty(class AController* WeaponOwnerPlayer)
+{
+	if(WeaponOwnerPlayer&&WeaponOwnerPlayer==this)
+	if (bAutoReload)
+	{
+		ReloadWeapon();
 	}
 }
 

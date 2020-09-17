@@ -228,11 +228,13 @@ void AINSWeaponBase::SpawnProjectile(FVector SpawnLoc, FVector SpawnDir, float T
 	FTransform ProjectileSpawnTransform;
 	ProjectileSpawnTransform.SetLocation(SpawnLoc + SpawnDir * 20.f);
 	ProjectileSpawnTransform.SetRotation(SpawnDir.ToOrientationQuat());
-	AINSProjectile* SpawnedProjectile = GetWorld()->SpawnActorDeferred<AINSProjectile>(ProjectileClass,
+	AINSProjectile* SpawnedProjectile = GetWorld()->SpawnActorDeferred<AINSProjectile>(
+		ProjectileClass,
 		ProjectileSpawnTransform,
 		GetOwnerCharacter()->GetController(),
 		GetOwnerCharacter(),
 		ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+
 	if (SpawnedProjectile)
 	{
 		SpawnedProjectile->SetOwnerWeapon(this);
@@ -240,8 +242,8 @@ void AINSWeaponBase::SpawnProjectile(FVector SpawnLoc, FVector SpawnDir, float T
 		SpawnedProjectile->SetMuzzleSpeed(WeaponConfigData.MuzzleSpeed);
 		SpawnedProjectile->SetCurrentPenetrateCount(0);
 		UGameplayStatics::FinishSpawningActor(SpawnedProjectile, ProjectileSpawnTransform);
-		ConsumeAmmo();
 		GetWorldTimerManager().SetTimer(ResetFireStateTimer, this, &AINSWeaponBase::ResetFireState, 1.f, false, WeaponConfigData.TimeBetweenShots);
+		ConsumeAmmo();
 	}
 }
 
@@ -637,13 +639,9 @@ void AINSWeaponBase::SimulateEachSingleShoot()
 	AddWeaponSpread(SpreadDir, AdjustDir);
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		SpawnProjectile(WeaponMesh1PComp->GetMuzzleLocation(), SpreadDir, GetWorld()->GetTimeSeconds() - LastFireTime);
 		SetWeaponState(EWeaponState::FIRING);
-	}
-	else
-	{
-		ServerSpawnProjectile(WeaponMesh1PComp->GetMuzzleLocation(), SpreadDir, GetWorld()->GetTimeSeconds() - LastFireTime);
-		ServerSetWeaponState(EWeaponState::FIRING);
+		SpawnProjectile(WeaponMesh1PComp->GetMuzzleLocation(), SpreadDir, GetWorld()->GetTimeSeconds() - LastFireTime);
+		
 	}
 	if (CurrentWeaponFireMode == EWeaponFireMode::SEMIAUTO)
 	{
@@ -716,10 +714,6 @@ void AINSWeaponBase::ConsumeAmmo()
 		if (GetNetMode() == ENetMode::NM_Standalone || GetNetMode() == ENetMode::NM_ListenServer)
 		{
 			OnRep_CurrentClipAmmo();
-		}
-		if (CurrentClipAmmo == 0 && bEnableAutoReload)
-		{
-			StartReloadWeapon();
 		}
 	}
 }
@@ -830,7 +824,10 @@ void AINSWeaponBase::OnRep_Equipping()
 
 void AINSWeaponBase::OnRep_CurrentClipAmmo()
 {
-
+	if (CurrentClipAmmo == 0)
+	{
+		OnClipEmpty.Broadcast(Cast<AController>(GetOwner()));
+	}
 }
 
 void AINSWeaponBase::StartReloadWeapon()
