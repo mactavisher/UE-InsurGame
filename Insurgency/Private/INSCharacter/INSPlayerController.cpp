@@ -18,6 +18,7 @@
 #include "INSHud/INSHUDBase.h"
 #include "INSCharacter/INSPlayerStateBase.h"
 #include "INSItems/INSPickups/INSPickup_Weapon.h"
+#include "Components/AudioComponent.h"
 #ifndef GEngine
 #include "Engine/Engine.h"
 #endif
@@ -27,6 +28,7 @@ AINSPlayerController::AINSPlayerController(const FObjectInitializer& ObjectIniti
 {
 	PlayerCameraManagerClass = AINSPlayerCameraManager::StaticClass();
 	bPlayerFiring = false;
+	AmbientAudioComp = ObjectInitializer.CreateDefaultSubobject<UAudioComponent>(this, TEXT("AmbientAudioComp"));
 }
 
 void AINSPlayerController::OnUnPossess()

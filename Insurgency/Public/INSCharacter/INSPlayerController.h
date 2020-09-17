@@ -11,6 +11,7 @@
 
 class AINSWeaponBase;
 class AINSPlayerStateBase;
+class UAudioComponent;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogAINSPlayerController, Log, All)
 
@@ -47,6 +48,9 @@ protected:
 	/** default weapon instance */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_PlayerTeam, Category = "Default")
 		AINSTeamInfo* PlayerTeam;
+
+	UPROPERTY(VisibleAnywhere,BlueprintReadWrite,Category="AmbientAudioComp", meta = (AllowPrivateAccess = "true"))
+	    UAudioComponent* AmbientAudioComp;
 
 protected:
 	/** possess a character */

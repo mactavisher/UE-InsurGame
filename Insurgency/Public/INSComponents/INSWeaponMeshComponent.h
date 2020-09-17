@@ -81,7 +81,7 @@ public:
 	virtual FWeaponSocketNames GetWeaponSockets()const { return WeaponSockets; }
 	virtual FVector GetMuzzleLocation()const { return GetSocketLocation(WeaponSockets.MuzzleFlashSocket); }
 	virtual FRotator GetMuzzleRotation()const { return GetSocketRotation(WeaponSockets.MuzzleFlashSocket); }
-	virtual FVector GetMuzzleForwardVector()const { return GetMuzzleRotation().Vector().ForwardVector; }
+	virtual FVector GetMuzzleForwardVector()const { return GetMuzzleRotation().Vector(); }
 	virtual FTransform GetMuzzleTransform()const { return GetSocketTransform(WeaponSockets.MuzzleFlashSocket); }
 	virtual FVector GetShellSocketLocation()const { return GetSocketLocation(WeaponSockets.ShellEjectSocket); }
 	virtual FTransform GetShellSpawnTransform()const;

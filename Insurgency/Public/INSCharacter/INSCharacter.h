@@ -233,6 +233,15 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "EyeHeight")
 		float CurrentEyeHeight;
 
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="FallingDamage")
+	    float FatalFallingSpeed;
+
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="FallingDamage")
+	    UCurveFloat* FallingDamageCurve;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FallingDamage")
+		uint8 bEnableFallingDamage:1;
+
 	/** bone mapped damage modifier */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BoneDamageModifier")
 		FBoneDamageModifier  BoneNameMappedDamageModifier;
@@ -263,6 +272,10 @@ protected:
 
 	virtual void PreReplication(IRepChangedPropertyTracker & ChangedPropertyTracker)override;
 
+	virtual void GatherCurrentMovement()override;
+
+	virtual void OnRep_ReplicatedMovement()override;
+
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
@@ -290,7 +303,10 @@ protected:
 	/** replication support */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
 
-	/** landed */
+	/**
+	 * @desc calls when character landed,calculate falling damage
+	 * @param Hit    HitResult When Landed
+	 */
 	virtual void Landed(const FHitResult& Hit)override;
 
 	/** Cast Blood decal on static building when take damage */

@@ -100,6 +100,7 @@ void AINSWeaponBase::PostInitializeComponents()
 void AINSWeaponBase::BeginPlay()
 {
 	Super::BeginPlay();
+	SetupWeaponMeshRenderings();
 }
 
 void AINSWeaponBase::FireWeapon()
@@ -129,24 +130,9 @@ void AINSWeaponBase::InspectWeapon()
 
 void AINSWeaponBase::SetupWeaponMeshRenderings()
 {
-	if (!GetOwner())
+	if (GetLocalRole() == ROLE_Authority)
 	{
-		WeaponMesh1PComp->SetHiddenInGame(false);
-		WeaponMesh3PComp->SetHiddenInGame(false);
-		WeaponMesh1PComp->SetComponentTickEnabled(false);
-		WeaponMesh3PComp->SetComponentTickEnabled(false);
-		WeaponMesh1PComp->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
-		WeaponMesh3PComp->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
-		WeaponMesh1PComp->SetCastShadow(false);
-		WeaponMesh1PComp->bCastDynamicShadow = false;
-		WeaponMesh3PComp->SetCastShadow(false);
-		WeaponMesh3PComp->bCastDynamicShadow = false;
-		return;
-	}
-
-	if (GetOwner()->GetLocalRole() == ROLE_Authority)
-	{
-		if (GetOwner()->GetNetMode() == ENetMode::NM_DedicatedServer)
+		if (GetNetMode() == ENetMode::NM_DedicatedServer)
 		{
 			WeaponMesh1PComp->SetHiddenInGame(true);
 			WeaponMesh3PComp->SetHiddenInGame(true);
@@ -159,54 +145,46 @@ void AINSWeaponBase::SetupWeaponMeshRenderings()
 			WeaponMesh3PComp->SetCastShadow(false);
 			WeaponMesh3PComp->bCastDynamicShadow = false;
 		}
-		else if (GetOwner()->GetNetMode() == ENetMode::NM_ListenServer || GetOwner()->GetNetMode() == ENetMode::NM_Standalone)
+		else if (GetNetMode() == ENetMode::NM_Standalone||GetNetMode()==ENetMode::NM_ListenServer)
 		{
-			if (GetOwner() && GetOwner() == UGameplayStatics::GetPlayerController(GetWorld(), 0))
-			{
-
-				WeaponMesh1PComp->SetHiddenInGame(false);
-				WeaponMesh3PComp->SetHiddenInGame(true);
-				WeaponMesh1PComp->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
-				WeaponMesh3PComp->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPose;
-				WeaponMesh1PComp->SetCastShadow(true);
-				WeaponMesh1PComp->bCastDynamicShadow = true;
-				WeaponMesh3PComp->SetCastShadow(true);
-				WeaponMesh3PComp->bCastDynamicShadow = true;
-			}
-			else
-			{
-				WeaponMesh1PComp->SetHiddenInGame(true);
-				WeaponMesh3PComp->SetHiddenInGame(false);
-				WeaponMesh1PComp->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
-				WeaponMesh3PComp->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
-				WeaponMesh1PComp->SetCastShadow(false);
-				WeaponMesh1PComp->bCastDynamicShadow = false;
-				WeaponMesh3PComp->SetCastShadow(true);
-				WeaponMesh3PComp->bCastDynamicShadow = true;
-			}
+			//const APlayerController* const MyPlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
+			WeaponMesh1PComp->SetHiddenInGame(false);
+			WeaponMesh3PComp->SetHiddenInGame(true);
+			WeaponMesh1PComp->SetComponentTickEnabled(true);
+			WeaponMesh3PComp->SetComponentTickEnabled(false);
+			WeaponMesh1PComp->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
+			WeaponMesh3PComp->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
+			WeaponMesh1PComp->SetCastShadow(true);
+			WeaponMesh1PComp->bCastDynamicShadow = false;
+			WeaponMesh3PComp->SetCastShadow(false);
+			WeaponMesh3PComp->bCastDynamicShadow = false;
 		}
 	}
-	else if (GetOwner()->GetLocalRole() == ROLE_AutonomousProxy)
+	else if (GetLocalRole() == ROLE_AutonomousProxy)
 	{
 		WeaponMesh1PComp->SetHiddenInGame(false);
 		WeaponMesh3PComp->SetHiddenInGame(true);
+		WeaponMesh1PComp->SetComponentTickEnabled(true);
+		WeaponMesh3PComp->SetComponentTickEnabled(false);
 		WeaponMesh1PComp->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
-		WeaponMesh3PComp->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPose;
+		WeaponMesh3PComp->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
 		WeaponMesh1PComp->SetCastShadow(true);
-		WeaponMesh1PComp->bCastDynamicShadow = true;
-		WeaponMesh3PComp->SetCastShadow(true);
-		WeaponMesh3PComp->bCastDynamicShadow = true;
+		WeaponMesh1PComp->bCastDynamicShadow = false;
+		WeaponMesh3PComp->SetCastShadow(false);
+		WeaponMesh3PComp->bCastDynamicShadow = false;
 	}
-	else if (GetLocalRole() == ROLE_SimulatedProxy)
+	else
 	{
 		WeaponMesh1PComp->SetHiddenInGame(true);
 		WeaponMesh3PComp->SetHiddenInGame(false);
+		WeaponMesh1PComp->SetComponentTickEnabled(false);
+		WeaponMesh3PComp->SetComponentTickEnabled(true);
 		WeaponMesh1PComp->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
-		WeaponMesh3PComp->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPose;
+		WeaponMesh3PComp->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
 		WeaponMesh1PComp->SetCastShadow(false);
 		WeaponMesh1PComp->bCastDynamicShadow = false;
-		WeaponMesh3PComp->SetCastShadow(true);
-		WeaponMesh3PComp->bCastDynamicShadow = true;
+		WeaponMesh3PComp->SetCastShadow(false);
+		WeaponMesh3PComp->bCastDynamicShadow = false;
 	}
 }
 
@@ -259,8 +237,8 @@ void AINSWeaponBase::SpawnProjectile(FVector SpawnLoc, FVector SpawnDir, float T
 	{
 		SpawnedProjectile->SetOwnerWeapon(this);
 		SpawnedProjectile->SetIsFakeProjectile(false);
+		SpawnedProjectile->SetMuzzleSpeed(WeaponConfigData.MuzzleSpeed);
 		SpawnedProjectile->SetCurrentPenetrateCount(0);
-		SpawnedProjectile->SetInstigatedPlayer(OwnerCharacter->GetController());
 		UGameplayStatics::FinishSpawningActor(SpawnedProjectile, ProjectileSpawnTransform);
 		ConsumeAmmo();
 		GetWorldTimerManager().SetTimer(ResetFireStateTimer, this, &AINSWeaponBase::ResetFireState, 1.f, false, WeaponConfigData.TimeBetweenShots);

@@ -196,8 +196,8 @@ void AINSPlayerCharacter::OnRep_CurrentWeapon()
 	Super::OnRep_CurrentWeapon();
 	if (CurrentWeapon)
 	{
+		CurrentWeapon->SetupWeaponMeshRenderings();
 		CharacterEquipWeapon();
-		CurrentWeapon->SetWeaponMeshVisibility(GetIsMesh1pHidden(), GetIsMesh3pHidden());
 	}
 }
 
@@ -209,9 +209,6 @@ void AINSPlayerCharacter::CharacterEquipWeapon()
 		Get3PAnimInstance()->SetCurrentWeaponRef(CurrentWeapon);
 		CurrentWeapon->WeaponMesh1PComp->AttachToComponent(CharacterMesh1P, FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("Bip01_Weapon1Socket"));
 		CurrentWeapon->WeaponMesh3PComp->AttachToComponent(CharacterMesh3P, FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("Bip01_Weapon1Socket"));
-		CurrentWeapon->SetWeaponMeshVisibility(CharacterMesh1P->bHiddenInGame,CharacterMesh3P->bHiddenInGame);
-		//PlayerCameraComp->AttachToComponent(CurrentWeapon->WeaponMesh1PComp, FAttachmentTransformRules::SnapToTargetNotIncludingScale, TEXT("M68Carryhandle"));
-		//PlayerCameraComp->AddRelativeLocation(FVector(-20.f, 0.f, 0.f));
 	}
 }
 
@@ -259,7 +256,7 @@ void AINSPlayerCharacter::OnRep_Dead()
 	GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
 	CharacterAudioComp->SetVoiceType(EVoiceType::DIE);
 	CharacterAudioComp->PlayVoice();
-	CharacterMesh3P->AddImpulseAtLocation(LastHitInfo.Momentum*0.1f, LastHitInfo.RelHitLocation);
+	CharacterMesh3P->AddImpulseAtLocation(LastHitInfo.Momentum*0.4f, LastHitInfo.RelHitLocation);
 	if (GetLocalRole() == ROLE_AutonomousProxy||GetLocalRole()==ROLE_Authority)
 	{
 		GetINSPlayerController()->OnCharacterDeath();
@@ -338,11 +335,11 @@ void AINSPlayerCharacter::OnRep_CharacterTeam()
 		AINSPlayerController* PlayerController = Cast<AINSPlayerController>(GetController());
 		if (PlayerController)
 		{
-			if (GetINSPlayerController()->GetLocalRole() == ROLE_AutonomousProxy)
-			{
-				GetINSPlayerController()->ServerGetGameModeRandomWeapon();
-			}
-			if (GetINSPlayerController()->GetLocalRole() == ROLE_Authority)
+// 			if (GetINSPlayerController()->GetLocalRole() == ROLE_AutonomousProxy)
+// 			{
+// 				GetINSPlayerController()->ServerGetGameModeRandomWeapon();
+// 			}
+			 if (GetINSPlayerController()->GetLocalRole() == ROLE_Authority)
 			{
 				GetINSPlayerController()->GetGameModeRandomWeapon();
 			}

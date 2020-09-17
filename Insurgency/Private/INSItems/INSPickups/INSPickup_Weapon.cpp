@@ -20,15 +20,11 @@ AINSPickup_Weapon::AINSPickup_Weapon(const FObjectInitializer& ObjectInitializer
 	SetReplicateMovement(true);
 	VisualMeshComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("VisualMeshComp"));
 	RootComponent = VisualMeshComp;
-	VisualMeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	InteractionComp->SetupAttachment(RootComponent);
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
 	InteractionComp->SetHiddenInGame(false);
 #endif
-	VisualMeshComp->SetCollisionProfileName(TEXT("PickupAble"));
-	InteractionComp->SetCollisionProfileName(TEXT("Trigger"));
-	InteractionComp->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
-	InteractionComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+	InteractionComp->SetCollisionProfileName(TEXT("Pickups"));
 }
 
 void AINSPickup_Weapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

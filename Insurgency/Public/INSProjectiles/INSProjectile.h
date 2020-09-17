@@ -22,10 +22,8 @@ class AINSWeaponBase;
 
 INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogINSProjectile, Log, All);
 
-/** Replicated movement data of our RootComponent.
-*   More efficient than engine's FRepMovement
-*/
-USTRUCT()
+//no need to override engine's replicate movement system,since it has be optimized
+/*USTRUCT()
 struct FRepINSProjMovement
 {
 	GENERATED_USTRUCT_BODY()
@@ -84,7 +82,7 @@ struct FRepINSProjMovement
 	{
 		return !(*this == Other);
 	}
-};
+};*/
 
 
 /**
@@ -111,10 +109,6 @@ protected:
 	/** projectile visual mesh */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "MeshComp", meta = (AllowPrivateAccess = "true"))
 		UStaticMeshComponent* ProjectileMesh;
-
-	/** Used for replication of our RootComponent's position and velocity */
-	UPROPERTY(Replicated, ReplicatedUsing = OnRep_INSProjReplicatedMovement)
-		struct FRepINSProjMovement INSProjReplicatedMovement;
 
 	/** projectile movement comp */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ProjectileMoveMentComp", meta = (AllowPrivateAccess = "true"))
@@ -156,6 +150,14 @@ protected:
 	UPROPERTY(VisibleAnywhere, Replicated, ReplicatedUsing = OnRep_HitCounter, BlueprintReadOnly, Category = "Repliciation|Hit")
 		uint8  HitCounter;
 
+	/** how much time to wait since last movement info replication happens before next update,controls some sort of frequency and used for optimization*/
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="MovementRepInterval")
+	    float MovementRepInterval;
+
+	/**record last time we replicate this projectile movement  */
+	UPROPERTY(Transient, BlueprintReadOnly, VisibleAnywhere, Category = "MovementRepInterval")
+		float LastMovementRepTime;
+
 	/** indicates how many times dose the net authority projectile Current penetrates*/
 	UPROPERTY(VisibleAnywhere, Replicated, BlueprintReadOnly, Category = "Repliciation|Hit")
 		uint8  CurrentPenetrateCount;
@@ -179,9 +181,6 @@ protected:
 	/** is a visual fake projectile */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BFProjectile|Explosive")
 		uint8 bClientFakeProjectile : 1;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Replication")
-		uint8 bRepINSMovement : 1;
 
 	/** is a visual fake projectile */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BFProjectile|Explosive")
@@ -227,9 +226,6 @@ protected:
 	UFUNCTION()
 		virtual void EnableFakeProjVisual();
 
-	UFUNCTION()
-		virtual void OnRep_INSProjReplicatedMovement();
-
 	/** delegate call back for collision detect */
 	UFUNCTION()
 		virtual void OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
@@ -252,7 +248,12 @@ protected:
 
 	virtual void PostNetReceiveLocationAndRotation()override;
 
-	/** Gather current INS Movement,override default FRepmentRep */
+	/**
+	 * @desc Gathering MovementInfo,add a gather time interval to optimize the projectiles movement
+	 *  since server and clients are simulated the same projectile with same properties,we just need
+	 *  server send movement update to clients for fixing it transformation with a rather low frequency,
+	 *  we do not need to send a update to all clients each server tick
+	 */
 	virtual void GatherCurrentMovement()override;
 
 	/** happens right before replication occurs,override some properties */
@@ -276,6 +277,12 @@ public:
 
 	/** return base damage amount */
 	inline virtual float GetBaseDamage()const { return DamageBase; }
+
+	/**
+	 * @desc set the initial speed this projectile will use to travel
+	 * @Param NewSpeed     The New Speed to set
+	 */
+	virtual void SetMuzzleSpeed(float NewSpeed);
 
 	inline virtual uint8 GetCurrentPenetrateCount()const { return CurrentPenetrateCount; }
 
@@ -307,5 +314,5 @@ public:
 	FORCEINLINE UStaticMeshComponent* GetProjectileMesh()const { return ProjectileMesh; }
 
 	/** return projectile movement comp */
-	FORCEINLINE UProjectileMovementComponent* GetProjectileMovement()const { return ProjectileMoveComp; }
+	FORCEINLINE UProjectileMovementComponent* GetProjectileMovementComp()const { return ProjectileMoveComp; }
 };

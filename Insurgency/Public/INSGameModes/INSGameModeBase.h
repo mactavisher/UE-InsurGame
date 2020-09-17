@@ -149,7 +149,7 @@ protected:
 	virtual void CountDownMatchPrepare();
 public:
 	/**Modify damage according to the game rules*/
-	virtual void ModifyDamage(float& OutDamage, class AController* PlayerInstigator, class AController* Victim,FName BoneName);
+	virtual void ModifyDamage(float& OutDamage, class AController* PlayerInstigator, class AController* Victim,const FDamageEvent& DamageEvent,FName BoneName);
 
 	/**bTeamDamageAllowed setter*/
 	virtual void SetAllowTeamDamage(bool bTeamDamageAllowed) { bAllowTeamDamage = bTeamDamageAllowed; }

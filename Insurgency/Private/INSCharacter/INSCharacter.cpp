@@ -23,6 +23,9 @@
 #ifndef GEngine
 #include "Engine/Engine.h"
 #endif // !GEngine
+#ifndef UWorld
+#include "Engine/World.h"
+#endif // !UWorld
 #ifndef UCapsuleComponent
 #include "Components/CapsuleComponent.h"
 #endif // !UCapsuleComponent
@@ -31,7 +34,8 @@
 DEFINE_LOG_CATEGORY(LogINSCharacter);
 
 // Sets default values
-AINSCharacter::AINSCharacter(const FObjectInitializer&ObjectInitializer) :Super(ObjectInitializer.SetDefaultSubobjectClass<UINSCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
+AINSCharacter::AINSCharacter(const FObjectInitializer&ObjectInitializer) :
+	Super(ObjectInitializer.SetDefaultSubobjectClass<UINSCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
 	PrimaryActorTick.bCanEverTick = true;
 	SetReplicates(true);
@@ -44,6 +48,8 @@ AINSCharacter::AINSCharacter(const FObjectInitializer&ObjectInitializer) :Super(
 	DefaultBaseEyeHeight = 90.f;
 	bIsSuppressed = false;
 	CharacterCurrentStance = ECharacterStance::STAND;
+	FatalFallingSpeed = 2016.f;
+	bEnableFallingDamage = true;
 	NoiseEmmiterComp = ObjectInitializer.CreateDefaultSubobject<UPawnNoiseEmitterComponent>(this, TEXT("NoiseEmmiterComp"));
 	CharacterHealthComp = ObjectInitializer.CreateDefaultSubobject<UINSHealthComponent>(this, TEXT("HealthComp"));
 	if (CharacterHealthComp)
@@ -84,6 +90,21 @@ void AINSCharacter::PreReplication(IRepChangedPropertyTracker & ChangedPropertyT
 	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 }
 
+void AINSCharacter::GatherCurrentMovement()
+{
+	Super::GatherCurrentMovement();
+// 	FRepMovement OptMovementInfo = GetReplicatedMovement();
+// 	OptMovementInfo.LocationQuantizationLevel = EVectorQuantization::RoundTwoDecimals;
+// 	OptMovementInfo.RotationQuantizationLevel = ERotatorQuantization::ByteComponents;
+// 	OptMovementInfo.VelocityQuantizationLevel = EVectorQuantization::RoundOneDecimal;
+// 	SetReplicatedMovement(OptMovementInfo);
+}
+
+void AINSCharacter::OnRep_ReplicatedMovement()
+{
+	Super::OnRep_ReplicatedMovement();
+}
+
 void AINSCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
@@ -98,6 +119,7 @@ void AINSCharacter::ApplyDamageMomentum(float DamageTaken, FDamageEvent const& D
 
 void AINSCharacter::HandleOnTakePointDamage(AActor* DamagedActor, float Damage, AController* InstigatedBy, FVector HitLocation, UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotFromDirection, const UDamageType* DamageType, AActor* DamageCauser)
 {
+
 }
 
 void AINSCharacter::HandleOnTakeAnyDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
@@ -116,11 +138,12 @@ float AINSCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, A
 	if (GetIsCharacterDead())
 	{
 		AINSGameStateBase* GS = GetWorld()->GetGameState<AINSGameStateBase>();
-		if (GS&&LastHitInfo.Damage >0.f)
+		if (GS&&LastHitInfo.Damage > 0.f)
 		{
 			GS->OnPlayerKilled(EventInstigator, GetController(), FMath::CeilToInt(LastHitInfo.Damage), LastHitInfo.bIsTeamDamage);
 		}
-	}else
+	}
+	else
 	{
 		AINSGameStateBase* GS = GetWorld()->GetGameState<AINSGameStateBase>();
 		if (GS&&LastHitInfo.Damage > 0.f)
@@ -145,8 +168,30 @@ void AINSCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 
 void AINSCharacter::Landed(const FHitResult& Hit)
 {
-	Super::Landed(Hit);
-	const float LandVelocity = GetVelocity().Size();
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		Super::Landed(Hit);
+		const float LandVelocity = GetVelocity().Size();
+		float Damage = 0.f;
+		if (bEnableFallingDamage)
+		{
+			if (LandVelocity > 500.f)
+			{
+				Damage = FallingDamageCurve == nullptr ? 15.f : FallingDamageCurve->GetFloatValue(LandVelocity);
+			}
+
+			if (LandVelocity >= FatalFallingSpeed)
+			{
+				Damage = 90.f;
+			}
+			FPointDamageEvent FallingDamageEvent;
+			FallingDamageEvent.Damage = 70.f;
+			FallingDamageEvent.ShotDirection = Hit.ImpactNormal;
+			FallingDamageEvent.HitInfo = Hit;
+			// some sort of suicide
+			ReceiveHit(GetController(), this, FallingDamageEvent, Hit, 70.f);
+		}
+	}
 }
 
 void AINSCharacter::CastBloodDecal(FVector HitLocation, FVector HitDir)
@@ -296,7 +341,7 @@ void AINSCharacter::OnRep_Prone()
 
 void AINSCharacter::OnRep_CurrentWeapon()
 {
-	//SetOwner(GetOwner());
+
 }
 
 FORCEINLINE class UINSCharacterMovementComponent* AINSCharacter::GetINSCharacterMovement()
@@ -317,7 +362,7 @@ void AINSCharacter::ReceiveHit(class AController*const InstigatorPlayer, class A
 			// modify any damage according to game rules and other settings
 			if (GameMode)
 			{
-				GameMode->ModifyDamage(DamageTaken, InstigatorPlayer, this->GetController(), Hit.BoneName);
+				GameMode->ModifyDamage(DamageTaken, InstigatorPlayer, this->GetController(), DamageEvent,Hit.BoneName);
 			}
 			if (PointDamageEventPtr)
 			{
@@ -495,14 +540,19 @@ void AINSCharacter::SpawnWeaponPickup()
 			nullptr,
 			nullptr,
 			ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
+
 		FVector WeaponLocation = CurrentWeapon->GetActorLocation();
-		FTransform PickupSpawnTransform(CurrentWeapon->GetActorRotation(), WeaponLocation + FVector(0.f, 0.f, 50.f), FVector::OneVector);
+		FTransform PickupSpawnTransform(CurrentWeapon->GetActorRotation(), 
+			WeaponLocation + FVector(0.f, 0.f, 50.f), 
+			FVector::OneVector);
+
 		if (WeaponPickup)
 		{
 			WeaponPickup->SetActualWeaponClass(CurrentWeapon->GetClass());
 			WeaponPickup->SetAmmoLeft(CurrentWeapon->AmmoLeft);
 			WeaponPickup->SetCurrentClipAmmo(CurrentWeapon->CurrentClipAmmo);
-			WeaponPickup->SetViualMesh(CurrentWeapon->WeaponMesh1PComp->SkeletalMesh);
+			UClass* const MeshClass = CurrentWeapon->WeaponMesh1PComp->SkeletalMesh->GetClass();
+			WeaponPickup->SetViualMesh(NewObject<USkeletalMesh>(MeshClass));
 			UGameplayStatics::FinishSpawningActor(WeaponPickup, PickupSpawnTransform);
 		}
 	}
@@ -512,7 +562,7 @@ void AINSCharacter::SpawnWeaponPickup()
 void AINSCharacter::SetCurrentWeapon(class AINSWeaponBase* NewWeapon)
 {
 	this->CurrentWeapon = NewWeapon;
-	if(CurrentWeapon)
+	if (CurrentWeapon)
 	{
 		CurrentWeapon->SetOwnerCharacter(this);
 	}

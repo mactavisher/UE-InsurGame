@@ -221,7 +221,7 @@ bool UINSCharacterAimInstance::CheckValid()
 	}
 	if (OwnerPlayerCharacter->GetNetMode() == ENetMode::NM_DedicatedServer)
 	{
-		UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("Owner character runs on Dedicated server,can't play animations"));
+		//UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("Owner character runs on Dedicated server,can't play animations"));
 		return false;
 
 	}

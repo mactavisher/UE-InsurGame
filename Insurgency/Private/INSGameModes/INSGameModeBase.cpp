@@ -9,6 +9,7 @@
 #include "INSHud\INSHUDBase.h"
 #include "Engine\World.h"
 #include "INSCharacter\INSPlayerStateBase.h"
+#include "INSDamageTypes\INSDamageType_Falling.h"
 #include "TimerManager.h"
 #include "..\..\Public\INSGameModes\INSGameModeBase.h"
 
@@ -155,7 +156,7 @@ void AINSGameModeBase::EndMatchPerparing()
 
 }
 
-void AINSGameModeBase::ModifyDamage(float& OutDamage, AController* PlayerInstigator, AController* Victim, FName BoneName)
+void AINSGameModeBase::ModifyDamage(float& OutDamage, class AController* PlayerInstigator, class AController* Victim, const FDamageEvent& DamageEvent, FName BoneName)
 {
 	//modify match state damage first
 	if (GetMatchState() != MatchState::InProgress)
@@ -165,6 +166,7 @@ void AINSGameModeBase::ModifyDamage(float& OutDamage, AController* PlayerInstiga
 	}
 	float originDamage = OutDamage;
 	bool bIsHeadShot = false;
+	bool isDamageCausedByWorld = DamageEvent.DamageTypeClass->IsChildOf(UINSDamageType_Falling::StaticClass());
 	//modify bone damage
 	AINSCharacter* const VictimCharacter = Victim->GetPawn() == nullptr ? nullptr : CastChecked<AINSCharacter>(Victim->GetPawn());
 	if (VictimCharacter)
@@ -181,7 +183,7 @@ void AINSGameModeBase::ModifyDamage(float& OutDamage, AController* PlayerInstiga
 		UE_LOG(LogINSCharacter, Warning, TEXT("character %s hit with bone:%s,damage modifier values is:%f,Modified damage value is %f"), *GetName(), *BoneName.ToString(), BoneDamageModifier, ModifiedDamage);
 	}
 	//modify team damage
-	const bool bIsTeamDamage = GetIsTeamDamage(PlayerInstigator, Victim);
+	const bool bIsTeamDamage = GetIsTeamDamage(PlayerInstigator, Victim)&&!isDamageCausedByWorld;
 	if (bIsTeamDamage)
 	{
 		if (bAllowTeamDamage)

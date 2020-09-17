@@ -12,8 +12,7 @@ AINSItems_Pickup::AINSItems_Pickup(const FObjectInitializer& ObjectInitializer) 
 	InteractionComp = ObjectInitializer.CreateDefaultSubobject<USphereComponent>(this, TEXT("InteractionComp"));
 	InteractionComp->InitSphereRadius(100.f);
 	InteractionComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	InteractionComp->SetCollisionResponseToAllChannels(ECR_Overlap);
-	//InteractionComp->SetCollisionResponseToChannel(ECC_Pawn, ECollisionResponse::ECR_Overlap);
+	InteractionComp->SetCollisionProfileName(TEXT("Pickups"));
 }
 
 void AINSItems_Pickup::HandleOnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)

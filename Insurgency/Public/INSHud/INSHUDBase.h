@@ -208,6 +208,9 @@ public:
 	}
 };
 
+/**
+ * helper struct to track screen drawing score
+ */
 USTRUCT(BlueprintType)
 struct FDrawPlayerScoreInfo
 {
