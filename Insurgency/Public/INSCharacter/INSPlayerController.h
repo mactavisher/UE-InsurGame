@@ -240,7 +240,7 @@ public:
 	UFUNCTION(Server,Unreliable,WithValidation)
 	virtual  void ServerGetGameModeRandomWeapon();
 
-	/** check to see if a give actor is consider as my enemy ,controllers typically*/
+	/** check to see if a given actor is consider as my enemy ,controllers typically*/
 	virtual bool IsEnemyFor(class AActor* Other);
 
 	/** check to see if we see a enemy,will be ticked for owner client */
@@ -250,7 +250,7 @@ public:
 	virtual void OnCharacterDeath();
 
 	virtual AINSPlayerStateBase* GetINSPlayerState();
-	virtual class AINSTeamInfo* GetMyTeamInfo();
+
 
 	virtual void ReceiveOverlapPickupItems(class AActor* PickupItems);
 
@@ -264,7 +264,7 @@ public:
 
 	/**
 	 * @desc add the player score
-	 * @param  Score      the score to add
+	 * @param  Score   the score to add
 	 */
 	virtual void PlayerScore(int32 Score);
 
@@ -293,9 +293,9 @@ public:
 	virtual void OnRep_Pawn()override;
 
 	/**
-	 * returns the player team info
+	 * @desc returns the player team info
 	 */
-	virtual class AINSTeamInfo* GetPlayerTeam()const { return PlayerTeam; }
+	inline virtual class AINSTeamInfo* GetPlayerTeam();
 
 	/**
 	 * @desc set the player's current weapon

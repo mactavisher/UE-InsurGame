@@ -295,15 +295,6 @@ protected:
 
 	virtual bool IsFPPlayingWeaponIdleAnim();
 
-	UFUNCTION()
-	virtual void StopFPPlayingWeaponIdleAnim();
-
-	UFUNCTION()
-	virtual void FPPlayMoveAnimation();
-
-	UFUNCTION()
-	virtual void StopFPPlayMoveAnimation();
-
 	virtual void UpdateDirection();
 
 	virtual void UpdateStandStopMoveAlpha();
@@ -318,6 +309,7 @@ protected:
 
 	//~ begin INSWeaponAnim Interface
 
+	public:
 	/** play animation when firing, additive animations are shared between FP and TP */
 	virtual void PlayFireAnim(bool bHasForeGrip,bool bIsDry)override;
 
@@ -334,6 +326,15 @@ protected:
 	virtual void PlaySprintAnim()override;
 
 	virtual void StopPlaySprintAnim()override;
+
+	UFUNCTION()
+		virtual void StopFPPlayingWeaponIdleAnim();
+
+	UFUNCTION()
+		virtual void FPPlayMoveAnimation();
+
+	UFUNCTION()
+		virtual void StopFPPlayMoveAnimation();
 
 	virtual void OnWeaponAnimDelegateBindingFinished()override;
 

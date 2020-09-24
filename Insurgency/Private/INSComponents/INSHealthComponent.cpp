@@ -63,10 +63,9 @@ void UINSHealthComponent::ReduceHealth(float ReduceAmount, class AActor* DamageC
 
 void UINSHealthComponent::ReGenerateHealth()
 {
-	CurrentHealth += 1;
-	if (CurrentHealth >= MaximunHealth)
+	CurrentHealth = FMath::Clamp<float>(CurrentHealth += 1, CurrentHealth, MaximunHealth);
+	if (CurrentHealth == MaximunHealth)
 	{
-		CurrentHealth = MaximunHealth;
 		GetWorld()->GetTimerManager().ClearTimer(HealthRestoreTimerHandle);
 	}
 }

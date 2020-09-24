@@ -70,7 +70,6 @@ void AINSPlayerCharacter::BeginPlay()
 	}
 	SetupCharacterRenderings();
 	CharacterMesh1P->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	CharacterMesh1P->SetCollisionResponseToAllChannels(ECR_Ignore);
 }
 
 void AINSPlayerCharacter::PostInitializeComponents()
@@ -196,6 +195,10 @@ void AINSPlayerCharacter::OnRep_CurrentWeapon()
 	Super::OnRep_CurrentWeapon();
 	if (CurrentWeapon)
 	{
+		if (GetINSPlayerController())
+		{
+			GetINSPlayerController()->SetCurrentWeapon(CurrentWeapon);
+		}
 		CurrentWeapon->SetupWeaponMeshRenderings();
 		CharacterEquipWeapon();
 	}
@@ -254,8 +257,6 @@ void AINSPlayerCharacter::OnRep_Dead()
 	CharacterMesh3P->SetSimulatePhysics(true);
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
-	CharacterAudioComp->SetVoiceType(EVoiceType::DIE);
-	CharacterAudioComp->PlayVoice();
 	CharacterMesh3P->AddImpulseAtLocation(LastHitInfo.Momentum*0.4f, LastHitInfo.RelHitLocation);
 	if (GetLocalRole() == ROLE_AutonomousProxy||GetLocalRole()==ROLE_Authority)
 	{
@@ -301,20 +302,19 @@ void AINSPlayerCharacter::OnRep_LastHitInfo()
 
 void AINSPlayerCharacter::OnRep_Owner()
 {
-	//role may not need to check here , because controller doesn't exist on simulated clients
-	if (GetLocalRole() == ROLE_AutonomousProxy)
-	{
-		CurrentPlayerController = Cast<AINSPlayerController>(GetOwner());
-	}
+	Super::OnRep_Owner();
+	CurrentPlayerController = Cast<AINSPlayerController>(GetOwner());
 }
 
 void AINSPlayerCharacter::SetOwner(AActor* NewOwner)
 {
 	Super::SetOwner(NewOwner);
-	if (GetLocalRole() == ROLE_Authority)
-	{
-		CurrentPlayerController = Cast<AINSPlayerController>(GetOwner());
-	}
+	OnRep_Owner();
+}
+
+void AINSPlayerCharacter::OnRep_Controller()
+{
+	Super::OnRep_Controller();
 }
 
 void AINSPlayerCharacter::OnRep_CharacterTeam()

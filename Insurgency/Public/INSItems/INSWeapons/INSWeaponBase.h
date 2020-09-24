@@ -55,6 +55,10 @@ struct FWeaponConfigData
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
 		float MuzzleSpeed;
 
+	/** muzzle speed , used to init projectile initial velocity */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+		float ScanTraceRange;
+
 public:
 	FWeaponConfigData()
 		: AmmoPerClip(30)
@@ -64,6 +68,7 @@ public:
 		, ZoomingOutTime(0.1f)
 		, BaseDamage(20.f)
 		, MuzzleSpeed(40000.f)
+		, ScanTraceRange(1000.f)
 	{
 	}
 	void InitWeaponConfig()
@@ -216,7 +221,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWeaponOutIdleSignature);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWeaponStartAimSignature);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWeaponStopAimSignature);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWeaponFinishReloadSignature);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponClipEmptySignature,class AController*,OwnerPlayer);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponClipEmptySignature, class AController*, OwnerPlayer);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWeaponClipAmmoLowSignature);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWeaponAmmoLeftZero);
 
@@ -534,9 +539,19 @@ protected:
 
 
 public:
-	/** returns pawn owner of this weapon,returns null if none */
-	virtual AINSCharacter* GetOwnerCharacter();
 
+	/**
+	 * returns pawn owner of this weapon,returns null if none
+	 * the owner we set will typically be controller,but it's may be an AIController,
+	 * so we provide a template here,return value might be null if class Type not compatible
+	 */
+	template<typename T>
+	T* GetOwnerCharacter() const
+	{
+		return Cast<T>(OwnerCharacter);
+	}
+
+	virtual AINSCharacter* GetOwnerCharacter() { return OwnerCharacter; }
 	/** start reload weapon */
 	virtual void StartReloadWeapon();
 
@@ -614,6 +629,8 @@ public:
 
 	virtual void SetupWeaponMeshRenderings();
 
+	virtual void WeaponGoToIdleState();
+
 	/**
 	 * @desc called before any components get initialized
 	 */
@@ -626,7 +643,7 @@ public:
 
 	/**
 	 * @desc   get ads sight transform
-	 * @params OutTransform calculate and produce the transform    
+	 * @params OutTransform calculate and produce the transform
 	 */
 	virtual void GetADSSightTransform(FTransform& OutTransform);
 
@@ -672,6 +689,10 @@ public:
 	/** return weapon assets ref */
 	FORCEINLINE virtual UINSWeaponAssets* GetWeaponAssets()const { return WeaponAssetsptr; };
 
+	FORCEINLINE virtual class UINSWeaponAnimInstance* GetWeapon1PAnimInstance();
+
+	FORCEINLINE virtual class UINSWeaponAnimInstance* GetWeapon3pAnimINstance();
+
 	/** return whether this weapon equip with a fore grip ,this will affect animation poses and recoil*/
 	inline virtual bool GetIsWeaponHasForeGrip()const { return bForeGripEquipt; }
 
@@ -693,9 +714,13 @@ public:
 
 	inline virtual FVector GetAdjustADSHandsIk()const { return AdjustADSHandsIK; }
 
+	virtual float GetMuzzleSpeedValue()const { return WeaponConfigData.MuzzleSpeed; }
+
 	virtual void SetAdjustADSHandsIk(FVector NewIKPosition) { AdjustADSHandsIK = NewIKPosition; }
 
 	virtual FTransform GetSightsTransform()const;
+
+	virtual bool CheckScanTraceRange();
 
 	UFUNCTION(BlueprintCallable, BlueprintPure)
 		virtual EWeaponState GetCurrentWeaponState()const { return CurrentWeaponState; }

@@ -39,6 +39,7 @@ protected:
 
 	virtual bool CheckValid();
 
+public:
 	//~begin INSWeaponAnim Interface
 	virtual void PlayFireAnim(bool bhasForeGrip,bool bIsDry)override;
 

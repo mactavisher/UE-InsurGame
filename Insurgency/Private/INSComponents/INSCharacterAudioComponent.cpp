@@ -4,25 +4,70 @@
 #include "INSComponents/INSCharacterAudioComponent.h"
 #include "INSAssets/INSCharVoiceAssetData.h"
 #include "Sound/SoundCue.h"
+#include "INSCharacter/INSPlayerCharacter.h"
 
 void UINSCharacterAudioComponent::SetVoiceType(EVoiceType NewVoiceType)
 {
 	CurrentVoiceType = NewVoiceType;
 }
 
-void UINSCharacterAudioComponent::PlayVoice()
+
+void UINSCharacterAudioComponent::OnTakeDamage(const bool bIsTeamDamage)
 {
-	if (!IsPlaying())
+	if (!GetIsOwnerCharacterDead())
 	{
-		SetSound(GetSoundToPlay());
-		Play(0.f);;
+		USoundCue* SelectedSoundToPlay = bIsTeamDamage ? GetSoundToPlay(EVoiceType::TEAMDAMAGE) : GetSoundToPlay(EVoiceType::TAKEDAMAGE);
+		SetSound(SelectedSoundToPlay);
+		Play();
 	}
 }
 
-class USoundCue* UINSCharacterAudioComponent::GetSoundToPlay()
+void UINSCharacterAudioComponent::OnWeaponReload()
+{
+	if (!GetIsOwnerCharacterDead())
+	{
+		USoundCue* SelectedSoundToPlay = GetSoundToPlay(EVoiceType::RELOADING);
+		SetSound(SelectedSoundToPlay);
+		Play();
+	}
+}
+
+void UINSCharacterAudioComponent::OnManDown()
+{
+
+}
+
+void UINSCharacterAudioComponent::OnDeath()
+{
+	USoundCue* SelectedSoundToPlay = GetSoundToPlay(EVoiceType::DIE);
+	Stop();
+	SetSound(SelectedSoundToPlay);
+	Play();
+}
+
+void UINSCharacterAudioComponent::OnLowHeath()
+{
+
+}
+
+void UINSCharacterAudioComponent::SetOwnerCharacter(class AINSCharacter* NewCharacter)
+{
+	OwnerCharacter = NewCharacter;
+}
+
+bool UINSCharacterAudioComponent::GetIsOwnerCharacterDead() const
+{
+	if (GetOwnerCharacter())
+	{
+		return GetOwnerCharacter()->GetIsCharacterDead();
+	}
+	return false;
+}
+
+class USoundCue* UINSCharacterAudioComponent::GetSoundToPlay(const EVoiceType NewVoiceType)
 {
 	USoundCue* SoundToPlay = nullptr;
-	switch (CurrentVoiceType)
+	switch (NewVoiceType)
 	{
 	case EVoiceType::TAKEDAMAGE:SoundToPlay = MaleVoiceData->MaleVoiceData.TakeDamageVoice; break;
 	case EVoiceType::DIE:SoundToPlay = MaleVoiceData->MaleVoiceData.DieVoice; break;

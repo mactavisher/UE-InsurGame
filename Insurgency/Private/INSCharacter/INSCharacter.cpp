@@ -109,6 +109,7 @@ void AINSCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 	CharacterAudioComp->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("Bip01_HeadSocket"));
+	CharacterAudioComp->SetOwnerCharacter(this);
 }
 
 
@@ -233,45 +234,56 @@ void AINSCharacter::OnRep_Dead()
 	GetINSCharacterMovement()->StopMovementImmediately();
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
+	if (GetNetMode() != ENetMode::NM_DedicatedServer&&GetCharacterAudioComp())
+	{
+		GetCharacterAudioComp()->OnDeath();
+	}
 }
 
 void AINSCharacter::OnRep_LastHitInfo()
 {
-	if (LastHitInfo.bIsDirtyData)
+	if (GetNetMode() != ENetMode::NM_DedicatedServer)
 	{
-		UE_LOG(LogINSCharacter, Warning, TEXT("received Characters's:%s Dirty Hit Info!"));
-		return;
-	}
-	UE_LOG(LogINSCharacter, Warning, TEXT("received Characters's:%s Hit Info,start handle take hit logic!"));
-	//spawn blood hit Impact
-	const FVector BloodSpawnLocation = LastHitInfo.RelHitLocation;
-	const float ShotDirPitchDecompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirPitch);
-	const float ShotDirYawDeCompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirYaw);
-	const FRotator BloodSpawenRotation = FRotator(ShotDirPitchDecompressed, ShotDirYawDeCompressed, 0.f);
-	const FTransform BloodSpawnTrans = FTransform(BloodSpawenRotation, BloodSpawnLocation, FVector::OneVector);
-	const int32 BloodParticlesSize = BloodParticles.Num();
-	const int32 randomIndex = FMath::RandHelper(BloodParticlesSize - 1);
-	UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BloodParticles[randomIndex], BloodSpawnTrans);
-	UGameplayStatics::SpawnSoundAtLocation(this, BodyHitSound, LastHitInfo.RelHitLocation);
-	const uint8 RandInt = FMath::RandHelper(10);
-	if (RandInt % 3 == 0)
-	{
-		CastBloodDecal(BloodSpawnLocation, LastHitInfo.Momentum);
-	}
-	if (LastHitInfo.Damage > 0.f && !GetIsCharacterDead())
-	{
-		uint8 RamdonNum = FMath::RandHelper(7);
-		if (RamdonNum % 3 == 0)
+		if (LastHitInfo.bIsDirtyData)
 		{
-			if (LastHitInfo.bIsTeamDamage)
+			UE_LOG(LogINSCharacter, Warning, TEXT("received Characters's:%s Dirty Hit Info!"));
+			return;
+		}
+		UE_LOG(LogINSCharacter, Warning, TEXT("received Characters's:%s Hit Info,start handle take hit logic!"));
+		//spawn blood hit Impact
+		const FVector BloodSpawnLocation = LastHitInfo.RelHitLocation;
+		const float ShotDirPitchDecompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirPitch);
+		const float ShotDirYawDeCompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirYaw);
+		const FRotator BloodSpawenRotation = FRotator(ShotDirPitchDecompressed, ShotDirYawDeCompressed, 0.f);
+		const FTransform BloodSpawnTrans = FTransform(BloodSpawenRotation, BloodSpawnLocation, FVector::OneVector);
+		const int32 BloodParticlesSize = BloodParticles.Num();
+		const int32 randomIndex = FMath::RandHelper(BloodParticlesSize - 1);
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BloodParticles[randomIndex], BloodSpawnTrans);
+		UGameplayStatics::SpawnSoundAtLocation(this, BodyHitSound, LastHitInfo.RelHitLocation);
+		const uint8 RandInt = FMath::RandHelper(10);
+		if (RandInt % 3 == 0)
+		{
+			CastBloodDecal(BloodSpawnLocation, LastHitInfo.Momentum);
+		}
+		if (LastHitInfo.Damage > 0.f && !GetIsCharacterDead())
+		{
+			uint8 RamdonNum = FMath::RandHelper(7);
+			if (RamdonNum % 3 == 0)
 			{
-				CharacterAudioComp->SetVoiceType(EVoiceType::TEAMDAMAGE);
-				CharacterAudioComp->PlayVoice();
-			}
-			else
-			{
-				CharacterAudioComp->SetVoiceType(EVoiceType::TAKEDAMAGE);
-				CharacterAudioComp->PlayVoice();
+				if (LastHitInfo.bIsTeamDamage)
+				{
+					if (GetCharacterAudioComp())
+					{
+						GetCharacterAudioComp()->OnTakeDamage(true);
+					}
+				}
+				else
+				{
+					if (GetCharacterAudioComp())
+					{
+						GetCharacterAudioComp()->OnTakeDamage(false);
+					}
+				}
 			}
 		}
 	}

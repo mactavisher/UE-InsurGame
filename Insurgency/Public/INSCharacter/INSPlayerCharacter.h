@@ -17,7 +17,7 @@ struct  FDefaultPlayerMesh
    GENERATED_USTRUCT_BODY()
 
    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "DefaultMesh1p")
-        USkeletalMesh* Mesh1p;
+       USkeletalMesh* Mesh1p;
 
    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "DefaultMesh1p")
 	   USkeletalMesh* Mesh3p;
@@ -101,9 +101,19 @@ protected:
 
 	virtual void OnRep_LastHitInfo()override;
 
+	/**
+	 * @desc called when owner gets replicated and for controllers , 
+	 *       this will only get called on server or autonomus_proxy clients
+	 */
 	virtual void OnRep_Owner()override;
 
 	virtual void SetOwner(AActor* NewOwner)override;
+
+	/**
+	 * called when player controller gets replicated,this will only be called on Role_Athority or Role_AutonomousProxy
+	 */
+	virtual void OnRep_Controller()override;
+
 	UFUNCTION()
 	virtual void OnRep_CharacterTeam();
 

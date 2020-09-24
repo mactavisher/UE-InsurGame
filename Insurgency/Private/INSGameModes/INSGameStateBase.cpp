@@ -88,12 +88,15 @@ void AINSGameStateBase::OnPlayerKilled(class AController* Killer, class AControl
 
 void AINSGameStateBase::OnPlayerDamaged(class AController* DamageInstigtor, class AController* Victim, float DamageAmount, bool bIsTeamDamage)
 {
-	if (DamageInstigtor->GetClass()->IsChildOf(AINSPlayerController::StaticClass()))
+	if (GetLocalRole() == ROLE_Authority)
 	{
-		AINSPlayerController* const PC = Cast<AINSPlayerController>(DamageInstigtor);
-		if (PC)
+		if (DamageInstigtor->GetClass()->IsChildOf(AINSPlayerController::StaticClass()))
 		{
-			PC->ClientReceiveCauseDamage(Victim, DamageAmount, bIsTeamDamage);
+			AINSPlayerController* const PC = Cast<AINSPlayerController>(DamageInstigtor);
+			if (PC)
+			{
+				PC->ClientReceiveCauseDamage(Victim, DamageAmount, bIsTeamDamage);
+			}
 		}
 	}
 }

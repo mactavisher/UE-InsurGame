@@ -135,6 +135,15 @@ void AINSPlayerController::OnRep_Pawn()
 	Super::OnRep_Pawn();
 }
 
+class AINSTeamInfo* AINSPlayerController::GetPlayerTeam()
+{
+	if (PlayerState)
+	{
+		return GetPlayerState<AINSPlayerStateBase>()->GetPlayerTeam();
+	}
+	return nullptr;
+}
+
 void AINSPlayerController::SetCurrentWeapon(class AINSWeaponBase* NewWeapon)
 {
 	CurrentWeapon = NewWeapon;
@@ -148,9 +157,9 @@ void AINSPlayerController::BindWeaponDelegate()
 {
 	if (CurrentWeapon)
 	{
-		CurrentWeapon->OnAmmoLeftEmpty.AddDynamic(this, &AINSPlayerController::OnWeaponAmmoLeftEmpty);
-		CurrentWeapon->OnClipLow.AddDynamic(this, &AINSPlayerController::OnWeaponClipAmmoLow);
-		CurrentWeapon->OnClipEmpty.AddDynamic(this, &AINSPlayerController::OnWeaponClipEmpty);
+// 		CurrentWeapon->OnAmmoLeftEmpty.AddDynamic(this, &AINSPlayerController::OnWeaponAmmoLeftEmpty);
+// 		CurrentWeapon->OnClipLow.AddDynamic(this, &AINSPlayerController::OnWeaponClipAmmoLow);
+// 		CurrentWeapon->OnClipEmpty.AddDynamic(this, &AINSPlayerController::OnWeaponClipEmpty);
 	}
 }
 
@@ -649,10 +658,12 @@ void AINSPlayerController::OnWeaponClipAmmoLow()
 
 void AINSPlayerController::OnWeaponClipEmpty(class AController* WeaponOwnerPlayer)
 {
-	if(WeaponOwnerPlayer&&WeaponOwnerPlayer==this)
-	if (bAutoReload)
+	if (CurrentWeapon->GetOwner() == this)
 	{
-		ReloadWeapon();
+		if (bAutoReload)
+		{
+			ReloadWeapon();
+		}
 	}
 }
 
@@ -755,18 +766,9 @@ void AINSPlayerController::OnCharacterDeath()
 AINSPlayerStateBase* AINSPlayerController::GetINSPlayerState()
 {
 	//this return value could still be nullptr 
-	return INSPlayerState == nullptr ? Cast<AINSPlayerStateBase>(PlayerState) : INSPlayerState;
+	return INSPlayerState == nullptr ? GetPlayerState<AINSPlayerStateBase>() : INSPlayerState;
 }
 
-AINSTeamInfo*  AINSPlayerController::GetMyTeamInfo()
-{
-	const AINSPlayerStateBase* const MyPlayerState = GetPlayerState<AINSPlayerStateBase>();
-	if (MyPlayerState)
-	{
-		return MyPlayerState->GetPlayerTeam();
-	}
-	return nullptr;
-}
 
 void AINSPlayerController::ReceiveOverlapPickupItems(class AActor* PickupItems)
 {

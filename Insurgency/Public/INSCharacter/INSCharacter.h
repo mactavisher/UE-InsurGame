@@ -130,7 +130,7 @@ public:
 		BoneDamageModifier = BoneMappedDamageModifier.Find(BoneName);
 		if (BoneDamageModifier == nullptr)
 		{
-			return 1.f*(*BoneDamageModifier);
+			return 1.f*BoneDamageRandomSeed;
 		}
 		else
 		{

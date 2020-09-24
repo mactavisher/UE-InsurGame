@@ -151,8 +151,8 @@ protected:
 		uint8  HitCounter;
 
 	/** how much time to wait since last movement info replication happens before next update,controls some sort of frequency and used for optimization*/
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="MovementRepInterval")
-	    float MovementRepInterval;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "MovementRepInterval")
+		float MovementRepInterval;
 
 	/**record last time we replicate this projectile movement  */
 	UPROPERTY(Transient, BlueprintReadOnly, VisibleAnywhere, Category = "MovementRepInterval")
@@ -201,6 +201,18 @@ protected:
 	/** weak ptr type ,player that actually fire this projectile */
 	TWeakObjectPtr<AController> InstigatorPlayer;
 
+	/** force a update to clients */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MovementReplication")
+		uint8 bForceMovementReplication : 1;
+	/** force a update to clients */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MovementReplication")
+		uint8 bIsGatheringMovement : 1;
+
+
+	/** force a update to clients */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MovementReplication")
+		uint8 bUsingScanTrace : 1;
+
 #if WITH_EDITORONLY_DATA
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Projectile|Debug")
 		uint8 bUsingDebugTrace : 1;
@@ -233,8 +245,8 @@ protected:
 	UFUNCTION()
 		virtual void CalAndSpawnPenetrateProjectile(const FHitResult& OriginHitResult, const FVector& OriginVelocity);
 protected:
-	// ~Begin AActor interface
 
+	// ~Begin AActor interface
 	/** event begin play happens */
 	virtual void BeginPlay() override;
 
@@ -261,13 +273,28 @@ protected:
 
 	/**
 	 * @desc override function, to support custom replicated properties
-     * @param OutLiftTimeProps   Replicated Property tracker
+	 * @param OutLiftTimeProps   Replicated Property tracker
 	 */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
+
+
+	virtual void OnRep_ReplicatedMovement()override;
 	// ~End AActor interface
 
-	/** instantiate a client fake projectile for providing visual effect purpose */
+	/**
+	 * instantiate a client fake projectile for providing visual effect purpose
+	 * if use the directly replicated Projectile from server ,it's may get choppy
+	 * since we have modify it's replication frequency,so the solution is when the
+	 * server side projectile Replicated and it's owner is Replicated,instantiate the
+	 * client fake projectile immediately and still simulate it's physic state,and by
+	 * each time we received a update ,just update the fake to match the server one
+	 */
 	virtual void InitClientFakeProjectile();
+
+	/**
+	 * sends a initial replication after replicated
+	 */
+	virtual void SendInitialReplication();
 
 
 public:
@@ -286,7 +313,7 @@ public:
 
 	inline virtual uint8 GetCurrentPenetrateCount()const { return CurrentPenetrateCount; }
 
-	virtual void SetCurrentPenetrateCount(uint8 AddInCount = 1){ CurrentPenetrateCount += AddInCount; }
+	virtual void SetCurrentPenetrateCount(uint8 AddInCount = 1) { CurrentPenetrateCount += AddInCount; }
 
 	/** set owner weapon */
 	virtual void SetOwnerWeapon(class AINSWeaponBase* NewWeaponOwner) { this->OwnerWeapon = NewWeaponOwner; }
@@ -302,6 +329,14 @@ public:
 
 	/** get owner weapon */
 	virtual class AINSWeaponBase* GetOwnerWeapon()const { return OwnerWeapon; }
+
+	virtual class AINSProjectile* GetClientFakeProjectile()const { return ClientFakeProjectile; }
+
+	/**
+	 * Set the fake projectile of the net Authority one,Each client will have one of this fake projectile
+	 * @param NewFakeProjectile  New Fake Projectile to set
+	 */
+	virtual void SetClientFakeProjectile(class AINSProjectile* NewFakeProjectile) { ClientFakeProjectile = NewFakeProjectile; };
 
 	/** get actual damage taken */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "BFProjectile")
