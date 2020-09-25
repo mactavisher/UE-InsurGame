@@ -145,6 +145,22 @@ protected:
 	virtual void AssignPlayerTeam(class AINSPlayerController* NewPlayer);
 	virtual void Tick(float DeltaSeconds)override;
 	virtual void ScorePlayer(class AINSPlayerController* PlayerToScore, int32 Score);
+	/**
+	 * @desc spawns player controller and assign the player team and other attribute if need
+	 * @param InRemoteRole RemoteRole
+	 * @param SpawnLocation Location to Spawn this Controller
+	 * @param SpawnRotation Rotation to spawn this controller
+	 * @params InPlayerControllerClass  Player Controller type to spawn
+	 */
+	virtual APlayerController* SpawnPlayerControllerCommon(ENetRole InRemoteRole, FVector const& SpawnLocation, FRotator const& SpawnRotation, TSubclassOf<APlayerController> InPlayerControllerClass)override;
+
+	/**
+	 * @desc override and find a suitable player start to spawn the player controller
+	 * @param Player
+	 * @param IncomingName
+	 */
+	virtual AActor* FindPlayerStart_Implementation(AController* Player, const FString& IncomingName /* = TEXT("") */)override;
+
 	UFUNCTION()
 	virtual void CountDownMatchPrepare();
 public:

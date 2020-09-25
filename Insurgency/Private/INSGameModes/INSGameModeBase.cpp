@@ -10,6 +10,9 @@
 #include "Engine\World.h"
 #include "INSCharacter\INSPlayerStateBase.h"
 #include "INSDamageTypes\INSDamageType_Falling.h"
+#include "INSPlayerSpawning/INSPlayerStart.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "EngineUtils.h"
 #include "TimerManager.h"
 #include "..\..\Public\INSGameModes\INSGameModeBase.h"
 
@@ -69,17 +72,17 @@ bool AINSGameModeBase::HasMatchStarted() const
 void AINSGameModeBase::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
-	static const FString CTTeamKey = TEXT("CT");
-	static const FString TTeamKey = TEXT("T");
-	const bool RandomBool = FMath::RandBool();
-	class AINSTeamInfo* SelectedTeam = RandomBool ? GetGameState<AINSGameStateBase>()->GetCTTeamInfo() : GetGameState<AINSGameStateBase>()->GetTerroristTeamInfo();
-	class AINSPlayerController* Player = Cast<AINSPlayerController>(NewPlayer);
-	if (Player)
-	{
-		AINSPlayerStateBase* PlayerState = CastChecked<AINSPlayerStateBase>(NewPlayer->PlayerState);
-		SelectedTeam->AddPlayerToThisTeam(Player);
-		Player->SetPlayerTeam(SelectedTeam);
-	}
+// 	static const FString CTTeamKey = TEXT("CT");
+// 	static const FString TTeamKey = TEXT("T");
+// 	const bool RandomBool = FMath::RandBool();
+// 	class AINSTeamInfo* SelectedTeam = RandomBool ? GetGameState<AINSGameStateBase>()->GetCTTeamInfo() : GetGameState<AINSGameStateBase>()->GetTerroristTeamInfo();
+// 	class AINSPlayerController* Player = Cast<AINSPlayerController>(NewPlayer);
+// 	if (Player)
+// 	{
+// 		AINSPlayerStateBase* PlayerState = CastChecked<AINSPlayerStateBase>(NewPlayer->PlayerState);
+// 		SelectedTeam->AddPlayerToThisTeam(Player);
+// 		Player->SetPlayerTeam(SelectedTeam);
+// 	}
 	UE_LOG(LogINSGameMode, Log, TEXT("Player %s Has Called postLogin"), *NewPlayer->GetName());
 }
 
@@ -263,6 +266,110 @@ void AINSGameModeBase::Tick(float DeltaSeconds)
 void AINSGameModeBase::ScorePlayer(class AINSPlayerController* PlayerToScore, int32 Score)
 {
 }
+
+APlayerController* AINSGameModeBase::SpawnPlayerControllerCommon(ENetRole InRemoteRole, FVector const& SpawnLocation, FRotator const& SpawnRotation, TSubclassOf<APlayerController> InPlayerControllerClass)
+{
+	APlayerController* SpawnedPlayerController = Super::SpawnPlayerControllerCommon(InRemoteRole, SpawnLocation, SpawnRotation, InPlayerControllerClass);
+	if (InPlayerControllerClass->IsChildOf(AINSPlayerController::StaticClass()))
+	{
+		AINSPlayerController* PlayerController = Cast<AINSPlayerController>(SpawnedPlayerController);
+		static const FString CTTeamKey = TEXT("CT");
+		static const FString TTeamKey = TEXT("T");
+		const bool RandomBool = FMath::RandBool();
+		class AINSTeamInfo* SelectedTeam = RandomBool ? GetGameState<AINSGameStateBase>()->GetCTTeamInfo() : GetGameState<AINSGameStateBase>()->GetTerroristTeamInfo();
+		if (PlayerController)
+		{
+			AINSPlayerStateBase* PlayerState = CastChecked<AINSPlayerStateBase>(PlayerController->PlayerState);
+			SelectedTeam->AddPlayerToThisTeam(PlayerController);
+			PlayerController->SetPlayerTeam(SelectedTeam);
+		}
+	}
+	return SpawnedPlayerController;
+}
+
+AActor* AINSGameModeBase::FindPlayerStart_Implementation(AController* Player, const FString& IncomingName /* = TEXT("") */)
+{
+	if (Player == nullptr)
+	{
+		return Super::FindPlayerStart_Implementation(Player, IncomingName);
+	}
+
+	UWorld* World = GetWorld();
+	const UClass* const PlayerClass = Player->GetClass();
+	AINSPlayerController* MyPlayeController = Cast<AINSPlayerController>(Player);
+	if (MyPlayeController)
+	{
+		AINSTeamInfo* MyPlayerTeam = MyPlayeController->GetPlayerTeam();
+		TArray<APlayerStart*> CTPlayerStarts;
+		TArray<APlayerStart*> TPlayerStarts;
+		for (TActorIterator<APlayerStart> It(World); It; ++It)
+		{
+			APlayerStart* Start = *It;
+			if (Start)
+			{
+				if (Start->PlayerStartTag == FName(TEXT("CT")))
+				{
+					CTPlayerStarts.AddUnique(Start);
+				}
+				else if (Start->PlayerStartTag == FName(TEXT("T")))
+				{
+					TPlayerStarts.AddUnique(Start);
+				}
+			}
+		}
+		const FName SelectePlayerTag = MyPlayerTeam->GetTeamType() == ETeamType::T ? FName(TEXT("T")) : FName(TEXT("CT"));
+		TArray<APlayerStart*> SeletedStarts = MyPlayerTeam->GetTeamType() == ETeamType::T ? TPlayerStarts : CTPlayerStarts;
+		TArray<APlayerStart*> SafePlayerStarts;
+		const TArray<TEnumAsByte <EObjectTypeQuery>> ObjectTypeQueries;
+	    TArray<AActor*> ActorsToIgnore;
+		TArray<AActor*> FoundPlayers;
+		if (SeletedStarts.Num() > 0)
+		{
+			for (int i = 0; i < SeletedStarts.Num(); i++)
+			{
+				APlayerStart* CurrentPlayerStart = SeletedStarts[i];
+				UKismetSystemLibrary::SphereOverlapActors(GetWorld(),
+					CurrentPlayerStart->GetActorLocation(),
+					1000.f, ObjectTypeQueries,
+					AINSPlayerController::StaticClass(),
+					ActorsToIgnore,
+					FoundPlayers);
+				if (FoundPlayers.Num() == 0)
+				{
+					SafePlayerStarts.AddUnique(CurrentPlayerStart);
+				}
+				else if (FoundPlayers.Num() > 0)
+				{
+					bool bContainsEnemy = false;
+					for (int j = 0; j < FoundPlayers.Num(); j++)
+					{
+						AINSPlayerController* const ThatPlayer = Cast<AINSPlayerController>(FoundPlayers[i]);
+						const AINSTeamInfo* const ThatPlayerTeam = ThatPlayer->GetPlayerTeam();
+						if (MyPlayerTeam->GetTeamType() != ThatPlayerTeam->GetTeamType())
+						{
+							bContainsEnemy = true;
+						}
+					}
+					if (!bContainsEnemy)
+					{
+						SafePlayerStarts.AddUnique(CurrentPlayerStart);
+					}
+				}
+			}
+			if (SafePlayerStarts.Num() > 0)
+			{
+				const int32 Random = FMath::RandHelper(SafePlayerStarts.Num() - 1);
+				return SafePlayerStarts[Random];
+			}
+			else
+			{
+				return Super::FindPlayerStart_Implementation(Player,IncomingName);
+			}
+		}
+	}
+	return Super::FindPlayerStart_Implementation(Player, IncomingName);
+}
+
 
 void AINSGameModeBase::CountDownMatchPrepare()
 {
