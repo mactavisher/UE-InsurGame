@@ -350,7 +350,7 @@ AActor* AINSGameModeBase::FindPlayerStart_Implementation(AController* Player, co
 				APlayerStart* CurrentPlayerStart = SeletedStarts[i];
 				UKismetSystemLibrary::SphereOverlapActors(GetWorld()
 					,CurrentPlayerStart->GetActorLocation()
-					, 1000.f
+					, 2000.f
 					, ObjectTypeQueries
 					, AINSPlayerController::StaticClass()
 					, ActorsToIgnore

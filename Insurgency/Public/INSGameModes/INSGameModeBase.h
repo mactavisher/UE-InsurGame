@@ -163,12 +163,28 @@ protected:
 	UFUNCTION()
 	virtual void CountDownMatchPrepare();
 public:
-	/**Modify damage according to the game rules*/
+	
+	/**
+	 * Modify damage according to the game rules
+	 * @ param OutDamage out produced damage after damage is modified
+	 * @ param PlayerInstigator Player Who actually instigate the damage
+	 * @ param Victim The victim player
+	 * @ param Damage event associate with this damage
+	 * @ param BoneName The bone that hit with this damage
+	 */
 	virtual void ModifyDamage(float& OutDamage, class AController* PlayerInstigator, class AController* Victim,const FDamageEvent& DamageEvent,FName BoneName);
 
 	/**bTeamDamageAllowed setter*/
 	virtual void SetAllowTeamDamage(bool bTeamDamageAllowed) { bAllowTeamDamage = bTeamDamageAllowed; }
 
+	/**
+	 * confirms a player kill
+	 * @ param OutDamage out produced damage after damage is modified
+	 * @ param Killer Player Who make that kill
+	 * @ param Victim The victim player
+	 * @ param KillerScore  score
+	 * @ param bIsTeamDamage is this kill is team mate kill
+	 */
 	/**confirms a player kill*/
 	virtual void ConfirmKill(class AController* Killer, class AController* Victim,int32 KillerScore,bool bIsTeamDamage);
 
