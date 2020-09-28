@@ -40,10 +40,7 @@ protected:
 		uint8 bIsSprinting : 1;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|State")
-		uint8 bCanSprint : 1;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|State")
-		uint8 bCanCrouch : 1;
+		uint8 bSprintPressed : 1;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|State")
 		uint8 bIsArmed : 1;
@@ -94,10 +91,16 @@ protected:
 		UBlendSpace* ProneMoveBlendSpace;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Blendspace")
-		uint8 CanEnterSprint : 1;
+		uint8 bCanEnterSprint : 1;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Blendspace")
+		uint8 bCanEnterJogFromSprint : 1;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Blendspace")
 		uint8 CanStopSprint : 1;
+
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="State")
+	uint8 bCanEnterJog:1;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BlendSpace")
 		float Yaw;
@@ -112,6 +115,10 @@ protected:
 	/** how much to apply additive base on ads time alpha value */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BlendSpace")
 		float JogPlayRate;
+
+	/** how much to apply additive base on ads time alpha value */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BlendSpace")
+		float JogSpeed;
 
 	/** how much to apply additive base on ads time alpha value */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BlendSpace")
@@ -134,6 +141,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Blend")
 		float VerticalSpeed;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Blend")
+	    float SprintPlaySpeed;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControl")
 		FVector WeaponIKRootOffSetEffector;
@@ -236,10 +246,6 @@ public:
 
 	virtual void SetIsSprinting(bool bIsSprintingNow) { this->bIsSprinting = bIsSprintingNow; }
 
-	virtual void SetCanSprint(bool bCanSprintNow) { this->bCanSprint = bCanSprintNow; }
-
-	virtual void SetCanCrouch(bool bCanCrouchNow) { this->bCanCrouch = bCanCrouchNow; }
-
 	virtual void SetIsCrouching(bool bIsCrouchingNow) { this->bIsCrouching = bIsCrouchingNow; }
 
 	virtual void SetIsArmed(bool NewAremdState) { this->bIsArmed = NewAremdState; }
@@ -257,6 +263,12 @@ public:
 	virtual void UpdateSprintToWalkAlpha();
 
 	virtual void UpdateTurnConditions();
+
+	virtual void UpdateJogSpeed();
+
+	virtual void UpdateCanEnterSprint();
+
+	virtual void UpdateEnterJogState();
 
 	virtual void UpdateADSAlpha(float DeltaTimeSeconds);
 
@@ -303,6 +315,12 @@ protected:
 
 	virtual void UpdateHandsIk();
 
+	virtual void UpdateSprintPlaySpeed();
+
+	virtual void UpdateIsMoving();
+
+	virtual void UpdateCanEnterJogFromSprint();
+
 	virtual void UpdatePredictFallingToLandAlpha();
 
 	virtual void UpdateWeaponIkSwayRotation(float deltaSeconds);
@@ -342,6 +360,8 @@ protected:
 	virtual void FPPlayWeaponIdleAnim();
 
 	virtual void PlayWeaponIdleAnim()override;
+
+	virtual void SetSprintPressed(bool NewSprintPress) { bSprintPressed = NewSprintPress; }
 
 	//~ end INSWeaponAnim Interface
 

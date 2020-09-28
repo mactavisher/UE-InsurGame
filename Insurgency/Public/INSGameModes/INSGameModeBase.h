@@ -12,7 +12,6 @@ class AINSTeamInfo;
 /**
  *
  */
-
 INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogINSGameMode, Log, All);
 UCLASS()
 class INSURGENCY_API AINSGameModeBase : public AGameMode
@@ -146,11 +145,11 @@ protected:
 	virtual void Tick(float DeltaSeconds)override;
 	virtual void ScorePlayer(class AINSPlayerController* PlayerToScore, int32 Score);
 	/**
-	 * @desc spawns player controller and assign the player team and other attribute if need
+	 * @desc  Override spawns player controller and assign the player team and other attribute if need
 	 * @param InRemoteRole RemoteRole
 	 * @param SpawnLocation Location to Spawn this Controller
 	 * @param SpawnRotation Rotation to spawn this controller
-	 * @params InPlayerControllerClass  Player Controller type to spawn
+	 * @param InPlayerControllerClass  Player Controller type to spawn
 	 */
 	virtual APlayerController* SpawnPlayerControllerCommon(ENetRole InRemoteRole, FVector const& SpawnLocation, FRotator const& SpawnRotation, TSubclassOf<APlayerController> InPlayerControllerClass)override;
 

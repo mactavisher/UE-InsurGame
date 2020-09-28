@@ -274,6 +274,8 @@ void AINSPlayerCharacter::OnRep_IsCrouched()
 void AINSPlayerCharacter::OnRep_Sprint()
 {
 	Super::OnRep_Sprint();
+	Get1PAnimInstance()->SetSprintPressed(bIsSprint);
+	Get3PAnimInstance()->SetSprintPressed(bIsSprint);
 }
 
 void AINSPlayerCharacter::OnRep_PlayerState()

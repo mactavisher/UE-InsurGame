@@ -12,6 +12,7 @@ UINSCharacterMovementComponent::UINSCharacterMovementComponent(const FObjectInit
 	CrouchSpeedModifier = 0.8f;
 	ProneSpeedModifier = 0.1f;
 	AimSpeedModifier = 0.3f;
+	MaxAcceleration = 500.f;
 }
 
 void UINSCharacterMovementComponent::StartCrouch()

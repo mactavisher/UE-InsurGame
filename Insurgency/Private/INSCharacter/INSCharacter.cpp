@@ -505,10 +505,12 @@ void AINSCharacter::HandleCrouchRequest()
 	if (bIsCrouched)
 	{
 		UnCrouch(true);
+		bIsCrouched = false;
 	}
-	else
+	else if(!bIsCrouched&&CanCrouch())
 	{
 		Crouch(true);
+		bIsCrouched = true;
 	}
 }
 

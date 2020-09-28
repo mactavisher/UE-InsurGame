@@ -18,7 +18,7 @@ UINSCharacterAimInstance::UINSCharacterAimInstance(const FObjectInitializer& Obj
 	bWeaponAnimDelegateBindingFinished = false;
 	bIsAiming = false;
 	StandStopMoveAlpha = 0.f;
-	CanEnterSprint = false;
+	bCanEnterSprint = false;
 	CanStopSprint = true;
 	Pitch = 0.f;
 	Yaw = 0.5f;
@@ -36,6 +36,7 @@ UINSCharacterAimInstance::UINSCharacterAimInstance(const FObjectInitializer& Obj
 	bStartJump = false;
 	bIsCrouching = false;
 	WalkToStopAlpha = 1.f;
+	StandStopMoveAlpha = 1.f;
 	SprintToWalkAlpha = 1.0f;
 	ADSAlpha = 0.f;
 	WeaponIKSwayRotationAlpha = 0.f;
@@ -48,7 +49,11 @@ UINSCharacterAimInstance::UINSCharacterAimInstance(const FObjectInitializer& Obj
 	MaxWeaponSwayYaw = MaxWeaponSwayPitch;
 	WeaponSwayRecoverySpeed = 40.f;
 	WeaponSwayScale = 10.f;
+	bCanEnterJog = false;
 	TPShouldTurnLeft90 = false;
+	bSprintPressed = false;
+	bCanEnterSprint = false;
+	bCanEnterJogFromSprint = false;
 	CurrentStance = ECharacterStance::STAND;
 #if WITH_EDITORONLY_DATA
 	bShowDebugTrace = true;
@@ -84,7 +89,7 @@ void UINSCharacterAimInstance::UpdateTurnConditions()
 	if (GetOwningComponent() && CurrentViewMode == EViewMode::TPS)
 	{
 		const float DeltaYaw = OwnerPlayerCharacter->GetControlRotation().Yaw - GetOwningComponent()->GetForwardVector().Rotation().Yaw;
-		//UE_LOG(LogINSCharacterAimInstance, Log, TEXT("DeltaYaw value with mesh and controll:%f"), DeltaYaw);
+		//UE_LOG(LogINSCharacterAimInstance, Log, TEXT("DeltaYaw value with mesh and control:%f"), DeltaYaw);
 		if (DeltaYaw <= -80.f)
 		{
 			TPShouldTurnLeft90 = true;
@@ -98,6 +103,38 @@ void UINSCharacterAimInstance::UpdateTurnConditions()
 			TPShouldTurnLeft90 = false;
 			TPShouldTurnRight90 = false;
 		}
+	}
+}
+
+void UINSCharacterAimInstance::UpdateJogSpeed()
+{
+	const float CurrentSpeedValue = CharacterMovementComponent->GetLastUpdateVelocity().Size2D();
+	const float MaxSpeed = CharacterMovementComponent->MaxWalkSpeed;
+	JogSpeed = CurrentSpeedValue / MaxSpeed;
+}
+
+void UINSCharacterAimInstance::UpdateCanEnterSprint()
+{
+ bCanEnterSprint = bSprintPressed && CharacterMovementComponent->GetLastUpdateVelocity().Size2D()>0.f;
+}
+
+void UINSCharacterAimInstance::UpdateEnterJogState()
+{
+	if (bIsMoving)
+	{
+		float CurrentSpeedVar = CharacterMovementComponent->GetLastUpdateVelocity().Size2D();
+		if (CurrentSpeedVar > 10.f)
+		{
+			bCanEnterJog = true;
+		}
+		else
+		{
+			bCanEnterJog = false;
+		}
+	}
+	else
+	{
+		bCanEnterJog = false;
 	}
 }
 
@@ -174,6 +211,12 @@ void UINSCharacterAimInstance::NativeUpdateAnimation(float DeltaSeconds)
 		UpdateWeaponIkSwayRotation(DeltaSeconds);
 		UpdateStandStopMoveAlpha();
 		UpdateTurnConditions();
+		UpdateIsMoving();
+		UpdateJogSpeed();
+		UpdateEnterJogState();
+		UpdateCanEnterSprint();
+		UpdateCanEnterJogFromSprint();
+		UpdateSprintPlaySpeed();
 		if (!OwnerPlayerController)
 		{
 			OwnerPlayerController = Cast<AINSPlayerController>(OwnerPlayerCharacter->GetController());
@@ -328,7 +371,7 @@ void UINSCharacterAimInstance::UpdateStandStopMoveAlpha()
 	{
 		float CharacterCurrentSpeed = CharacterMovementComponent->GetLastUpdateVelocity().Size2D();
 		float CharacterMaxMoveSpeed = CharacterMovementComponent->MaxWalkSpeed;
-		WalkToStopAlpha = CharacterCurrentSpeed / CharacterMaxMoveSpeed;
+		StandStopMoveAlpha =FMath::Abs(1.f- CharacterCurrentSpeed / CharacterMaxMoveSpeed) ;
 	}
 }
 
@@ -359,6 +402,28 @@ void UINSCharacterAimInstance::UpdateHandsIk()
 		const FVector BaseHandsIkPostion = CurrentWeaponRef->GetBaseHandsIk();
 		const FVector
 	}*/
+}
+
+void UINSCharacterAimInstance::UpdateSprintPlaySpeed()
+{
+	SprintPlaySpeed = CharacterMovementComponent->GetLastUpdateVelocity().Size2D() / CharacterMovementComponent->MaxWalkSpeed;
+}
+
+void UINSCharacterAimInstance::UpdateIsMoving()
+{
+	if (CharacterMovementComponent)
+	{
+		bIsMoving = CharacterMovementComponent->GetLastUpdateVelocity().Size2D() > 0.f;
+	}
+	else
+	{
+		bIsMoving = false;
+	}
+}
+
+void UINSCharacterAimInstance::UpdateCanEnterJogFromSprint()
+{
+	bCanEnterJogFromSprint = !bSprintPressed;
 }
 
 void UINSCharacterAimInstance::UpdatePredictFallingToLandAlpha()

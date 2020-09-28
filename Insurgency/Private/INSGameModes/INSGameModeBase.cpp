@@ -125,7 +125,7 @@ void AINSGameModeBase::SpawnTerrorisTeam()
 	{
 		FActorSpawnParameters SpawnInfo;
 		SpawnInfo.Instigator = GetInstigator();
-		SpawnInfo.ObjectFlags |= RF_Transient;	// We never want to save game states or network managers into a map	
+		SpawnInfo.ObjectFlags |= RF_Transient;	// We never want to TeamInfo into a map	
 		TerroristTeam = GetWorld()->SpawnActor<AINSTeamInfo>(TeamInfoClass);
 		TerroristTeam->SetTeamType(ETeamType::T);
 		static const FString TeamKey = TEXT("T");
@@ -140,7 +140,7 @@ void AINSGameModeBase::SpawnCounterTerroristTeam()
 	{
 		FActorSpawnParameters SpawnInfo;
 		SpawnInfo.Instigator = GetInstigator();
-		SpawnInfo.ObjectFlags |= RF_Transient;	// We never want to save game states or network managers into a map	
+		SpawnInfo.ObjectFlags |= RF_Transient;	// We never want to save TeamInfo into a map	
 		CTTeam = GetWorld()->SpawnActor<AINSTeamInfo>(TeamInfoClass);
 		CTTeam->SetTeamType(ETeamType::CT);
 		static const FString TeamKey = TEXT("CT");
@@ -242,7 +242,33 @@ UClass* AINSGameModeBase::GetRandomGameModeWeaponClass() const
 
 void AINSGameModeBase::AssignPlayerTeam(class AINSPlayerController* NewPlayer)
 {
-
+	TArray<AINSPlayerController*> CTTeamPlayers = CTTeam->TeamMembers;
+	TArray<AINSPlayerController*> TTeamPlayers = TerroristTeam->TeamMembers;
+	const uint8 CTTeamPlayerNum = CTTeamPlayers.Num();
+	const uint8 TTeamPlayerNum = TTeamPlayers.Num();
+	static const FString CTTeamKey = TEXT("CT");
+	static const FString TTeamKey = TEXT("T");
+	//balance Player team
+	AINSTeamInfo* SelectedTeam=nullptr;
+	if (CTTeamPlayerNum == TTeamPlayerNum)
+	{
+		const bool RandomBool = FMath::RandBool();
+		SelectedTeam = RandomBool ? GetGameState<AINSGameStateBase>()->GetCTTeamInfo() : GetGameState<AINSGameStateBase>()->GetTerroristTeamInfo();
+	}
+	else if (CTTeamPlayerNum > TTeamPlayerNum)
+	{
+		SelectedTeam = GetGameState<AINSGameStateBase>()->GetTerroristTeamInfo();
+	}
+	else if (CTTeamPlayerNum < TTeamPlayerNum)
+	{
+		SelectedTeam = GetGameState<AINSGameStateBase>()->GetCTTeamInfo();
+	}
+	if (SelectedTeam&&NewPlayer)
+	{
+		AINSPlayerStateBase* PlayerState = CastChecked<AINSPlayerStateBase>(NewPlayer->PlayerState);
+		SelectedTeam->AddPlayerToThisTeam(NewPlayer);
+		NewPlayer->SetPlayerTeam(SelectedTeam);
+	}
 }
 
 void AINSGameModeBase::Tick(float DeltaSeconds)
@@ -273,16 +299,7 @@ APlayerController* AINSGameModeBase::SpawnPlayerControllerCommon(ENetRole InRemo
 	if (InPlayerControllerClass->IsChildOf(AINSPlayerController::StaticClass()))
 	{
 		AINSPlayerController* PlayerController = Cast<AINSPlayerController>(SpawnedPlayerController);
-		static const FString CTTeamKey = TEXT("CT");
-		static const FString TTeamKey = TEXT("T");
-		const bool RandomBool = FMath::RandBool();
-		class AINSTeamInfo* SelectedTeam = RandomBool ? GetGameState<AINSGameStateBase>()->GetCTTeamInfo() : GetGameState<AINSGameStateBase>()->GetTerroristTeamInfo();
-		if (PlayerController)
-		{
-			AINSPlayerStateBase* PlayerState = CastChecked<AINSPlayerStateBase>(PlayerController->PlayerState);
-			SelectedTeam->AddPlayerToThisTeam(PlayerController);
-			PlayerController->SetPlayerTeam(SelectedTeam);
-		}
+		AssignPlayerTeam(PlayerController);
 	}
 	return SpawnedPlayerController;
 }
@@ -291,10 +308,11 @@ AActor* AINSGameModeBase::FindPlayerStart_Implementation(AController* Player, co
 {
 	if (Player == nullptr)
 	{
+		UE_LOG(LogINSGameMode, Warning, TEXT("Trying to find a player start spot for null player,abort custom logic!"));
 		return Super::FindPlayerStart_Implementation(Player, IncomingName);
 	}
 
-	UWorld* World = GetWorld();
+	UWorld* const World = GetWorld();
 	const UClass* const PlayerClass = Player->GetClass();
 	AINSPlayerController* MyPlayeController = Cast<AINSPlayerController>(Player);
 	if (MyPlayeController)
@@ -302,6 +320,8 @@ AActor* AINSGameModeBase::FindPlayerStart_Implementation(AController* Player, co
 		AINSTeamInfo* MyPlayerTeam = MyPlayeController->GetPlayerTeam();
 		TArray<APlayerStart*> CTPlayerStarts;
 		TArray<APlayerStart*> TPlayerStarts;
+		//Iterate the all player start spots that placed in map in advance,
+		//Match their tags,And categorize them
 		for (TActorIterator<APlayerStart> It(World); It; ++It)
 		{
 			APlayerStart* Start = *It;
@@ -318,7 +338,7 @@ AActor* AINSGameModeBase::FindPlayerStart_Implementation(AController* Player, co
 			}
 		}
 		const FName SelectePlayerTag = MyPlayerTeam->GetTeamType() == ETeamType::T ? FName(TEXT("T")) : FName(TEXT("CT"));
-		TArray<APlayerStart*> SeletedStarts = MyPlayerTeam->GetTeamType() == ETeamType::T ? TPlayerStarts : CTPlayerStarts;
+		const TArray<APlayerStart*> SeletedStarts = MyPlayerTeam->GetTeamType() == ETeamType::T ? TPlayerStarts : CTPlayerStarts;
 		TArray<APlayerStart*> SafePlayerStarts;
 		const TArray<TEnumAsByte <EObjectTypeQuery>> ObjectTypeQueries;
 		TArray<AActor*> ActorsToIgnore;
@@ -328,12 +348,13 @@ AActor* AINSGameModeBase::FindPlayerStart_Implementation(AController* Player, co
 			for (int i = 0; i < SeletedStarts.Num(); i++)
 			{
 				APlayerStart* CurrentPlayerStart = SeletedStarts[i];
-				UKismetSystemLibrary::SphereOverlapActors(GetWorld(),
-					CurrentPlayerStart->GetActorLocation(),
-					1000.f, ObjectTypeQueries,
-					AINSPlayerController::StaticClass(),
-					ActorsToIgnore,
-					FoundPlayers);
+				UKismetSystemLibrary::SphereOverlapActors(GetWorld()
+					,CurrentPlayerStart->GetActorLocation()
+					, 1000.f
+					, ObjectTypeQueries
+					, AINSPlayerController::StaticClass()
+					, ActorsToIgnore
+					, FoundPlayers);
 				if (FoundPlayers.Num() == 0)
 				{
 					SafePlayerStarts.AddUnique(CurrentPlayerStart);
