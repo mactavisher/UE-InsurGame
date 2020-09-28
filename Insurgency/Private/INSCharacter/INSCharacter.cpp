@@ -20,6 +20,7 @@
 #include "Net/RepLayout.h"
 #include "INSCharacter\INSCharacter.h"
 #include "INSGameModes/INSGameStateBase.h"
+#include "Components/PawnNoiseEmitterComponent.h"
 #ifndef GEngine
 #include "Engine/Engine.h"
 #endif // !GEngine

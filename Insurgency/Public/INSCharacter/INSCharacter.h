@@ -19,6 +19,7 @@ class UINSCharacterMovementComponent;
 class UINSHealthComponent;
 class UINSCharacterAudioComponent;
 class AINSPickup_Weapon;
+class UPawnNoiseEmitterComponent;
 
 INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogINSCharacter, Log, All);
 

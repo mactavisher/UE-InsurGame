@@ -139,7 +139,7 @@ protected:
 	virtual void PreInitializeComponents()override;
 	virtual void SpawnTerrorisTeam();
 	virtual void SpawnCounterTerroristTeam();
-	virtual void PlayerScore(AINSPlayerController* ScoringPlayer);
+	virtual void PlayerScore(class AINSPlayerController* ScoringPlayer);
 	virtual void EndMatchPerparing();
 	virtual void AssignPlayerTeam(class AINSPlayerController* NewPlayer);
 	virtual void Tick(float DeltaSeconds)override;
@@ -188,7 +188,6 @@ public:
 	/**confirms a player kill*/
 	virtual void ConfirmKill(class AController* Killer, class AController* Victim,int32 KillerScore,bool bIsTeamDamage);
 
-	/**bTeamDamageAllowed getter*/
 	inline virtual bool GetAllowTeamDamage()const { return bAllowTeamDamage; }
 
 	/**TeamDamageModifier getter*/
