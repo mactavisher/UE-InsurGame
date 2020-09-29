@@ -112,8 +112,8 @@ enum class EWeaponBasePoseType :uint8
 
 UENUM(BlueprintType)
 enum class ETeamType :uint8 {
-	T           UMETA(DisplayName = "terrorist"),
-	CT          UMETA(DisplayName = "counter terrorist"),
+	REBEL           UMETA(DisplayName = "terrorist"),
+	ALLIE          UMETA(DisplayName = "counter terrorist"),
 	CORP        UMETA(DisplayName = "coorperation"),
 	NONE        UMETA(DisplayName = "None"),
 };
@@ -147,3 +147,9 @@ enum class EWeaponAttachmentType :uint8
 	LEFTRAIL                          UMETA(DisplayName = "LeftRail"),
 	RIGHTRAIL                         UMETA(DisplayName = "RightRail"),
 };
+
+namespace TeamName
+{
+	const FName Rebel(TEXT("Rebel"));	                    // Rebel team name
+	const FName Allie(TEXT("Allie"));		                // Allie Team name
+}

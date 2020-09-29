@@ -368,12 +368,12 @@ void AINSPlayerCharacter::UpdateCrouchEyeHeightSmoothly()
 
 void AINSPlayerCharacter::SetupPlayerMesh()
 {
-	if (CharacterTeam&&CharacterTeam->GetTeamType() == ETeamType::CT)
+	if (CharacterTeam&&CharacterTeam->GetTeamType() == ETeamType::ALLIE)
 	{
 		CharacterMesh1P->SetSkeletalMesh(CTDefaultMesh.Mesh1p);
 		CharacterMesh3P->SetSkeletalMesh(CTDefaultMesh.Mesh3p);
 	}
-	if (CharacterTeam&&CharacterTeam->GetTeamType() == ETeamType::T)
+	if (CharacterTeam&&CharacterTeam->GetTeamType() == ETeamType::REBEL)
 	{
 		CharacterMesh1P->SetSkeletalMesh(TerroristDefaultMesh.Mesh1p);
 		CharacterMesh3P->SetSkeletalMesh(TerroristDefaultMesh.Mesh3p);

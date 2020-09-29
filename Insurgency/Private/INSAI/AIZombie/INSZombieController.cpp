@@ -41,13 +41,13 @@ void AINSZombieController::BroadCastEnemyTo()
 
 	for (TActorIterator<AINSZombieController> It(CurrentWorld); It; ++It)
 	{
-		AINSZombieController* ZombieController = *It;
+		const AINSZombieController* const ZombieController = *It;
 		if (ZombieController)
 		{
 			AController* ThatZombieTarget = ZombieController->GetMyTargetEnemy();
 			if (ThatZombieTarget == nullptr)
 			{
-				SetTargetEnemy(GetMyTargetEnemy());
+				TrySetTargetEnemy(GetMyTargetEnemy());
 			}
 			else if (ThatZombieTarget == GetMyTargetEnemy())
 			{
@@ -67,7 +67,7 @@ void AINSZombieController::ReceiveBroadCastedEnemy(class AAIController* Instigat
 
 }
 
-bool AINSZombieController::SetTargetEnemy(class AController* NewEnemyTarget)
+bool AINSZombieController::TrySetTargetEnemy(class AController* NewEnemyTarget)
 {
 	const int32 RandomNum = FMath::RandHelper(10);
 	if (RandomNum % 3 == 0)

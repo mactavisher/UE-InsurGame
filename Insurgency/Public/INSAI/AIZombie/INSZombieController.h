@@ -60,17 +60,17 @@ protected:
 	inline virtual AController* GetMyTargetEnemy()const { return CurrentTargetEnemy; }
 
 	/**
-	 * @desc set the current target enemy;
+	 * @desc   set the current target enemy,whether this will set is not sure
 	 * @param  NewTargetEnemy the new enemy target to set
 	 * @return returns true if the Target enemy Set successfully,false otherwise
 	 */
-	virtual bool SetTargetEnemy(class AController* NewEnemyTarget);
+	virtual bool TrySetTargetEnemy(class AController* NewEnemyTarget);
 
 	/**
 	 * Get The Current zombie that controlled by this zombie controller
 	 * @return Zombie that controlled by this controller
 	 */
-	virtual AINSZombie* GetZombiePawn() { return GetPawn<AINSZombie>(); }
+	inline virtual AINSZombie* GetZombiePawn() { return GetPawn<AINSZombie>(); }
 
 	/**
 	 * override when this zombie controller possess it's zombie pawn happened,allow some logic to set up here
@@ -86,7 +86,7 @@ protected:
 
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
 	/**
-	 * draw a debug line to provide lines of sight line visual
+	 * draw a debug line to provide lines of sight visual
 	 */
 	virtual void DrawLOSDebugLine();
 #endif

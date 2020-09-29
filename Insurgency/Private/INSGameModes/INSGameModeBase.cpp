@@ -127,8 +127,8 @@ void AINSGameModeBase::SpawnTerrorisTeam()
 		SpawnInfo.Instigator = GetInstigator();
 		SpawnInfo.ObjectFlags |= RF_Transient;	// We never want to TeamInfo into a map	
 		TerroristTeam = GetWorld()->SpawnActor<AINSTeamInfo>(TeamInfoClass);
-		TerroristTeam->SetTeamType(ETeamType::T);
-		static const FString TeamKey = TEXT("T");
+		TerroristTeam->SetTeamType(ETeamType::REBEL);
+		static const FString TeamKey = TEXT("Rebel");
 		InGameTeams.Add(TeamKey, TerroristTeam);
 		UE_LOG(LogINSGameMode, Log, TEXT("Terrorist Team Has spawned for this game"));
 	}
@@ -142,8 +142,8 @@ void AINSGameModeBase::SpawnCounterTerroristTeam()
 		SpawnInfo.Instigator = GetInstigator();
 		SpawnInfo.ObjectFlags |= RF_Transient;	// We never want to save TeamInfo into a map	
 		CTTeam = GetWorld()->SpawnActor<AINSTeamInfo>(TeamInfoClass);
-		CTTeam->SetTeamType(ETeamType::CT);
-		static const FString TeamKey = TEXT("CT");
+		CTTeam->SetTeamType(ETeamType::ALLIE);
+		static const FString TeamKey = TEXT("Allie");
 		InGameTeams.Add(TeamKey, CTTeam);
 		UE_LOG(LogINSGameMode, Log, TEXT("Counter Terrorist Team Has spawned for this game"));
 	}
@@ -246,8 +246,8 @@ void AINSGameModeBase::AssignPlayerTeam(class AINSPlayerController* NewPlayer)
 	TArray<AINSPlayerController*> TTeamPlayers = TerroristTeam->TeamMembers;
 	const uint8 CTTeamPlayerNum = CTTeamPlayers.Num();
 	const uint8 TTeamPlayerNum = TTeamPlayers.Num();
-	static const FString CTTeamKey = TEXT("CT");
-	static const FString TTeamKey = TEXT("T");
+	static const FString RebelsTeamKey = TEXT("Rebels");
+	static const FString AlliesTeamKey = TEXT("Allies");
 	//balance Player team
 	AINSTeamInfo* SelectedTeam=nullptr;
 	if (CTTeamPlayerNum == TTeamPlayerNum)
@@ -314,31 +314,35 @@ AActor* AINSGameModeBase::FindPlayerStart_Implementation(AController* Player, co
 
 	UWorld* const World = GetWorld();
 	const UClass* const PlayerClass = Player->GetClass();
-	AINSPlayerController* MyPlayeController = Cast<AINSPlayerController>(Player);
+	AINSPlayerController* const MyPlayeController = Cast<AINSPlayerController>(Player);
 	if (MyPlayeController)
 	{
 		AINSTeamInfo* MyPlayerTeam = MyPlayeController->GetPlayerTeam();
-		TArray<APlayerStart*> CTPlayerStarts;
-		TArray<APlayerStart*> TPlayerStarts;
+		TArray<APlayerStart*> RebelPlayerStarts;
+		TArray<APlayerStart*> AlliePlayerStarts;
 		//Iterate the all player start spots that placed in map in advance,
 		//Match their tags,And categorize them
 		for (TActorIterator<APlayerStart> It(World); It; ++It)
 		{
-			APlayerStart* Start = *It;
+			APlayerStart* const Start = *It;
 			if (Start)
 			{
-				if (Start->PlayerStartTag == FName(TEXT("CT")))
+				if (Start->PlayerStartTag == FName(TEXT("Allie")))
 				{
-					CTPlayerStarts.AddUnique(Start);
+					AlliePlayerStarts.AddUnique(Start);
 				}
-				else if (Start->PlayerStartTag == FName(TEXT("T")))
+				else if (Start->PlayerStartTag == FName(TEXT("Rebel")))
 				{
-					TPlayerStarts.AddUnique(Start);
+					RebelPlayerStarts.AddUnique(Start);
 				}
 			}
 		}
-		const FName SelectePlayerTag = MyPlayerTeam->GetTeamType() == ETeamType::T ? FName(TEXT("T")) : FName(TEXT("CT"));
-		const TArray<APlayerStart*> SeletedStarts = MyPlayerTeam->GetTeamType() == ETeamType::T ? TPlayerStarts : CTPlayerStarts;
+		const FName SelectePlayerTag = MyPlayerTeam->GetTeamType() == ETeamType::REBEL
+			? FName(TEXT("Rebel"))
+			: FName(TEXT("Allie"));
+		const TArray<APlayerStart*> SeletedStarts = MyPlayerTeam->GetTeamType() == ETeamType::REBEL
+			? RebelPlayerStarts
+			: AlliePlayerStarts;
 		TArray<APlayerStart*> SafePlayerStarts;
 		const TArray<TEnumAsByte <EObjectTypeQuery>> ObjectTypeQueries;
 		TArray<AActor*> ActorsToIgnore;
@@ -349,7 +353,7 @@ AActor* AINSGameModeBase::FindPlayerStart_Implementation(AController* Player, co
 			{
 				APlayerStart* CurrentPlayerStart = SeletedStarts[i];
 				UKismetSystemLibrary::SphereOverlapActors(GetWorld()
-					,CurrentPlayerStart->GetActorLocation()
+					, CurrentPlayerStart->GetActorLocation()
 					, 2000.f
 					, ObjectTypeQueries
 					, AINSPlayerController::StaticClass()
@@ -390,7 +394,6 @@ AActor* AINSGameModeBase::FindPlayerStart_Implementation(AController* Player, co
 	}
 	return Super::FindPlayerStart_Implementation(Player, IncomingName);
 }
-
 
 void AINSGameModeBase::CountDownMatchPrepare()
 {

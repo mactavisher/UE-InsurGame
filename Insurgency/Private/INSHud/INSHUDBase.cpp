@@ -87,8 +87,8 @@ void AINSHUDBase::DrawMyTeamInfo()
 			const ETeamType MyTeamType = MyTeamInfo->GetTeamType();
 			switch (MyTeamType)
 			{
-			case ETeamType::CT:MyTeamName.Append("CT"); break;
-			case ETeamType::T:MyTeamName.Append("T"); break;
+			case ETeamType::ALLIE:MyTeamName.Append("Allie"); break;
+			case ETeamType::REBEL:MyTeamName.Append("Rebel"); break;
 			default: MyTeamName.Append("None"); break;
 			}
 			DrawText(MyTeamName, FLinearColor::White, Canvas->SizeX*0.1f, Canvas->SizeY*0.95f, GEngine->GetSmallFont(), 1.2f, false);
