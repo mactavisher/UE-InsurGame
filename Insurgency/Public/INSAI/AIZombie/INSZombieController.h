@@ -9,6 +9,8 @@
 
 class AINSZombie;
 class UBehaviorTreeComponent;
+class UPawnSensingComponent;
+
 
 INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogZombieController, Log, All);
 
@@ -28,15 +30,28 @@ class INSURGENCY_API AINSZombieController : public AAIController
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AI")
 		float BroadCastEnemyRange;
 
+	/** our ai will trying to broad cast enemy to others with this range */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AI")
+		float LostEnemyTime;
+
 	/** BehaviorTree comp */
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "BehaviorTreeComp",meta = (AllowPrivateAccess = "true"))
-		class UBehaviorTreeComponent* BehaviorTreeComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "BehaviorTreeComp", meta = (AllowPrivateAccess = "true"))
+		UBehaviorTreeComponent* BehaviorTreeComponent;
+
+	/** BehaviorTree comp */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ZombieSensingComp", meta = (AllowPrivateAccess = "true"))
+		UPawnSensingComponent* ZombieSensingComp;
+
+
 
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
 	/** indicates if need to show a line of sight line */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Debug")
 		uint8 bDrawDebugLineOfSightLine : 1;
 #endif
+
+	UPROPERTY()
+	FTimerHandle LostEnemyTimerHandle;
 
 protected:
 
@@ -79,10 +94,37 @@ protected:
 	virtual void OnPossess(APawn* InPawn)override;
 
 	/**
- * override when this zombie controller possess it's zombie pawn happened,allow some logic to set up here
- * @params InPawn the zombie pawn that possessed by this zombie controller
- */
+	 * override when this zombie controller un-possess it's zombie pawn happened,allow some logic to set up here
+	 */
 	virtual void OnUnPossess()override;
+
+	/**
+	 * randomly initialize a zombies move mode
+	 */
+	virtual void InitZombieMoveMode();
+
+	/**
+	 * on see a pawn,call back function bind for PawnSensing comp
+	 * @param Pawn We see
+	 */
+	UFUNCTION()
+	virtual void OnSeePawn(APawn* SeenPawn);
+
+	/**
+	 * on hear noise,call back function bind for PawnSensing comp
+	 * @param Instigator  pawn that made that noise
+	 * @param Location    The noise location
+	 * @param Volume      The noise volume
+	 */
+	UFUNCTION()
+	virtual void OnHearNoise(APawn* NoiseInstigator, const FVector& Location, float Volume);
+
+	UFUNCTION()
+	virtual void OnEnemyLost();
+
+	UFUNCTION()
+	virtual void TickEnemyVisibility();
+
 
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
 	/**

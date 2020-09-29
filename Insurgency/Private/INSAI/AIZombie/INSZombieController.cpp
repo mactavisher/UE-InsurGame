@@ -3,10 +3,14 @@
 
 #include "INSAI/AIZombie/INSZombieController.h"
 #include "BehaviorTree/BehaviorTreeComponent.h"
+#include "Perception/PawnSensingComponent.h"
+#include "INSAI/AIZombie/INSZombie.h"
+#ifndef FTimerManager
+#include "TimerManager.h"
+#endif
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
 #include "DrawDebugHelpers.h"
 #endif
-#include "INSAI/AIZombie/INSZombie.h"
 #ifndef UEngineUtils
 #include "EngineUtils.h"
 #endif
@@ -19,6 +23,7 @@ AINSZombieController::AINSZombieController(const FObjectInitializer& ObjectIniti
 	bDrawDebugLineOfSightLine = true;
 #endif
 	BrainComponent = BehaviorTreeComponent = ObjectInitializer.CreateDefaultSubobject<UBehaviorTreeComponent>(this, TEXT("BehaviourTreeComp"));
+	ZombieSensingComp = ObjectInitializer.CreateDefaultSubobject<UPawnSensingComponent>(this, TEXT("ZombieSensingComp"));
 	PrimaryActorTick.bCanEverTick = true;
 }
 
@@ -28,10 +33,7 @@ void AINSZombieController::TickActor(float DeltaTime, enum ELevelTick TickType, 
 	Super::TickActor(DeltaTime, TickType, ThisTickFunction);
 	if (CurrentTargetEnemy)
 	{
-		LineOfSightTo(CurrentTargetEnemy);
-#if WITH_EDITOR&&!UE_BUILD_SHIPPING
-		DrawLOSDebugLine();
-#endif
+		TickEnemyVisibility();
 	}
 }
 
@@ -73,6 +75,10 @@ bool AINSZombieController::TrySetTargetEnemy(class AController* NewEnemyTarget)
 	if (RandomNum % 3 == 0)
 	{
 		CurrentTargetEnemy = NewEnemyTarget;
+		if (GetWorldTimerManager().IsTimerActive(LostEnemyTimerHandle))
+		{
+			GetWorldTimerManager().ClearTimer(LostEnemyTimerHandle);
+		}
 		return true;
 	}
 	else
@@ -91,6 +97,13 @@ void AINSZombieController::OnPossess(APawn* InPawn)
 	Super::OnPossess(InPawn);
 	if (InPawn)
 	{
+		InitZombieMoveMode();
+		if (ZombieSensingComp)
+		{
+			// bind delegate
+			ZombieSensingComp->OnSeePawn.AddDynamic(this, &AINSZombieController::OnSeePawn);
+			ZombieSensingComp->OnHearNoise.AddDynamic(this, &AINSZombieController::OnHearNoise);
+		}
 		RunBehaviorTree(GetZombiePawn()->GetZombieBehaviorTree());
 	}
 }
@@ -100,7 +113,78 @@ void AINSZombieController::OnUnPossess()
 	Super::OnUnPossess();
 	if (BehaviorTreeComponent&&BehaviorTreeComponent->IsRunning())
 	{
+		ZombieSensingComp->OnSeePawn.RemoveAll(this);
+		ZombieSensingComp->OnHearNoise.RemoveAll(this);
 		BehaviorTreeComponent->StopTree(EBTStopMode::Safe);
+	}
+}
+
+void AINSZombieController::InitZombieMoveMode()
+{
+	const int32 RandomNum = FMath::RandHelper(2);
+	EZombieMoveMode SelectedZombieMoveMode;
+	switch (RandomNum)
+	{
+	case 0:SelectedZombieMoveMode = EZombieMoveMode::Shamble; break;
+	case 1:SelectedZombieMoveMode = EZombieMoveMode::Walk; break;
+	case 2:SelectedZombieMoveMode = EZombieMoveMode::Chase; break;
+	default:SelectedZombieMoveMode = EZombieMoveMode::Shamble; break;
+	}
+	GetZombiePawn()->SetZombieMoveMode(SelectedZombieMoveMode);
+}
+
+void AINSZombieController::OnSeePawn(APawn* SeenPawn)
+{
+	if (SeenPawn->GetClass()->IsChildOf(AINSZombie::StaticClass()))
+	{
+		// we are zombies 
+		UE_LOG(LogZombieController
+			, Log
+			, TEXT("%s is another zombie of my type ,can't set it as my enemy !")
+			, *SeenPawn->GetName());
+		return;
+	}
+	if (GetMyTargetEnemy())
+	{
+		if (GetMyTargetEnemy()->GetPawn() == SeenPawn)
+		{
+			// that pawn is already my enemy now 
+			UE_LOG(LogZombieController
+				, Log
+				, TEXT("%s is is already my enemy now !")
+				, *SeenPawn->GetName());
+			return;
+		}
+		else
+		{
+			TrySetTargetEnemy(SeenPawn->GetController());
+		}
+	}
+}
+
+void AINSZombieController::OnHearNoise(APawn* NoiseInstigator, const FVector& Location, float Volume)
+{
+
+}
+
+void AINSZombieController::OnEnemyLost()
+{
+	CurrentTargetEnemy = nullptr;
+	GetWorldTimerManager().ClearTimer(LostEnemyTimerHandle);
+}
+
+void AINSZombieController::TickEnemyVisibility()
+{
+	if (CurrentTargetEnemy)
+	{
+		const bool isEnemyVisible = LineOfSightTo(CurrentTargetEnemy);
+		if (!isEnemyVisible)
+		{
+			GetWorldTimerManager().SetTimer(LostEnemyTimerHandle, this, &AINSZombieController::OnEnemyLost, 1.f, false, LostEnemyTime);
+		}
+#if WITH_EDITOR&&!UE_BUILD_SHIPPING
+		DrawLOSDebugLine();
+#endif
 	}
 }
 

@@ -7,3 +7,4 @@ AINSZombie::AINSZombie(const FObjectInitializer& ObjectInitializer) :Super(Objec
 {
    
 }
+
