@@ -31,10 +31,10 @@
 
 #define ECC_Penetrate                                              ECC_EngineTraceChannel1
 
-/** ~~--------------------------------------------------------------
-   define INS Game Types-------------------------------------------*/
+	/** ~~--------------------------------------------------------------
+	   define INS Game Types-------------------------------------------*/
 
-/** specify a character' gender,can be assigned via blueprint */
+	   /** specify a character' gender,can be assigned via blueprint */
 UENUM(BlueprintType)
 enum class ECharacterGender :uint8
 {
@@ -113,9 +113,9 @@ enum class EWeaponBasePoseType :uint8
 UENUM(BlueprintType)
 enum class ETeamType :uint8 {
 	REBEL           UMETA(DisplayName = "terrorist"),
-	ALLIE          UMETA(DisplayName = "counter terrorist"),
-	CORP        UMETA(DisplayName = "coorperation"),
-	NONE        UMETA(DisplayName = "None"),
+	ALLIE           UMETA(DisplayName = "counter terrorist"),
+	CORP            UMETA(DisplayName = "coorperation"),
+	NONE            UMETA(DisplayName = "None"),
 };
 
 UENUM(BlueprintType)

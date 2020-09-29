@@ -10,26 +10,28 @@
 class UParticleSystemComponent;
 class AINSImpactEffect;
 
-UCLASS()
+INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(INSProjectileShell, Log, All);
+
+UCLASS(notplaceable,Blueprintable)
 class INSURGENCY_API AINSProjectileShell : public AActor
 {
 	GENERATED_UCLASS_BODY()
-	
-public:	
-	// Sets default values for this actor's properties
-	AINSProjectileShell();
+
 protected:
 
+	/** shell particle comp */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"), Category = "ShellParticle")
 		UParticleSystemComponent* ParticleComp;
 
+	/** shell particle template */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AmmoShell|ShellParticle")
 		UParticleSystem* ParticleTemplate;
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="Effects")
-	   TSubclassOf<AINSImpactEffect> ShellCollideEffectClass;
+	/** shell particle impact spawn effect class */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
+		TSubclassOf<AINSImpactEffect> ShellCollideEffectClass;
 
-
+	/** indicate if this particle comp collided */
 	UPROPERTY()
 		uint8 bCollided : 1;
 
@@ -39,10 +41,22 @@ protected:
 	FScriptDelegate ParticleCollideDelegate;
 
 protected:
-	// Called when the game starts or when spawned
+	//~ begin AActor interface
 	virtual void BeginPlay() override;
-
 	virtual void PostInitializeComponents()override;
+	//~ end AActor interface
+
+	/**
+	 * call back function call back when this particle comp collide
+	 * @param EventName EventName
+	 * @param EmitterTime EmitterTime
+	 * @param ParticleTime ParticleTime
+	 * @param Location Collide Location
+	 * @param Direction Collide Direction
+	 * @param Normal collide normal
+	 * @param BoneName collide bone name if any
+	 * @param PhysMat Collide surface material type
+	 */
 	UFUNCTION()
 		virtual void OnShellCollide(FName EventName, float EmitterTime, int32 ParticleTime, FVector Location, FVector Velocity, FVector Direction, FVector Normal, FName BoneName, UPhysicalMaterial* PhysMat);
 };
