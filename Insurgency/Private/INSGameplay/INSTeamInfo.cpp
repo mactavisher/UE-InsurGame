@@ -4,6 +4,9 @@
 #include "INSGameplay/INSTeamInfo.h"
 #include "Engine/World.h"
 #include "Net/UnrealNetwork.h"
+#ifndef AINSPlayerStateBase
+#include "INSCharacter/INSPlayerStateBase.h"
+#endif
 #include "INSGameModes/INSGameModeBase.h"
 #include "INSCharacter/INSPlayerController.h"
 AINSTeamInfo::AINSTeamInfo(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
@@ -29,6 +32,7 @@ void AINSTeamInfo::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AINSTeamInfo, ThisTeamType);
+	DOREPLIFETIME(AINSTeamInfo, TeamScore);
 }
 
 void AINSTeamInfo::SetTeamType(ETeamType NewTeamType)
@@ -45,7 +49,7 @@ void AINSTeamInfo::OnRep_TeamType()
 	OnTeamTypeChange.Broadcast();
 }
 
-void AINSTeamInfo::AddPlayerToThisTeam(class AINSPlayerController* NewPlayer)
+void AINSTeamInfo::AddPlayerToThisTeam(class AINSPlayerStateBase* NewPlayer)
 {
 	if (!isTeamFull() && NewPlayer != nullptr)
 	{
@@ -60,7 +64,7 @@ void AINSTeamInfo::SortPlayersByScore()
 // 	});
 }
 
-void AINSTeamInfo::RemovePlayer(class AINSPlayerController* PlayerToRemove)
+void AINSTeamInfo::RemovePlayer(class AINSPlayerStateBase* PlayerToRemove)
 {
 	TeamMembers.Remove(PlayerToRemove);
 }
@@ -75,3 +79,4 @@ bool AINSTeamInfo::isTeamFull()
 	}
 	return GetCurrentTeamPlayers() < CurrentGameMode->GetMaxSingleTeamPlayers();
 }
+

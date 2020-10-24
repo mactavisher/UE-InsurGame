@@ -61,13 +61,19 @@ void AINSProjectileShell::OnShellCollide(FName EventName, float EmitterTime, int
 		if (ImpactActor)
 		{
 			ImpactActor->SetPysicalMat(PhysMat);
+			FHitResult ImpactHit(ForceInit);
+			ImpactHit.BoneName = BoneName;
+			ImpactHit.Location = Location;
+			ImpactHit.ImpactPoint = Location;
+			ImpactHit.ImpactNormal = Normal;
+			ImpactActor->SetImpactHit(ImpactHit);
 			UGameplayStatics::FinishSpawningActor(ImpactActor, ImpactSpawnTrans);
 			bCollided = true;
 			UE_LOG(INSProjectileShell
 				, Warning
 				, TEXT("projectile shell %s spawns it impacte effect at location %s,Spawned impact effct instance name %s")
 				, *GetName()
-				, *ImpactSpawnTrans.ToString()
+				, *ImpactSpawnTrans.GetLocation().ToString()
 				, *ImpactActor->GetName());
 			ParticleCollideDelegate.Unbind();
 		}

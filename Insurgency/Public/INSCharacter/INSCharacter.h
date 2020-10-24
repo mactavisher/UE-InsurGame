@@ -372,13 +372,12 @@ public:
 	/** returns the character's audio comp */
 	FORCEINLINE virtual class UINSCharacterAudioComponent* GetCharacterAudioComp()const { return CharacterAudioComp; }
 
-	/** calls when this character receives any damage */
-	virtual void ReceiveHit(AController* const InstigatorPlayer, AActor* const DamageCauser, const FDamageEvent& DamageEvent, const FHitResult& Hit, float DamageTaken);
-
 	/** take damage ,if you call Super::TakeDamage(),the super function has broadcast take certain type of damage base on damageEnvent::clasId
 	 *  such as point damageEvents,Radius damageEvents,otherwise you will need to broadcast those take damage event manually
 	 */
 	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)override;
+
+	virtual bool ShouldTakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)const override;
 
 	/** returns if this character is currently sprinting */
 	inline virtual bool GetIsSprint()const { return bIsSprint; }

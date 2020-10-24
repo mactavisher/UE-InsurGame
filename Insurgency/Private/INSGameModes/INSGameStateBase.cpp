@@ -67,16 +67,6 @@ void AINSGameStateBase::OnPlayerKilled(class AController* Killer, class AControl
 {
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		if (bIsTeamDamage)
-		{
-			KillerScore += 100;
-		}
-		AINSPlayerStateBase* KillerPlayerState = Killer->GetPlayerState<AINSPlayerStateBase>();
-		if (KillerPlayerState)
-		{
-			KillerPlayerState->PlayerScore(KillerScore);
-			KillerPlayerState->GetPlayerTeam()->AddTeamScore(KillerScore);
-		}
 		ClientsReceiveKillEvent(Killer->PlayerState, Victim->PlayerState, KillerScore, bIsTeamDamage);
 		if (GetNetMode() == ENetMode::NM_Standalone || GetNetMode() == ENetMode::NM_ListenServer)
 		{
@@ -84,7 +74,6 @@ void AINSGameStateBase::OnPlayerKilled(class AController* Killer, class AControl
 		}
 	}
 }
-
 
 void AINSGameStateBase::OnPlayerDamaged(class AController* DamageInstigtor, class AController* Victim, float DamageAmount, bool bIsTeamDamage)
 {

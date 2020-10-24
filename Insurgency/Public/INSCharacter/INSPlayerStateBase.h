@@ -8,6 +8,7 @@
 
 class AINSTeamInfo;
 class AINSPlayerController;
+class AINSWeaponBase;
 
 USTRUCT(BlueprintType)
 struct FCachedDamageInfo
@@ -37,7 +38,7 @@ public:
 };
 
 /**
- * Player state 
+ * Player state
  */
 UCLASS()
 class INSURGENCY_API AINSPlayerStateBase : public APlayerState
@@ -63,19 +64,19 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "CachedDamageinfo")
 		uint8 CachedDamageInfoMaxSize;
 
-	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="CachedDamageinfo")
-	   TArray<FCachedDamageInfo> CachedDamageInfos;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "CachedDamageinfo")
+		TArray<FCachedDamageInfo> CachedDamageInfos;
 
 	/** indicate how many plays does this player kill */
-	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Replicated, Category="Kills")
-	   int32 Kills;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Kills")
+		int32 Kills;
 
 	/** indicate how many death happens on this player */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Deaths")
-	   int32 Death;
+		int32 Death;
 
 protected:
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps)const override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
 	virtual void OnRep_Score()override;
 	virtual void BeginPlay()override;
 
@@ -108,12 +109,12 @@ public:
 	virtual void PlayerScore(int32 ScoreToAdd);
 
 	UFUNCTION()
-	virtual void OnPlayerKill(class APlayerState* Killer, class APlayerState* Victim, int32 KillerScore, bool bIsTeamDamage);
+		virtual void OnPlayerKill(class APlayerState* Killer, class APlayerState* Victim, int32 KillerScore, bool bIsTeamDamage);
 
 	UFUNCTION()
 		virtual void OnPlayerDamage(class APlayerState* Killer, class APlayerState* Victim, int32 DamagaCauserScore, bool bIsTeamDamage);
 	UFUNCTION()
-	virtual void TickRespawnTime();
+		virtual void TickRespawnTime();
 	virtual void Tick(float DeltaSeconds)override;
 	virtual void ReceivePlayerDeath(AINSPlayerController* DeadPlayer);
 };

@@ -7,31 +7,90 @@
 #include "INSZombie.generated.h"
 
 class UBehaviorTree;
-
-UENUM(BlueprintType)
-enum class EZombieMoveMode:uint8
-{
-  Walk                 UMETA(DisplayName = "Walk"),
-  Shamble              UMETA(DisplayName = "Shamble"),
-  Chase                UMETA(DisplayName = "Chase"),
-};
-
+class UINSZombieAnimInstance;
+class AINSZombieController;
+class UINSZombieAnimInstance;
 
 /**
- * 
+ * enum specify in which way the zombie zombie will move
  */
-UCLASS()
+UENUM(BlueprintType)
+enum class EZombieMoveMode :uint8
+{
+	Walk                 UMETA(DisplayName = "Walk"),
+	Shamble              UMETA(DisplayName = "Shamble"),
+	Chase                UMETA(DisplayName = "Chase"),
+};
+
+/**
+ *  zombie character class
+ */
+UCLASS(notplaceable)
 class INSURGENCY_API AINSZombie : public AINSCharacter
 {
 	GENERATED_UCLASS_BODY()
 
-		UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="ZombieBehavior")
+protected:
+
+	/** zombie behavior tree asset */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ZombieBehavior")
 		UBehaviorTree* ZombiebehaviorTree;
 
-	    UPROPERTY(EditAnywhere,BlueprintReadWrite,Category="ZombieMovement")
+	/** zombie current move mode  */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_ZombieMoveMode, Category = "ZombieMovement")
 		EZombieMoveMode CurrentZombieMoveMode;
 
+	/** cached zombie controller for this zombie */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Controller")
+		AINSZombieController* ZombieController;
+
+	/** cached zombie AnimInstance */
+	UPROPERTY()
+		UINSZombieAnimInstance* CachedZombieAnimInstance;
+
+protected:
+
+	/**
+	 * override
+	 */
+	virtual void OnRep_Dead()override;
+
+	/**
+	 * Get Replicated Properties for net work system
+	 * @param OutLifetimeProps  OutLifetimeProps
+	 */
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
+
+	/**
+	 * happens when possessed by a zombie controller
+	 * @param NewController New Controller that possess this zombie
+	 */
+	virtual void PossessedBy(AController* NewController)override;
+
+	/**
+	 * override
+	 */
+	virtual void OnRep_LastHitInfo()override;
+
+	/**
+	 * face this zombie to a given rotation
+	 * @param NewControlRotation Rotation to face to
+	 * @DeltaTime DeltaTime
+	 */
+	virtual void FaceRotation(FRotator NewControlRotation, float DeltaTime /* = 0.f */)override;
+
+	/**
+	 * call back function when zombie has changed it's move mode
+	 * when it replicate to other clients
+	 */
+	UFUNCTION()
+		virtual void OnRep_ZombieMoveMode();
+
 public:
+
+	/**
+	 * Get the zombie behavior tree asset
+	 */
 	FORCEINLINE class UBehaviorTree* GetZombieBehaviorTree()const { return ZombiebehaviorTree; }
 
 	/**
@@ -39,4 +98,16 @@ public:
 	 * @param NewZombieMoveMode  the new zombie move mode to set for this zombie
 	 */
 	virtual void SetZombieMoveMode(EZombieMoveMode NewZombieMoveMode) { CurrentZombieMoveMode = NewZombieMoveMode; };
+
+	/**
+	 * Get the zombie current move mode
+	 */
+	virtual EZombieMoveMode GetZombieMoveMode()const { return CurrentZombieMoveMode; }
+
+	/**
+	 * overridden from base character
+	 * zombie will have some behavior to set up when they takes some damage
+	 */
+	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)override;
+
 };

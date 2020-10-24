@@ -76,6 +76,17 @@ enum class EItemType :uint8
 	ARMOR                                  UMETA(DisplayName = "ARMOR"),
 };
 
+UENUM(BlueprintType)
+enum class EWeaponType :uint8
+{
+	ASSULTRIFLE                            UMETA(DisplayName = "AssultRifle"),
+	PISTOL                                 UMETA(DisplayName = "Pistol"),
+	SHOTGUN                                UMETA(DisplayName = "ShotGun"),
+	SMG                                    UMETA(DisplayName = "SMG"),
+	SNIPPER                                UMETA(DisplayName = "Snipper"),
+	BOLTRIFLE                              UMETA(DisplayName = "BoltRifle"),
+};
+
 /** weapon current state enum */
 UENUM(BlueprintType)
 enum class EWeaponState :uint8
@@ -150,6 +161,6 @@ enum class EWeaponAttachmentType :uint8
 
 namespace TeamName
 {
-	const FName Rebel(TEXT("Rebel"));	                    // Rebel team name
-	const FName Allie(TEXT("Allie"));		                // Allie Team name
+	static const FName Rebel = FName(TEXT("Rebel"));	                    // Rebel team name
+	static const FName Allie = FName(TEXT("Allie"));		                // Allie Team name
 }

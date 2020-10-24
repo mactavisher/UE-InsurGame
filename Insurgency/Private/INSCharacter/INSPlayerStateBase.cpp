@@ -40,7 +40,7 @@ void AINSPlayerStateBase::OnRep_Score()
 {
 	if (GetPawn()&& GetPawn()->IsLocallyControlled())
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, FString::SanitizeFloat(Score));
+		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, FString::SanitizeFloat(GetScore()));
 	}
 }
 

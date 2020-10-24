@@ -10,11 +10,14 @@ class UParticleSystem;
 class USoundCue;
 class UMaterial;
 
+/**
+ * point hit particle data
+ */
 USTRUCT(BlueprintType)
 struct FImpactParticleData {
 
 	GENERATED_USTRUCT_BODY()
-		/** projectile Impact Particles*/
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactParticles")
 		UParticleSystem* DefaultParticle;
 
@@ -80,6 +83,9 @@ struct FImpactParticleData {
 
 };
 
+/**
+ * point hit sound data
+ */
 USTRUCT(BlueprintType)
 struct FImpactSoundData {
 
@@ -150,6 +156,9 @@ struct FImpactSoundData {
 
 };
 
+/**
+ * point hit decal data
+ */
 USTRUCT(BlueprintType)
 struct FImpactDecalData {
 	GENERATED_USTRUCT_BODY()
@@ -182,7 +191,7 @@ struct FImpactDecalData {
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Decals")
 		UMaterial* FleshDecal;
 };
-UCLASS()
+UCLASS(notplaceable)
 class INSURGENCY_API AINSImpactEffect : public AActor
 {
 	GENERATED_UCLASS_BODY()

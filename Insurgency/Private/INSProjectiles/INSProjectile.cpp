@@ -83,8 +83,6 @@ void AINSProjectile::OnRep_HitCounter()
 		{
 			if (GetClientFakeProjectile())
 			{
-				//ProjectileDir = GetReplicatedMovement().Rotation.Vector();
-				//ProjectileLoc = GetClientFakeProjectile()->GetActorLocation() - ProjectileDir * 500.f;
 				if (GetClientFakeProjectile())
 				{
 					GetClientFakeProjectile()->GetProjectileMovementComp()->StopMovementImmediately();
@@ -93,19 +91,6 @@ void AINSProjectile::OnRep_HitCounter()
 				ProjectileLoc = GetClientFakeProjectile()->GetReplicatedMovement().Location - ProjectileDir * 200.f;
 				GetClientFakeProjectile()->Destroy();
 			}
-			/*else
-			{
-				if (GetOwnerWeapon()->GetIsOwnerLocal())
-				{
-					ProjectileDir = GetOwnerWeapon()->WeaponMesh1PComp->GetMuzzleForwardVector();
-					ProjectileLoc = GetOwnerWeapon()->WeaponMesh1PComp->GetMuzzleLocation();
-				}
-				else
-				{
-					ProjectileDir = GetOwnerWeapon()->WeaponMesh3PComp->GetMuzzleForwardVector();
-					ProjectileLoc = GetOwnerWeapon()->WeaponMesh3PComp->GetMuzzleLocation();
-				}
-			}*/
 		}
 		FCollisionQueryParams QueryParams;
 		QueryParams.AddIgnoredActor(this);
@@ -189,12 +174,12 @@ void AINSProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* 
 			PoitHit.ImpactNormal = Hit.ImpactNormal;
 			PointDamageEvent.HitInfo = PoitHit;
 			PointDamageEvent.ShotDirection = this->GetVelocity().GetSafeNormal();
-			HitCharacter->ReceiveHit(InstigatorPlayer.Get(), this, PointDamageEvent, Hit, DamageBase);
+			HitCharacter->TakeDamage(DamageBase, PointDamageEvent, InstigatorPlayer.Get(), this);
 		}
 		CollisionComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		bForceMovementReplication = true;
 		bIsGatheringMovement = false;
-		//GatherCurrentMovement();
+		GatherCurrentMovement();
 		//force a transformation update to clients
 		HitCounter++;
 		UE_LOG(LogINSProjectile

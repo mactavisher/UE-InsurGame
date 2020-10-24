@@ -102,7 +102,7 @@ void AINSPlayerController::PlayerScore(int32 Score)
 	AINSPlayerStateBase* const CurrentPlayerState = CastChecked<AINSPlayerStateBase>(PlayerState);
 	if (CurrentPlayerState)
 	{
-		CurrentPlayerState->Score = CurrentPlayerState->Score + Score;
+		CurrentPlayerState->SetScore(CurrentPlayerState->GetScore() + Score);
 	}
 }
 
@@ -479,7 +479,7 @@ void AINSPlayerController::ReceiveGameKills(class APlayerState* Killer, APlayerS
 	//get the local machine player controller
 	AINSPlayerController* LocalPC = Cast<AINSPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
 	//if the killer is me
-	if (Killer->PlayerId == LocalPC->PlayerState->PlayerId)
+	if (Killer->GetPlayerId() == LocalPC->PlayerState->GetPlayerId())
 	{
 		AINSHUDBase* PlayerHud = GetHUD<AINSHUDBase>();
 		if (PlayerHud)

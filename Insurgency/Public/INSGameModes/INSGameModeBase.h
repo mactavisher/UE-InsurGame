@@ -167,12 +167,13 @@ public:
 	/**
 	 * Modify damage according to the game rules
 	 * @ param OutDamage out produced damage after damage is modified
+	 * @ param OriginDamage damage before modified
 	 * @ param PlayerInstigator Player Who actually instigate the damage
 	 * @ param Victim The victim player
 	 * @ param Damage event associate with this damage
 	 * @ param BoneName The bone that hit with this damage
 	 */
-	virtual void ModifyDamage(float& OutDamage, class AController* PlayerInstigator, class AController* Victim,const FDamageEvent& DamageEvent,FName BoneName);
+	virtual void ModifyDamage(float& OutDamage, const float& OriginDamage, class AController* PlayerInstigator, class AController* Victim, const FDamageEvent& DamageEvent, const FName BoneName);
 
 	/**bTeamDamageAllowed setter*/
 	virtual void SetAllowTeamDamage(bool bTeamDamageAllowed) { bAllowTeamDamage = bTeamDamageAllowed; }

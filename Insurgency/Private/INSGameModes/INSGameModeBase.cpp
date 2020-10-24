@@ -159,7 +159,7 @@ void AINSGameModeBase::EndMatchPerparing()
 
 }
 
-void AINSGameModeBase::ModifyDamage(float& OutDamage, class AController* PlayerInstigator, class AController* Victim, const FDamageEvent& DamageEvent, FName BoneName)
+void AINSGameModeBase::ModifyDamage(float& OutDamage, const float& OriginDamage, class AController* PlayerInstigator, class AController* Victim, const FDamageEvent& DamageEvent, const FName BoneName)
 {
 	//modify match state damage first
 	if (GetMatchState() != MatchState::InProgress)
@@ -167,7 +167,6 @@ void AINSGameModeBase::ModifyDamage(float& OutDamage, class AController* PlayerI
 		//do not apply any damage when game is not in progress
 		OutDamage = 0.f;
 	}
-	float originDamage = OutDamage;
 	bool bIsHeadShot = false;
 	bool isDamageCausedByWorld = DamageEvent.DamageTypeClass->IsChildOf(UINSDamageType_Falling::StaticClass());
 	//modify bone damage
@@ -183,7 +182,13 @@ void AINSGameModeBase::ModifyDamage(float& OutDamage, class AController* PlayerI
 		{
 			bIsHeadShot = true;
 		}
-		UE_LOG(LogINSCharacter, Warning, TEXT("character %s hit with bone:%s,damage modifier values is:%f,Modified damage value is %f"), *GetName(), *BoneName.ToString(), BoneDamageModifier, ModifiedDamage);
+		UE_LOG(LogINSCharacter
+			, Warning
+			, TEXT("character %s hit with bone:%s,damage modifier values is:%f,Modified damage value is %f")
+			, *GetName()
+			, *BoneName.ToString()
+			, BoneDamageModifier
+			, ModifiedDamage);
 	}
 	//modify team damage
 	const bool bIsTeamDamage = GetIsTeamDamage(PlayerInstigator, Victim) && !isDamageCausedByWorld;
@@ -192,7 +197,7 @@ void AINSGameModeBase::ModifyDamage(float& OutDamage, class AController* PlayerI
 		if (bAllowTeamDamage)
 		{
 			OutDamage *= TeamDamageModifier;
-			UE_LOG(LogINSGameMode, Log, TEXT("Modify Team damage from %f to %f for Victim Player %s"), originDamage, OutDamage, *Victim->GetName());
+			UE_LOG(LogINSGameMode, Log, TEXT("Modify Team damage from %f to %f for Victim Player %s"), OriginDamage, OutDamage, *Victim->GetName());
 		}
 		else
 		{
@@ -204,6 +209,38 @@ void AINSGameModeBase::ModifyDamage(float& OutDamage, class AController* PlayerI
 void AINSGameModeBase::ConfirmKill(AController* Killer, AController* Victim, int32 KillerScore, bool bIsTeamDamage)
 {
 	AINSGameStateBase* GS = GetGameState<AINSGameStateBase>();
+	if (Killer->GetClass()->IsChildOf(AINSPlayerController::StaticClass()))
+	{
+		AINSPlayerStateBase* const KillerPlayerState = Cast<AINSPlayerController>(Killer)->GetINSPlayerState();
+		if (KillerPlayerState)
+		{
+			const float PlayerCurrentScore = KillerPlayerState->GetScore();
+			AINSTeamInfo* KillerTeam = Cast<AINSPlayerController>(Killer)->GetPlayerTeam();
+			if (bIsTeamDamage)
+			{
+				KillerPlayerState->SetScore(PlayerCurrentScore + FMath::CeilToFloat(KillerScore));
+				KillerPlayerState->AddKill(1);
+				if (KillerTeam)
+				{
+					KillerTeam->AddTeamScore(FMath::CeilToFloat(KillerScore));
+				}
+			}
+			else
+			{
+				KillerPlayerState->SetScore(FMath::Clamp<float>(PlayerCurrentScore - FMath::CeilToFloat(KillerScore), 0.f, PlayerCurrentScore));
+				KillerTeam->AddTeamScore(FMath::Clamp<float>(KillerTeam->GetTeamScore() - FMath::CeilToFloat(KillerScore), 0.f, KillerTeam->GetTeamScore()));
+			}
+		}
+	}
+	if (Victim->GetClass()->IsChildOf(AINSPlayerController::StaticClass()))
+	{
+		AINSPlayerStateBase* const VictimPlayerState = Cast<AINSPlayerController>(Killer)->GetINSPlayerState();
+		if (VictimPlayerState)
+		{
+			VictimPlayerState->AddDeath();
+		}
+	}
+
 	if (GS)
 	{
 		GS->OnPlayerKilled(Killer, Victim, KillerScore, bIsTeamDamage);
@@ -219,12 +256,12 @@ bool AINSGameModeBase::GetIsTeamDamage(class AController* DamageInstigator, clas
 {
 	const class AINSPlayerController* const InstigatorPlayer = Cast<AINSPlayerController>(DamageInstigator);
 	const class AINSPlayerController* const VictimPlayer = Cast<AINSPlayerController>(Victim);
-	if (InstigatorPlayer&&VictimPlayer)
+	if (InstigatorPlayer && VictimPlayer)
 	{
 		const ETeamType InstigatorTeamType = InstigatorPlayer->GetPlayerState<AINSPlayerStateBase>()->GetPlayerTeam()->GetTeamType();
 		const ETeamType VictimTeamType = VictimPlayer->GetPlayerState<AINSPlayerStateBase>()->GetPlayerTeam()->GetTeamType();
-		return InstigatorTeamType == VictimTeamType;
 		UE_LOG(LogINSGameMode, Log, TEXT("player %s is causing Team damage to player %s"), *DamageInstigator->GetName(), *VictimPlayer->GetName());
+		return InstigatorTeamType == VictimTeamType;
 	}
 	return false;
 }
@@ -242,14 +279,14 @@ UClass* AINSGameModeBase::GetRandomGameModeWeaponClass() const
 
 void AINSGameModeBase::AssignPlayerTeam(class AINSPlayerController* NewPlayer)
 {
-	TArray<AINSPlayerController*> CTTeamPlayers = CTTeam->TeamMembers;
-	TArray<AINSPlayerController*> TTeamPlayers = TerroristTeam->TeamMembers;
+	TArray<AINSPlayerStateBase*> CTTeamPlayers = CTTeam->TeamMembers;
+	TArray<AINSPlayerStateBase*> TTeamPlayers = TerroristTeam->TeamMembers;
 	const uint8 CTTeamPlayerNum = CTTeamPlayers.Num();
 	const uint8 TTeamPlayerNum = TTeamPlayers.Num();
-	static const FString RebelsTeamKey = TEXT("Rebels");
-	static const FString AlliesTeamKey = TEXT("Allies");
+	static const FString RebelsTeamKey = TeamName::Rebel.ToString();
+	static const FString AlliesTeamKey = TeamName::Allie.ToString();
 	//balance Player team
-	AINSTeamInfo* SelectedTeam=nullptr;
+	AINSTeamInfo* SelectedTeam = nullptr;
 	if (CTTeamPlayerNum == TTeamPlayerNum)
 	{
 		const bool RandomBool = FMath::RandBool();
@@ -263,10 +300,10 @@ void AINSGameModeBase::AssignPlayerTeam(class AINSPlayerController* NewPlayer)
 	{
 		SelectedTeam = GetGameState<AINSGameStateBase>()->GetCTTeamInfo();
 	}
-	if (SelectedTeam&&NewPlayer)
+	if (SelectedTeam && NewPlayer)
 	{
 		AINSPlayerStateBase* PlayerState = CastChecked<AINSPlayerStateBase>(NewPlayer->PlayerState);
-		SelectedTeam->AddPlayerToThisTeam(NewPlayer);
+		SelectedTeam->AddPlayerToThisTeam(PlayerState);
 		NewPlayer->SetPlayerTeam(SelectedTeam);
 	}
 }
@@ -274,7 +311,7 @@ void AINSGameModeBase::AssignPlayerTeam(class AINSPlayerController* NewPlayer)
 void AINSGameModeBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	if (!bIsMatchPrepare&&IsMatchInProgress() && !bMatchPreparingFinished)
+	if (!bIsMatchPrepare && IsMatchInProgress() && !bMatchPreparingFinished)
 	{
 		bIsMatchPrepare = true;
 		AINSGameStateBase* const CurrentGameState = GetGameState<AINSGameStateBase>();
@@ -291,6 +328,7 @@ void AINSGameModeBase::Tick(float DeltaSeconds)
 
 void AINSGameModeBase::ScorePlayer(class AINSPlayerController* PlayerToScore, int32 Score)
 {
+
 }
 
 APlayerController* AINSGameModeBase::SpawnPlayerControllerCommon(ENetRole InRemoteRole, FVector const& SpawnLocation, FRotator const& SpawnRotation, TSubclassOf<APlayerController> InPlayerControllerClass)
@@ -338,8 +376,8 @@ AActor* AINSGameModeBase::FindPlayerStart_Implementation(AController* Player, co
 			}
 		}
 		const FName SelectePlayerTag = MyPlayerTeam->GetTeamType() == ETeamType::REBEL
-			? FName(TEXT("Rebel"))
-			: FName(TEXT("Allie"));
+			? TeamName::Rebel
+			: TeamName::Allie;
 		const TArray<APlayerStart*> SeletedStarts = MyPlayerTeam->GetTeamType() == ETeamType::REBEL
 			? RebelPlayerStarts
 			: AlliePlayerStarts;

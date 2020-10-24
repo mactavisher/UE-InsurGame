@@ -12,7 +12,7 @@
 // Sets default values
 AINSImpactEffect::AINSImpactEffect(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 	PrimaryActorTick.SetTickFunctionEnable(false);
 	SetReplicates(false);
@@ -31,7 +31,10 @@ void AINSImpactEffect::PostInitializeComponents()
 	UMaterial* ImpactDecal = GetDecalMaterialBySurfaceType(SurfaceType);
 	if (ImpactParticle)
 	{
-		UGameplayStatics::SpawnEmitterAtLocation(this, ImpactParticle, ImpactHit.ImpactPoint, ImpactHit.ImpactNormal.ToOrientationRotator());
+		UGameplayStatics::SpawnEmitterAtLocation(this
+			, ImpactParticle
+			, ImpactHit.ImpactPoint
+			, ImpactHit.ImpactNormal.ToOrientationRotator());
 	}
 	if (ImpactSound)
 	{
@@ -41,7 +44,14 @@ void AINSImpactEffect::PostInitializeComponents()
 	{
 		FRotator RandomDecalRotation = ImpactHit.ImpactNormal.ToOrientationRotator();
 		RandomDecalRotation.Roll = FMath::FRandRange(-180.0f, 180.0f);
-		UGameplayStatics::SpawnDecalAttached(ImpactDecal, FVector(12.f, 12.f, 12.f), ImpactHit.Component.Get(), ImpactHit.BoneName, ImpactHit.ImpactPoint, RandomDecalRotation, EAttachLocation::KeepWorldPosition, 10.f);
+		UGameplayStatics::SpawnDecalAttached(ImpactDecal
+			, FVector(12.f, 12.f, 12.f)
+			, ImpactHit.Component.Get()
+			, ImpactHit.BoneName
+			, ImpactHit.ImpactPoint
+			, RandomDecalRotation
+			, EAttachLocation::KeepWorldPosition
+			, 10.f);
 	}
 	SetLifeSpan(3.0f);
 }

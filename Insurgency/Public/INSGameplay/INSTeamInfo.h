@@ -8,12 +8,12 @@
 #include "INSTeamInfo.generated.h"
 
 class AINSPlayerController;
+class AINSPlayerStateBase;
 
 
 /**
  *  Team Info class for Team Based Game Modes
  */
-
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FTeamTypeChangedSignature);
 UCLASS(Blueprintable)
 class INSURGENCY_API AINSTeamInfo : public AInfo
@@ -26,14 +26,14 @@ class INSURGENCY_API AINSTeamInfo : public AInfo
 
 	/** uint8 that limit a team maximum member to 255 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Team")
-		TArray<AINSPlayerController*> TeamMembers;
+		TArray<AINSPlayerStateBase*> TeamMembers;
 
 	/** this team's score */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Scoring")
 		float  TeamScore;
 
 public:
-	UPROPERTY(BlueprintAssignable,Category="Events")
+	UPROPERTY(BlueprintAssignable, Category = "Events")
 		FTeamTypeChangedSignature OnTeamTypeChange;
 
 protected:
@@ -58,9 +58,9 @@ public:
 
 	/**
 	 * @desc add a new player in this team
-     * @param NewPlayer  New Player to add in
+	 * @param NewPlayer  New Player to add in
 	 */
-	virtual void AddPlayerToThisTeam(class AINSPlayerController* NewPlayer);
+	virtual void AddPlayerToThisTeam(class AINSPlayerStateBase* NewPlayer);
 
 	/** get current team member size */
 	virtual uint8 GetCurrentTeamPlayers()const { return (uint8)TeamMembers.Num(); }
@@ -72,11 +72,16 @@ public:
 	 * @desc remove a player     from this Team
 	 * @param PlayerToRemove     player to remove from this team
 	 */
-	virtual void RemovePlayer(class AINSPlayerController* PlayerToRemove);
+	virtual void RemovePlayer(class AINSPlayerStateBase* PlayerToRemove);
 
 	/** is team maximum members reached ? */
 	inline virtual bool isTeamFull();
 
 	/** add team score */
 	virtual void AddTeamScore(int32 ScoreToAdd) { TeamScore += FMath::CeilToFloat(ScoreToAdd); };
+
+	/**
+	 * retrieve the team score
+	 */
+	virtual float GetTeamScore()const { return TeamScore; }
 };

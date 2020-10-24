@@ -10,6 +10,7 @@
 class AINSZombie;
 class UBehaviorTreeComponent;
 class UPawnSensingComponent;
+class UBoxComponent;
 
 
 INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogZombieController, Log, All);
@@ -21,6 +22,8 @@ UCLASS()
 class INSURGENCY_API AINSZombieController : public AAIController
 {
 	GENERATED_UCLASS_BODY()
+
+protected:
 
 	/** the current acknowledged enemy target */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
@@ -42,6 +45,18 @@ class INSURGENCY_API AINSZombieController : public AAIController
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ZombieSensingComp", meta = (AllowPrivateAccess = "true"))
 		UPawnSensingComponent* ZombieSensingComp;
 
+	/** AttackRange Comp */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AttackRangeComp", meta = (AllowPrivateAccess = "true"))
+		UBoxComponent* AttackRangeComp;
+
+	/** stimulate level for current possessed zombie  */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sensing")
+		float StimulateLevel;
+
+	/** stimulate location */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Sensing")
+		FVector StimulateLocation;
+
 
 
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
@@ -50,11 +65,18 @@ class INSURGENCY_API AINSZombieController : public AAIController
 		uint8 bDrawDebugLineOfSightLine : 1;
 #endif
 
+	/** timer handle for zombies to lost a target enemy if the enemy can't seen for a certain time */
 	UPROPERTY()
-	FTimerHandle LostEnemyTimerHandle;
+		FTimerHandle LostEnemyTimerHandle;
 
 protected:
 
+	/**
+	 * tick this actor
+	 * @param DeltaTime         Tick interval
+	 * @param TickType          TickType
+	 * @param ThisTickFunction  ThisTickFunction
+	 */
 	virtual void TickActor(float DeltaTime, enum ELevelTick TickType, FActorTickFunction& ThisTickFunction)override;
 
 	/**
@@ -83,7 +105,7 @@ protected:
 
 	/**
 	 * Get The Current zombie that controlled by this zombie controller
-	 * @return Zombie that controlled by this controller
+	 * @return ZombiePawn
 	 */
 	inline virtual AINSZombie* GetZombiePawn() { return GetPawn<AINSZombie>(); }
 
@@ -94,7 +116,7 @@ protected:
 	virtual void OnPossess(APawn* InPawn)override;
 
 	/**
-	 * override when this zombie controller un-possess it's zombie pawn happened,allow some logic to set up here
+	 * override when this zombie controller UnPossess it's zombie pawn happened,allow some logic to set up here
 	 */
 	virtual void OnUnPossess()override;
 
@@ -104,11 +126,24 @@ protected:
 	virtual void InitZombieMoveMode();
 
 	/**
+	 * update the zombie's focal point
+	 */
+	virtual void UpdateFocalPoint();
+
+	/**
+	 * update controller  Rotation
+	 * @param DeltaTime   DeltaTime
+	 * @param bUpdatePawn indicates if should set pawn's rotation sync with controller rotation
+	 */
+	virtual void UpdateControlRotation(float DeltaTime, bool bUpdatePawn /* = true */)override;
+
+
+	/**
 	 * on see a pawn,call back function bind for PawnSensing comp
 	 * @param Pawn We see
 	 */
 	UFUNCTION()
-	virtual void OnSeePawn(APawn* SeenPawn);
+		virtual void OnSeePawn(APawn* SeenPawn);
 
 	/**
 	 * on hear noise,call back function bind for PawnSensing comp
@@ -117,14 +152,52 @@ protected:
 	 * @param Volume      The noise volume
 	 */
 	UFUNCTION()
-	virtual void OnHearNoise(APawn* NoiseInstigator, const FVector& Location, float Volume);
+		virtual void OnHearNoise(APawn* NoiseInstigator, const FVector& Location, float Volume);
 
+	/**
+	 * call back function for enemy lost
+	 */
 	UFUNCTION()
-	virtual void OnEnemyLost();
+		virtual void OnEnemyLost();
 
+	/**
+	 * tick enemy is visible for me
+	 */
 	UFUNCTION()
-	virtual void TickEnemyVisibility();
+		virtual void TickEnemyVisibility();
 
+	/**
+	 * performs attack
+	 */
+	UFUNCTION()
+		virtual void ZombieAttack();
+
+	/**
+	 * Call back when attack range comp overlapped with something
+	 * @param OverlappedComponent my overlapped comp
+	 * @param OtherActor Overlapped Actor
+	 * @param OtherComp other comp overlapped with this comp
+	 * @param bFromSweep is Sweep
+	 * @param SweepResult Sweep Result
+	 */
+	UFUNCTION()
+		virtual void OnAttackRangeCompOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+
+public:
+	/**
+	 * Add the stimulate to this zombie
+	 * @Params ValueToAdd  Value of stimulate to Add
+	 */
+	virtual void AddStimulate(float ValueToAdd);
+
+	/**
+	 * Happens when zombie takes damage
+	 * @Params Damage  damage taken
+	 * @param DamageEventInstigator instigator who instigate this damage
+	 * @param DamageCausedBy Actor who actually cause this damage
+	 */
+	virtual void OnZombieTakeDamage(float Damage, class AController* DamageEventInstigator, class AActor* DamageCausedBy);
 
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
 	/**

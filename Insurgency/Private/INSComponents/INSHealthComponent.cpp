@@ -25,8 +25,7 @@ void UINSHealthComponent::BeginPlay()
 }
 
 
-// Called every frame
-void UINSHealthComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UINSHealthComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	if (OwnerCharacter)

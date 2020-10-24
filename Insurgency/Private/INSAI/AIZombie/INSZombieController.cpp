@@ -5,6 +5,15 @@
 #include "BehaviorTree/BehaviorTreeComponent.h"
 #include "Perception/PawnSensingComponent.h"
 #include "INSAI/AIZombie/INSZombie.h"
+#include "Components/BoxComponent.h"
+#include "INSProjectiles/INSProjectile.h"
+#include "INSCharacter/INSPlayerController.h"
+#ifndef AINSPlayerCharacter
+#include "INSCharacter/INSPlayerCharacter.h"
+#endif
+#ifndef UCapsuleComponent
+#include "Components/CapsuleComponent.h"
+#endif
 #ifndef FTimerManager
 #include "TimerManager.h"
 #endif
@@ -19,12 +28,22 @@ DEFINE_LOG_CATEGORY(LogZombieController);
 AINSZombieController::AINSZombieController(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
 {
 	BroadCastEnemyRange = 10000.f;
-#if WITH_EDITOR&&!UE_BUILD_SHIPPING
-	bDrawDebugLineOfSightLine = true;
-#endif
 	BrainComponent = BehaviorTreeComponent = ObjectInitializer.CreateDefaultSubobject<UBehaviorTreeComponent>(this, TEXT("BehaviourTreeComp"));
 	ZombieSensingComp = ObjectInitializer.CreateDefaultSubobject<UPawnSensingComponent>(this, TEXT("ZombieSensingComp"));
 	PrimaryActorTick.bCanEverTick = true;
+	AttackRangeComp = ObjectInitializer.CreateDefaultSubobject<UBoxComponent>(this, TEXT("AttackRangeComp"));
+	AttackRangeComp->SetBoxExtent(FVector(200.f, 100.f, 100.f));
+	AttackRangeComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	StimulateLevel = 0.f;
+	StimulateLocation = FVector(ForceInit);
+	LostEnemyTime = 10.f;
+#if WITH_EDITOR&&!UE_BUILD_SHIPPING
+	bDrawDebugLineOfSightLine = true;
+	AttackRangeComp->bHiddenInGame = false;
+#endif
+#if !WITH_EDITOR&&UE_BUILD_SHIPPING
+	AttackRangeComp->bHiddenInGame = true;
+#endif
 }
 
 
@@ -34,6 +53,15 @@ void AINSZombieController::TickActor(float DeltaTime, enum ELevelTick TickType, 
 	if (CurrentTargetEnemy)
 	{
 		TickEnemyVisibility();
+		StimulateLocation = CurrentTargetEnemy->GetPawn()->GetActorLocation();
+	}
+	if (!StimulateLocation.IsZero())
+	{
+		SetFocalPoint(StimulateLocation);
+	}
+	if (CurrentTargetEnemy)
+	{
+		MoveToActor(CurrentTargetEnemy->GetPawn());
 	}
 }
 
@@ -75,6 +103,7 @@ bool AINSZombieController::TrySetTargetEnemy(class AController* NewEnemyTarget)
 	if (RandomNum % 3 == 0)
 	{
 		CurrentTargetEnemy = NewEnemyTarget;
+		StimulateLocation = NewEnemyTarget->GetPawn()->GetActorLocation();
 		if (GetWorldTimerManager().IsTimerActive(LostEnemyTimerHandle))
 		{
 			GetWorldTimerManager().ClearTimer(LostEnemyTimerHandle);
@@ -103,6 +132,10 @@ void AINSZombieController::OnPossess(APawn* InPawn)
 			// bind delegate
 			ZombieSensingComp->OnSeePawn.AddDynamic(this, &AINSZombieController::OnSeePawn);
 			ZombieSensingComp->OnHearNoise.AddDynamic(this, &AINSZombieController::OnHearNoise);
+			AttackRangeComp->OnComponentBeginOverlap.AddDynamic(this, &AINSZombieController::OnAttackRangeCompOverlap);
+			AttackRangeComp->AttachToComponent(GetZombiePawn()->GetCapsuleComponent(), FAttachmentTransformRules::SnapToTargetIncludingScale);
+			AttackRangeComp->SetRelativeLocation(FVector(50.f, 0.f, 0.f));
+			AttackRangeComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 		}
 		RunBehaviorTree(GetZombiePawn()->GetZombieBehaviorTree());
 	}
@@ -111,11 +144,13 @@ void AINSZombieController::OnPossess(APawn* InPawn)
 void AINSZombieController::OnUnPossess()
 {
 	Super::OnUnPossess();
-	if (BehaviorTreeComponent&&BehaviorTreeComponent->IsRunning())
+	if (BehaviorTreeComponent && BehaviorTreeComponent->IsRunning())
 	{
 		ZombieSensingComp->OnSeePawn.RemoveAll(this);
 		ZombieSensingComp->OnHearNoise.RemoveAll(this);
 		BehaviorTreeComponent->StopTree(EBTStopMode::Safe);
+		AttackRangeComp->DetachFromComponent(FDetachmentTransformRules::KeepRelativeTransform);
+		AttackRangeComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 }
 
@@ -131,6 +166,16 @@ void AINSZombieController::InitZombieMoveMode()
 	default:SelectedZombieMoveMode = EZombieMoveMode::Shamble; break;
 	}
 	GetZombiePawn()->SetZombieMoveMode(SelectedZombieMoveMode);
+}
+
+void AINSZombieController::UpdateFocalPoint()
+{
+
+}
+
+void AINSZombieController::UpdateControlRotation(float DeltaTime, bool bUpdatePawn /* = true */)
+{
+	Super::UpdateControlRotation(DeltaTime, bUpdatePawn);
 }
 
 void AINSZombieController::OnSeePawn(APawn* SeenPawn)
@@ -160,6 +205,10 @@ void AINSZombieController::OnSeePawn(APawn* SeenPawn)
 			TrySetTargetEnemy(SeenPawn->GetController());
 		}
 	}
+	else
+	{
+		TrySetTargetEnemy(SeenPawn->GetController());
+	}
 }
 
 void AINSZombieController::OnHearNoise(APawn* NoiseInstigator, const FVector& Location, float Volume)
@@ -170,21 +219,85 @@ void AINSZombieController::OnHearNoise(APawn* NoiseInstigator, const FVector& Lo
 void AINSZombieController::OnEnemyLost()
 {
 	CurrentTargetEnemy = nullptr;
+	StimulateLocation = FVector(ForceInit);
 	GetWorldTimerManager().ClearTimer(LostEnemyTimerHandle);
+	UE_LOG(LogZombieController
+		, Log
+		, TEXT("%s Zombie has lost target enemy")
+		, *GetZombiePawn()->GetName());
 }
 
 void AINSZombieController::TickEnemyVisibility()
 {
 	if (CurrentTargetEnemy)
 	{
-		const bool isEnemyVisible = LineOfSightTo(CurrentTargetEnemy);
+		bool isEnemyVisible = LineOfSightTo(GetMyTargetEnemy()->GetPawn());
 		if (!isEnemyVisible)
 		{
-			GetWorldTimerManager().SetTimer(LostEnemyTimerHandle, this, &AINSZombieController::OnEnemyLost, 1.f, false, LostEnemyTime);
+			if (!GetWorldTimerManager().IsTimerActive(LostEnemyTimerHandle))
+			{
+				GetWorldTimerManager().SetTimer(LostEnemyTimerHandle, this, &AINSZombieController::OnEnemyLost, 1.f, false, LostEnemyTime);
+			}
 		}
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
 		DrawLOSDebugLine();
 #endif
+	}
+}
+
+void AINSZombieController::ZombieAttack()
+{
+
+}
+
+void AINSZombieController::OnAttackRangeCompOverlap(UPrimitiveComponent* OverlappedComponent
+	, AActor* OtherActor
+	, UPrimitiveComponent* OtherComp
+	, int32 OtherBodyIndex
+	, bool bFromSweep
+	, const FHitResult& SweepResult)
+{
+	//refer to face to BB-entry
+	if (OtherActor->GetClass()->IsChildOf(AINSPlayerCharacter::StaticClass()))
+	{
+		if (!GetMyTargetEnemy())
+		{
+			CurrentTargetEnemy = Cast<AController>(OtherActor->GetOwner());
+		}
+	}
+	else if (GetMyTargetEnemy() == OtherActor->GetOwner())
+	{
+
+	}
+}
+
+void AINSZombieController::AddStimulate(float ValueToAdd)
+{
+	this->StimulateLevel += ValueToAdd;
+	UE_LOG(LogZombieController
+		, Log
+		, TEXT("%s Zombie has increase Stimulate %f!")
+		, *GetZombiePawn()->GetName()
+		, ValueToAdd);
+}
+
+void AINSZombieController::OnZombieTakeDamage(float Damage, class AController* DamageEventInstigator, class AActor* DamageCausedBy)
+{
+	if (Damage <= 0.f)
+	{
+		return;
+	}
+	else
+	{
+		if (DamageCausedBy)
+		{
+			const UClass* const DamageEventInstigatorClass = DamageEventInstigator->GetClass();
+			if (DamageEventInstigatorClass->IsChildOf(AINSPlayerController::StaticClass()))
+			{
+				StimulateLocation = DamageEventInstigator->GetPawn()->GetActorLocation();
+				AddStimulate(Damage);
+			}
+		}
 	}
 }
 
@@ -196,7 +309,7 @@ void AINSZombieController::DrawLOSDebugLine()
 		FRotator ViewRotation;
 		FVector ViewPoint;
 		GetActorEyesViewPoint(ViewPoint, ViewRotation);
-		DrawDebugLine(GetWorld(), ViewPoint, CurrentTargetEnemy->GetTargetLocation(GetZombiePawn()), FColor::Green, false, 0.5f);
+		DrawDebugLine(GetWorld(), ViewPoint, GetMyTargetEnemy()->GetPawn()->GetActorLocation(), FColor::Green, false, 0.5f);
 	}
 }
 #endif
