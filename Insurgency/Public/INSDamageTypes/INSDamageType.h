@@ -18,7 +18,7 @@ class INSURGENCY_API UINSDamageType : public UDamageType
 {
 	GENERATED_UCLASS_BODY()
 
-		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Message")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Message")
 		FText DamageMessage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Message")

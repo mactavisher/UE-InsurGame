@@ -247,7 +247,10 @@ void AINSZombieController::TickEnemyVisibility()
 
 void AINSZombieController::ZombieAttack()
 {
-
+	if (GetZombiePawn()&&!GetZombiePawn()->GetIsCharacterDead())
+	{
+		
+	}
 }
 
 void AINSZombieController::OnAttackRangeCompOverlap(UPrimitiveComponent* OverlappedComponent
