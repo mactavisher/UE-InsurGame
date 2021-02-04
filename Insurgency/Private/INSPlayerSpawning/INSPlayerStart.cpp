@@ -6,14 +6,14 @@
 AINSPlayerStart::AINSPlayerStart(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
 {
 	PlayerStartTag = TEXT("CT");
-#if WITH_EDITOR&&!UE_BUILD_SHIPPING
-	uint8 bShowPlayerStartOverlapDebugSphere = true;
-#endif
+//#if WITH_EDITOR&&!UE_BUILD_SHIPPING
+//	bShowPlayerStartOverlapDebugSphere = true;
+//#endif
 }
 
-#if WITH_EDITOR&&!UE_BUILD_SHIPPING
-void AINSPlayerStart::DrawPlayerStartPointOverlapSphere()
-{
-
-}
-#endif
+//#if WITH_EDITOR&&!UE_BUILD_SHIPPING
+//void AINSPlayerStart::DrawPlayerStartPointOverlapSphere()
+//{
+//
+//}
+//#endif

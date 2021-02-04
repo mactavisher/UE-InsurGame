@@ -81,11 +81,18 @@ void UINSWeaponAnimInstance::PlayReloadAnim(bool bHasForeGrip, bool bIsDry)
 	}
 	if (!SelectedGunReloadMontage)
 	{
-		UE_LOG(LogINSWeaponAimInstance, Warning, TEXT("weapon %s is trying to play Reload montage,but selectd reload Montage is missing,abort!!!"), *CurrentWeaponRef->GetName());
+		UE_LOG(LogINSWeaponAimInstance
+			, Warning
+			, TEXT("weapon %s is trying to play Reload montage,but selectd reload Montage is missing,abort!!!")
+			, *CurrentWeaponRef->GetName());
 		return;
 	}
 	Montage_Play(SelectedGunReloadMontage);
-	UE_LOG(LogINSWeaponAimInstance, Log, TEXT("weapon:%s Is playing Reload montage,reload Montage Name is %s"), *CurrentWeaponRef->GetName(), *SelectedGunReloadMontage->GetName());
+	UE_LOG(LogINSWeaponAimInstance
+		, Log
+		, TEXT("weapon:%s Is playing Reload montage,reload Montage Name is %s")
+		, *CurrentWeaponRef->GetName()
+		, *SelectedGunReloadMontage->GetName());
 }
 
 void UINSWeaponAnimInstance::PlaySwitchFireModeAnim(bool bHasForeGrip)
@@ -106,15 +113,22 @@ void UINSWeaponAnimInstance::PlaySwitchFireModeAnim(bool bHasForeGrip)
 	}
 	else
 	{
-		SelectedGunFireModeSwitchAnim= WeaponAssetsptr->FireModeSwitchAltGripFP.GunSwitchFireModeMontage;
+		SelectedGunFireModeSwitchAnim = WeaponAssetsptr->FireModeSwitchAltGripFP.GunSwitchFireModeMontage;
 	}
 	if (!SelectedGunFireModeSwitchAnim)
 	{
-		UE_LOG(LogINSWeaponAimInstance, Warning, TEXT("weapon %s is trying to play Reload montage,but selectd reload Montage is missing,abort!!!"), *CurrentWeaponRef->GetName());
+		UE_LOG(LogINSWeaponAimInstance
+			, Warning
+			, TEXT("weapon %s is trying to play Reload montage,but selectd reload Montage is missing,abort!!!")
+			, *CurrentWeaponRef->GetName());
 		return;
 	}
 	Montage_Play(SelectedGunFireModeSwitchAnim);
-	UE_LOG(LogINSWeaponAimInstance, Log, TEXT("weapon:%s Is playing Reload montage,reload Montage Name is %s"), *CurrentWeaponRef->GetName(), *SelectedGunFireModeSwitchAnim->GetName());
+	UE_LOG(LogINSWeaponAimInstance
+		, Log
+		, TEXT("weapon:%s Is playing Reload montage,reload Montage Name is %s")
+		, *CurrentWeaponRef->GetName()
+		, *SelectedGunFireModeSwitchAnim->GetName());
 }
 
 void UINSWeaponAnimInstance::OnWeaponAnimDelegateBindingFinished()
@@ -131,7 +145,9 @@ void UINSWeaponAnimInstance::PlayWeaponBasePose(bool bHasForeGrip)
 	}
 	UAnimMontage* SelectedWeaponBasePose = nullptr;
 	bHasForeGrip = CurrentWeaponRef->bForeGripEquipt;
-	SelectedWeaponBasePose = bHasForeGrip ? WeaponAssetsptr->BasePoseForeGripFP.GunBasePoseMontage : WeaponAssetsptr->BasePoseAltGripFP.GunBasePoseMontage;
+	SelectedWeaponBasePose = bHasForeGrip
+		? WeaponAssetsptr->BasePoseForeGripFP.GunBasePoseMontage
+		: WeaponAssetsptr->BasePoseAltGripFP.GunBasePoseMontage;
 }
 
 void UINSWeaponAnimInstance::PlayWeaponStartEquipAnim(bool bHasForeGrip)
@@ -157,54 +173,44 @@ void UINSWeaponAnimInstance::PlayWeaponStartEquipAnim(bool bHasForeGrip)
 	}
 	if (!SelectedGunEquipMontage)
 	{
-		UE_LOG(LogINSWeaponAimInstance, Warning, TEXT("weapon %s is trying to play equip montage,but selectd reload Montage is missing,abort!!!"), *CurrentWeaponRef->GetName());
+		UE_LOG(LogINSWeaponAimInstance
+			, Warning
+			, TEXT("weapon %s is trying to play equip montage,but selectd reload Montage is missing,abort!!!")
+			, *CurrentWeaponRef->GetName());
 		return;
 	}
 	Montage_Play(SelectedGunEquipMontage);
-	UE_LOG(LogINSWeaponAimInstance, Log, TEXT("weapon:%s Is playing equip montage,reload Montage Name is %s"), *CurrentWeaponRef->GetName(), *SelectedGunEquipMontage->GetName());
+	UE_LOG(LogINSWeaponAimInstance
+		, Log
+		, TEXT("weapon:%s Is playing equip montage,reload Montage Name is %s")
+		, *CurrentWeaponRef->GetName()
+		, *SelectedGunEquipMontage->GetName());
 }
 
 bool UINSWeaponAnimInstance::CheckValid()
 {
 	if (!bWeaponAnimDelegateBindingFinished)
 	{
-		UE_LOG(LogINSWeaponAimInstance, Warning, TEXT("waiting for delegate binding finished,can't play animations"));
+		UE_LOG(LogINSWeaponAimInstance
+			, Warning
+			, TEXT("waiting for delegate binding finished,can't play animations"));
 		return false;
 	}
 	if (!CurrentWeaponRef)
 	{
-		UE_LOG(LogINSWeaponAimInstance, Warning, TEXT("Missing Current Weapon Ref,invalid for playing any weapon anim"));
+		UE_LOG(LogINSWeaponAimInstance
+			, Warning
+			, TEXT("Missing Current Weapon Ref,invalid for playing any weapon anim"));
 		return false;
 	}
 	if (!WeaponAssetsptr)
 	{
-		UE_LOG(LogINSWeaponAimInstance, Warning, TEXT("Missing Current Weapon asstes Ref,invalid for playing any weapon anim"));
+		UE_LOG(LogINSWeaponAimInstance
+			, Warning
+			, TEXT("Missing Current Weapon asstes Ref,invalid for playing any weapon anim"));
 		return false;
 	}
 	return true;
 }
 
-void UINSWeaponAnimInstance::BindWeaponAnimDelegate()
-{
-	UE_LOG(LogINSWeaponAimInstance, Log, TEXT("Start Binding Weapon Anim Delegate for Weapon"));
-	FireDelegate.BindUFunction(this, TEXT("PlayFireAnim"));
-	StartSwitchFireModeDelegate.BindUFunction(this, TEXT("PlaySwitchFireModeAnim"));
-	StartEquipDelegate.BindUFunction(this, TEXT("PlayWeaponStartEquipAnim"));
-	StartReloadDelegate.BindUFunction(this, TEXT("PlayReloadAnim"));
-	CurrentWeaponRef->OnWeaponStartEquip.AddUnique(StartEquipDelegate);
-	UE_LOG(LogINSWeaponAimInstance, Log, TEXT("Bind Weapon Equip Anim delegate for Weapon: Delegate Function::PlayWeaponStartEquipAnim"));
-	CurrentWeaponRef->OnWeaponEachFire.AddUnique(FireDelegate);
-	UE_LOG(LogINSWeaponAimInstance, Log, TEXT("Bind Weapon Fire Anim delegate for Weapon: Delegate Function::PlayFireAnim"));
-	CurrentWeaponRef->OnWeaponStartReload.AddUnique(StartReloadDelegate);
-	UE_LOG(LogINSWeaponAimInstance, Log, TEXT("Bind Weapon Reload Anim delegate for Weapon: Delegate Function::PlayReloadAnim"));
-	CurrentWeaponRef->OnWeaponSwitchFireMode.AddUnique(StartSwitchFireModeDelegate);
-	UE_LOG(LogINSWeaponAimInstance, Log, TEXT("Bind Weapon Switch Fire Mode Anim delegate for Weapon: Delegate Function::PlaySwitchFireModeAnim"));
-	UE_LOG(LogINSWeaponAimInstance, Log, TEXT("Finish Binding Weapon Anim Delegate for Weapon"));
-	OnWeaponAnimDelegateBindingFinished();
-}
-
-void UINSWeaponAnimInstance::UnbindWeaponAnimDelegate()
-{
-
-}
 

@@ -63,7 +63,7 @@ void AINSPlayerController::SetupInputComponent()
 void AINSPlayerController::MoveRight(float Value)
 {
 	const AINSGameStateBase* GameState = GetWorld()->GetGameState<AINSGameStateBase>();
-	if (GameState&&GameState->GetAllowMove())
+	if (GameState && GameState->GetAllowMove())
 	{
 		if (Value != 0.0f)
 		{
@@ -83,7 +83,7 @@ void AINSPlayerController::MoveRight(float Value)
 void AINSPlayerController::MoveForward(float Value)
 {
 	const AINSGameStateBase* GameState = GetWorld()->GetGameState<AINSGameStateBase>();
-	if (GameState&&GameState->GetAllowMove() && Value != 0.f)
+	if (GameState && GameState->GetAllowMove() && Value != 0.f)
 	{
 
 		if (GetINSPlayerCharacter())
@@ -121,7 +121,9 @@ void AINSPlayerController::SetPlayerTeam(class AINSTeamInfo* NewTeam)
 	if (GetLocalRole() == ROLE_Authority)
 	{
 		PlayerTeam = NewTeam;
-		GetINSPlayerState()->SetPlayerTeam(PlayerTeam);
+		AINSPlayerStateBase* MyPlayerState = CastChecked<AINSPlayerStateBase>(GetPlayerState<AINSPlayerStateBase>());
+		PlayerTeam->AddPlayerToThisTeam(GetINSPlayerState());
+		MyPlayerState->SetPlayerTeam(PlayerTeam);
 	}
 }
 
@@ -137,11 +139,7 @@ void AINSPlayerController::OnRep_Pawn()
 
 class AINSTeamInfo* AINSPlayerController::GetPlayerTeam()
 {
-	if (PlayerState)
-	{
-		return GetPlayerState<AINSPlayerStateBase>()->GetPlayerTeam();
-	}
-	return nullptr;
+	return PlayerTeam;
 }
 
 void AINSPlayerController::SetCurrentWeapon(class AINSWeaponBase* NewWeapon)
@@ -157,9 +155,9 @@ void AINSPlayerController::BindWeaponDelegate()
 {
 	if (CurrentWeapon)
 	{
-// 		CurrentWeapon->OnAmmoLeftEmpty.AddDynamic(this, &AINSPlayerController::OnWeaponAmmoLeftEmpty);
-// 		CurrentWeapon->OnClipLow.AddDynamic(this, &AINSPlayerController::OnWeaponClipAmmoLow);
-// 		CurrentWeapon->OnClipEmpty.AddDynamic(this, &AINSPlayerController::OnWeaponClipEmpty);
+		// 		CurrentWeapon->OnAmmoLeftEmpty.AddDynamic(this, &AINSPlayerController::OnWeaponAmmoLeftEmpty);
+		// 		CurrentWeapon->OnClipLow.AddDynamic(this, &AINSPlayerController::OnWeaponClipAmmoLow);
+		// 		CurrentWeapon->OnClipEmpty.AddDynamic(this, &AINSPlayerController::OnWeaponClipEmpty);
 	}
 }
 
@@ -210,7 +208,7 @@ bool AINSPlayerController::ServerCrouch_Validate()
 
 void AINSPlayerController::UnCrouch()
 {
-
+	
 }
 
 void AINSPlayerController::ServerUnCrouch_Implementation()
@@ -231,14 +229,13 @@ void AINSPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 
 void AINSPlayerController::AimWeapon()
 {
-	if (GetINSPlayerCharacter() && GetINSPlayerCharacter()->GetCurrentWeapon())
+	if (GetINSPlayerCharacter())
 	{
 		if (GetLocalRole() == ROLE_Authority)
 		{
 			GetINSPlayerCharacter()->HandleAimWeaponRequest();
-			StopSprint();
 		}
-		else if(GetLocalRole()==ROLE_AutonomousProxy)
+		else if (GetLocalRole() == ROLE_AutonomousProxy)
 		{
 			ServerAimWeapon();
 		}
@@ -282,18 +279,17 @@ bool AINSPlayerController::ServerStopAimWeapon_Validate()
 
 void AINSPlayerController::ReloadWeapon()
 {
-	if (GetLocalRole() == ROLE_Authority)
+	if (GetINSPlayerCharacter())
 	{
-		if (GetINSPlayerCharacter())
+		if (GetLocalRole() == ROLE_Authority)
 		{
-			StopAimWeapon();
 			GetINSPlayerCharacter()->HandleWeaponRealoadRequest();
 		}
-	}
-	else
-	{
-		ServerStopAimWeapon();
-		ServerReloadWeapon();
+		else if(GetLocalRole()==ROLE_AutonomousProxy)
+		{
+			ServerStopAimWeapon();
+			ServerReloadWeapon();
+		}
 	}
 }
 
@@ -303,7 +299,7 @@ void AINSPlayerController::Fire()
 	{
 		const AINSGameModeBase* const CurrentGameMode = GetWorld()->GetAuthGameMode<AINSGameModeBase>();
 
-		if (GetINSPlayerCharacter() && CurrentGameMode&&CurrentGameMode->GetIsAllowFire())
+		if (GetINSPlayerCharacter() && CurrentGameMode && CurrentGameMode->GetIsAllowFire())
 		{
 			GetINSPlayerCharacter()->HandleFireRequest();
 		}
@@ -690,22 +686,16 @@ AINSPlayerCharacter* AINSPlayerController::GetINSPlayerCharacter()
 	return nullptr;
 }
 
-void AINSPlayerController::GetGameModeRandomWeapon()
+UClass* AINSPlayerController::GetGameModeRandomWeapon()
 {
-	const AINSGameModeBase* CurrentGameMode = GetWorld()->GetAuthGameMode<AINSGameModeBase>();
-	if (CurrentGameMode)
-	{
-		PlayerDefaultWeaponClass = CurrentGameMode->GetRandomGameModeWeaponClass();
-		AINSWeaponBase* const DefaultWeapon = GetWorld()->SpawnActorDeferred<AINSWeaponBase>(PlayerDefaultWeaponClass, GetINSPlayerCharacter()->GetActorTransform(), this, GetINSPlayerCharacter(), ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-		if (DefaultWeapon)
+	if (GetLocalRole() == ROLE_Authority) {
+		const AINSGameModeBase* const CurrentGameMode = GetWorld()->GetAuthGameMode<AINSGameModeBase>();
+		if (CurrentGameMode)
 		{
-			DefaultWeapon->SetWeaponState(EWeaponState::NONE);
-			UGameplayStatics::FinishSpawningActor(DefaultWeapon, GetINSPlayerCharacter()->GetActorTransform());
-			DefaultWeapon->SetOwner(this);
-			DefaultWeapon->SetAutonomousProxy(true);
+			return PlayerDefaultWeaponClass = CurrentGameMode->GetRandomGameModeWeaponClass();
 		}
-		GetINSPlayerCharacter()->SetCurrentWeapon(DefaultWeapon);
 	}
+	return nullptr;
 }
 
 void AINSPlayerController::ServerGetGameModeRandomWeapon_Implementation()
@@ -734,11 +724,11 @@ bool AINSPlayerController::IsEnemyFor(class AActor* Other)
 			const AINSPlayerCharacter* const OtherPlayerCharacter = CastChecked<AINSPlayerCharacter>(Other);
 			const AINSPlayerStateBase* const OtherPlayerState = OtherPlayerCharacter->GetPlayerState() == nullptr ? nullptr : OtherPlayerCharacter->GetPlayerStateChecked<AINSPlayerStateBase>();
 			const AINSPlayerStateBase* const MyPlayerState = GetINSPlayerCharacter()->GetPlayerState() == nullptr ? nullptr : GetINSPlayerCharacter()->GetPlayerStateChecked<AINSPlayerStateBase>();
-			if (OtherPlayerState&&MyPlayerState)
+			if (OtherPlayerState && MyPlayerState)
 			{
 				const AINSTeamInfo* const OtherPlayerCharacterTeam = OtherPlayerState->GetPlayerTeam();
 				const AINSTeamInfo* const MyPlayerCharacterTeam = MyPlayerState->GetPlayerTeam();
-				if (OtherPlayerCharacterTeam&&MyPlayerCharacterTeam)
+				if (OtherPlayerCharacterTeam && MyPlayerCharacterTeam)
 				{
 					const ETeamType OtherPlayerTeamType = OtherPlayerCharacterTeam->GetTeamType();
 					const ETeamType MyTeamType = MyPlayerCharacterTeam->GetTeamType();
@@ -760,7 +750,7 @@ bool AINSPlayerController::HasSeeEnemy()
 
 void AINSPlayerController::OnCharacterDeath()
 {
-	
+
 }
 
 AINSPlayerStateBase* AINSPlayerController::GetINSPlayerState()
@@ -799,16 +789,6 @@ void AINSPlayerController::OnPlayerMeshSetupFinished()
 
 void AINSPlayerController::OnPossess(APawn* InPawn)
 {
+	GetINSPlayerCharacter()->SetTeamType(PlayerTeam->GetTeamType());
 	Super::OnPossess(InPawn);
-	if (InPawn)
-	{
-		AINSPlayerCharacter* const ControlledPawn = GetINSPlayerCharacter();
-		if (ControlledPawn)
-		{
-			if (GetLocalRole() == ROLE_Authority)
-			{
-				ControlledPawn->SetCharacterTeam(PlayerTeam);
-			}
-		}
-	}
 }

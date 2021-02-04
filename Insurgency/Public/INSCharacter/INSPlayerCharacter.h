@@ -34,12 +34,13 @@ class INSURGENCY_API AINSPlayerCharacter : public AINSCharacter
 protected:
 
 	/** Player camera comp */
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "PlayerCameraComp", meta = (AllowPrivateAccess = "true"))
-		UCameraComponent* PlayerCameraComp;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "FirstPersonCamera", meta = (AllowPrivateAccess = "true"))
+		UCameraComponent* FirstPersonCamera;
 
-	/** Camera arm comp */
+	/* Camera arm comp*/ 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"), Category = "CameraArmComp")
-		USpringArmComponent* CameraArmComp;
+		USpringArmComponent* SpringArm;
+		
 
 	/** player character's 1P mesh comp,only visible to owner player */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "INSCharacter|CharacterMovement")
@@ -61,9 +62,14 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FeedBackEffects")
 		TSubclassOf<class UCameraShake> TakeHitCameraShake;
 
-	/** this Pawn's Team info */
-	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Replicated,ReplicatedUsing=OnRep_CharacterTeam, Category="Team")
-	   class AINSTeamInfo* CharacterTeam;
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Replicated,ReplicatedUsing=OnRep_TeamType, Category = "Team")
+	    ETeamType MyTeamType;
+
+	/** crouched relative location of springArm */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Camera")
+		float SpringArmRelLocCrouched;
+	
+
 
 
 
@@ -81,8 +87,6 @@ protected:
 
 	virtual void SimulateViewTrace();
 
-	virtual void UpdateCrouchedEyeHeight(float DeltaTimeSeconds);
-
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
 
 	virtual void OnRep_CurrentWeapon()override;
@@ -93,6 +97,8 @@ protected:
 
 	virtual void OnRep_Dead()override;
 
+	virtual void OnRep_Aim()override;
+
 	virtual void OnRep_IsCrouched()override;
 
 	virtual void OnRep_Sprint()override;
@@ -100,6 +106,12 @@ protected:
 	virtual void OnRep_PlayerState()override;
 
 	virtual void OnRep_LastHitInfo()override;
+
+	UFUNCTION()
+	virtual void OnRep_TeamType();
+
+	virtual void SetupMeshVisibility();
+
 
 	/**
 	 * @desc called when owner gets replicated and for controllers , 
@@ -115,9 +127,6 @@ protected:
 	virtual void OnRep_Controller()override;
 
 	UFUNCTION()
-	virtual void OnRep_CharacterTeam();
-
-	UFUNCTION()
 	virtual void UpdateCrouchEyeHeightSmoothly();
 
 public:
@@ -126,9 +135,17 @@ public:
 	virtual void ReceiveFriendlyFire(class AINSPlayerController* InstigatorPlayer, float DamageTaken);
 
 	/** return character camera comp */
-	FORCEINLINE virtual UCameraComponent* GetPlayerCameraComp()const { return PlayerCameraComp; }
+	FORCEINLINE virtual UCameraComponent* GetPlayerCameraComp()const { return FirstPersonCamera; }
 
 	virtual FTransform GetPlayerCameraTransform()const;
+
+	/**
+	 * @desc  get the camera socket transform in world space
+	 *        this will usually access by roles that will take FPS view 
+	 * 
+	 * @Param OutCameraSocketTransform  produce the CameraSocketTransform  FTransform
+	 */
+	virtual void GetPlayerCameraSocketWorldTransform(FTransform& OutCameraSocketTransform);
 
 	/** returns character's 3P mesh comp */
 	FORCEINLINE UINSCharSkeletalMeshComponent* GetCharacter3PMesh()const { return CharacterMesh3P; }
@@ -144,6 +161,8 @@ public:
 
 	/** returns current equipped weapon of this character */
 	virtual void SetCurrentWeapon(class AINSWeaponBase* NewWeapon)override;
+
+	virtual void SetupWeaponAttachment();
 
 	/** Set INS player controller that currently possess this character */
 	virtual void SetINSPlayerController(class AINSPlayerController* NewPlayerController);
@@ -166,23 +185,7 @@ public:
 	/** handles a stop sprint request from player controller */
 	virtual void HandleStartSprintRequest()override;
 
-	/** performs a mesh set up when game starts or when player states updated */
-	virtual void SetupPlayerMesh();
-
-	/**
-	 * @desc set up character mesh renderings according to it's local role
-	 */
-	virtual void SetupCharacterRenderings();
-
-	/**
-	 * @desc set up character mesh renderings according to it's local role
-	 */
-	virtual void SetCharacterTeam(class AINSTeamInfo* NewTeam);
-
-	/**
-	 * @desc returns the character's team info
-	 */
-	virtual AINSTeamInfo* GetCharacterTeamInfo()const { return CharacterTeam; }
+	virtual void HandleCrouchRequest()override;
 
 	/**
 	 * return if Mesh1p is hidden in game currently
@@ -194,7 +197,5 @@ public:
 	 */
 	inline bool GetIsMesh3pHidden()const;
 
-	virtual void UpdateADSHandsIkOffset();
-
-
+	virtual void SetTeamType(const ETeamType NewTeamType);
 };

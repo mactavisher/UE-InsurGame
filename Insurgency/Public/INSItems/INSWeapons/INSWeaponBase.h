@@ -18,6 +18,7 @@ class AINSCharacter;
 class UCameraShake;
 class AINSProjectile;
 class AINSProjectileShell;
+class UINSStaticAnimData;
 
 INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogINSWeapon, Log, All);
 
@@ -27,36 +28,36 @@ struct FWeaponConfigData
 {
 	GENERATED_USTRUCT_BODY()
 
-		/** the maximum ammo can be hold in a single clip */
-		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+	/** the maximum ammo can be hold in a single clip */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Ammo")
 		int32 AmmoPerClip;
 
 	/**the max ammo can carry with this weapon */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Ammo")
 		int32 MaxAmmo;
 
 	/** fire interval */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TimeBetweenShots")
 		float TimeBetweenShots;
 
 	/** time spent used to zoom in */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Zooming")
 		float ZoomingInTime;
 
 	/** time spent used to zoom out */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Zooming")
 		float ZoomingOutTime;
 
 	/** base damage of this weapon */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Damage")
 		float BaseDamage;
 
 	/** muzzle speed , used to init projectile initial velocity */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "MuzzleSpeed")
 		float MuzzleSpeed;
 
 	/** muzzle speed , used to init projectile initial velocity */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ScanTrace")
 		float ScanTraceRange;
 
 public:
@@ -117,10 +118,10 @@ struct FWeaponSpreadData
 
 namespace WeaponAttachmentSlotName
 {
-	const FName Muzzle(TEXT("Muzzle"));	                // Muzzle slot name
+	const FName Muzzle(TEXT("Muzzle"));	                    // Muzzle slot name
 	const FName Sight(TEXT("Sight"));		                // Sight slot name
-	const FName UnderBarrel(TEXT("UnderBarrel"));         // UnderBarrel slot name
-	const FName LeftRail(TEXT("LeftRail"));	            // LeftRail slot name
+	const FName UnderBarrel(TEXT("UnderBarrel"));           // UnderBarrel slot name
+	const FName LeftRail(TEXT("LeftRail"));	                // LeftRail slot name
 	const FName rightRail(TEXT("rightRail"));	            // rightRail slot name
 }
 
@@ -208,31 +209,23 @@ public:
 	}
 };
 
-
-/**
- *
- */
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWeaponFireSignature, bool, bHasForeGip, bool, bIsDry);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWeaponStartReloadSignature, bool, bHasForeGip, bool, bIsDry);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponStarSwitchFireModeSignature, bool, bHasForeGip);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponStartEquipSignature, bool, bHasForeGrip);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWeaponEnterIdleSignature);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWeaponOutIdleSignature);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWeaponStartAimSignature);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWeaponStopAimSignature);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWeaponFinishReloadSignature);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponClipEmptySignature, class AController*, OwnerPlayer);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWeaponClipAmmoLowSignature);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnWeaponAmmoLeftZero);
-
+static const FName SightAlignerSocketName = FName(TEXT("SightAligner"));
 UCLASS()
 class INSURGENCY_API AINSWeaponBase : public AINSItems
 {
 	GENERATED_UCLASS_BODY()
 
-		/** stores available fire modes to switch between */
-		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+	/** stores available fire modes to switch between */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
 		TArray<EWeaponFireMode> AvailableFireModes;
+
+	/** weapon animation data */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+		TSubclassOf<UINSStaticAnimData> WeaponAnimationClass;
+
+	/** weapon animation data */
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Animation")
+		UINSStaticAnimData* WeaponAnimation;
 
 	/** current selected(active) fire mode */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_CurrentFireMode, Category = "Config")
@@ -287,12 +280,12 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 		uint8 bEnableAutoReload : 1;
 
 	/** if enable ,weapon will reload automatically when current clip ammo hit 0 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Ammo")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = "Ammo")
 		uint8 bDryReload : 1;
 
 	/** if enable ,weapon will reload automatically when current clip ammo hit 0 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_AimWeapon, Category = "Aim")
-		uint8 bisAiming : 1;
+		uint8 bIsAimingWeapon : 1;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_Equipping, Category = "WeaponActions")
 		uint8 bWantsToEquip : 1;
@@ -395,59 +388,6 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	/** destroy if this weapon is dropped and not picked up for a period of time */
 	UPROPERTY()
 		FTimerHandle ResetFireStateTimer;
-public:
-
-	//~ begin weapon delegate signatures
-
-	/** weapon fires a single shot delegate */
-	UPROPERTY(BlueprintAssignable, Category = "WeaponEvents")
-		FOnWeaponFireSignature OnWeaponEachFire;
-
-	/** weapon switches it's fire mode delegate */
-	UPROPERTY(BlueprintAssignable, Category = "WeaponEvents")
-		FOnWeaponStarSwitchFireModeSignature OnWeaponSwitchFireMode;
-
-	/** weapon reload delegate */
-	UPROPERTY(BlueprintAssignable, Category = "WeaponEvents")
-		FOnWeaponStartReloadSignature OnWeaponStartReload;
-
-	/** weapon start equip delegate */
-	UPROPERTY(BlueprintAssignable, Category = "WeaponEvents")
-		FOnWeaponStartEquipSignature OnWeaponStartEquip;
-
-	/** character with weapon enters idle state delegate */
-	UPROPERTY(BlueprintAssignable, Category = "WeaponEvents")
-		FOnWeaponEnterIdleSignature OnWeaponEnterIdle;
-
-	/** character with weapon leaves idle state delegate */
-	UPROPERTY(BlueprintAssignable, Category = "WeaponEvents")
-		FOnWeaponOutIdleSignature OnWeaponOutIdle;
-
-	/** character start weapon aim delegate */
-	UPROPERTY(BlueprintAssignable, Category = "WeaponEvents")
-		FOnWeaponStartAimSignature OnWeaponAim;
-
-	/** character stop weapon aim delegate */
-	UPROPERTY(BlueprintAssignable, Category = "WeaponEvents")
-		FOnWeaponStopAimSignature OnStopWeaponAim;
-
-	/** weapon just finishes it's reloading delegate */
-	UPROPERTY(BlueprintAssignable, Category = "WeaponEvents")
-		FOnWeaponFinishReloadSignature OnFinishReloadWeapon;
-
-	/** weapon just finishes it's reloading delegate */
-	UPROPERTY(BlueprintAssignable, Category = "WeaponEvents")
-		FOnWeaponClipEmptySignature OnClipEmpty;
-
-	/** weapon just finishes it's reloading delegate */
-	UPROPERTY(BlueprintAssignable, Category = "WeaponEvents")
-		FOnWeaponClipAmmoLowSignature OnClipLow;
-
-	/** weapon just finishes it's reloading delegate */
-	UPROPERTY(BlueprintAssignable, Category = "WeaponEvents")
-		FOnWeaponAmmoLeftZero OnAmmoLeftEmpty;
-
-	//~ end  weapon delegate signatures
 
 protected:
 	//~ begin Actor interface
@@ -460,9 +400,6 @@ protected:
 
 	/** play weapon fire effects */
 	virtual void SimulateWeaponFireFX();
-
-	/** cast projectile shell after each shoot */
-	virtual void CastShell();
 
 	/** perform a trace to detect hit actor and adjust projectile spawn rotation */
 	virtual void SimulateScanTrace(FHitResult& Hit);
@@ -631,6 +568,8 @@ public:
 
 	virtual void WeaponGoToIdleState();
 
+	virtual void PlayWeaponReloadAnim();
+
 	/**
 	 * @desc called before any components get initialized
 	 */
@@ -678,7 +617,7 @@ public:
 	virtual void SetOwnerCharacter(class AINSCharacter* NewOwnerCharacter);
 
 	/** set this weapon current state */
-	virtual void SetWeaponState(EWeaponState NewWeaponState) { CurrentWeaponState = NewWeaponState; };
+	virtual void SetWeaponState(EWeaponState NewWeaponState);
 
 	inline virtual EWeaponState GetWeaponCurrentState()const { return CurrentWeaponState; }
 
@@ -708,20 +647,50 @@ public:
 
 	inline virtual float GetRecoilHorizontallyFactor()const { return RecoilHorizontallyFactor; }
 
+	/**
+	 * returns the base handIK location
+	 * @Param BaseHandsIk FVector
+	 */
 	inline virtual FVector GetBaseHandsIk()const { return BaseHandsIk; }
 
+	/**
+	 * set the base handIK location
+	 * @Param NewBaseHandsIk FVector
+	 */
 	virtual void SetBaseHandsIk(FVector NewBaseHandsIk) { BaseHandsIk = NewBaseHandsIk; }
 
-	inline virtual FVector GetAdjustADSHandsIk()const { return AdjustADSHandsIK; }
-
+	/**
+	 * returns the bullet muzzle velocity speed value
+	 * @return WeaponConfigData.MuzzleSpeed    float
+	 */
 	virtual float GetMuzzleSpeedValue()const { return WeaponConfigData.MuzzleSpeed; }
 
-	virtual void SetAdjustADSHandsIk(FVector NewIKPosition) { AdjustADSHandsIK = NewIKPosition; }
-
+	/**
+	 * return the sight socket transform,in world space
+	 */
 	virtual FTransform GetSightsTransform()const;
 
+	/**
+	 * performs a line trace to check as a HitScan
+	 */
 	virtual bool CheckScanTraceRange();
 
+	/**
+	 * check to see if the weapon has a extra sight aligner
+	 * @return true or false
+	 */
+	virtual bool IsSightAlignerExist()const;
+
+	/**
+	 * returns the weapon animation data
+	 * @return WeaponAnimation UINSStaticAnimData
+	 */
+	virtual UINSStaticAnimData* GetWeaponAnim()const { return WeaponAnimation; }
+
+	/**
+	 * returns the weapon state
+	 * @return CurrentWeaponState EWeaponState
+	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure)
 		virtual EWeaponState GetCurrentWeaponState()const { return CurrentWeaponState; }
 };

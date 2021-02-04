@@ -38,7 +38,16 @@ void UINSZombieAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 void UINSZombieAnimInstance::UpdateIsMoving()
 {
-	bIsMoving = ZombiePawnOwner && ZombiePawnMovementComp && ZombiePawnOwner->GetVelocity().Size2D() > 0.f;
+	const float HorizontalSpeed = ZombiePawnOwner&& ZombiePawnMovementComp?0.f: ZombiePawnMovementComp->GetLastUpdateVelocity().Size2D();
+	bIsMoving = HorizontalSpeed > 0.f;
+#if WITH_EDITOR&&!UE_BUILD_SHIPPING
+	if (TryGetPawnOwner() && TryGetPawnOwner()->GetNetMode() != ENetMode::NM_DedicatedServer)
+	{
+		FString DebugMessage = FString("Zombie is moving with speed");
+		DebugMessage.Append(FString::SanitizeFloat(HorizontalSpeed));
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green,DebugMessage);
+	}
+#endif
 }
 
 void UINSZombieAnimInstance::UpdateIsFalling()

@@ -163,7 +163,7 @@ void AINSProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* 
 			, HitComponent == nullptr ? TEXT("NULL") : *HitComponent->GetName()
 			, OtherComp == nullptr ? TEXT("NULL") : *OtherComp->GetName()
 			, OtherActor == nullptr ? TEXT("NULL") : *OtherActor->GetName());
-		if (OtherActor&&OtherActor->GetClass()->IsChildOf(AINSCharacter::StaticClass()))
+		if (OtherActor && OtherActor->GetClass()->IsChildOf(AINSCharacter::StaticClass()))
 		{
 			AINSCharacter* HitCharacter = CastChecked<AINSCharacter>(OtherActor);
 			FHitResult PoitHit;
@@ -221,22 +221,22 @@ void AINSProjectile::CalAndSpawnPenetrateProjectile(const FHitResult& OriginHitR
 		float PenetrateVelocitySize = 0.f;
 		switch (HitSurface)
 		{
-		case SurfaceType_Default:PenetrateVelocitySize = HitMat->Density*(FVector::Distance(OriginHitResult.Location, PrececionHit.Location) / 10)*0.6f*OriginVelocity.Size();
+		case SurfaceType_Default:PenetrateVelocitySize = HitMat->Density * (FVector::Distance(OriginHitResult.Location, PrececionHit.Location) / 10) * 0.6f * OriginVelocity.Size();
 		}
 		if (PenetrateVelocitySize > MinPenetrateVelSize)
 		{
 			FTransform SpawnTransform(
 				GetActorForwardVector().ToOrientationRotator(),
 				PrececionHit.Location +
-				GetActorForwardVector()*25.f,
+				GetActorForwardVector() * 25.f,
 				FVector::OneVector);
-			AINSProjectile*  PenetratedProj = GetWorld()->SpawnActorDeferred<AINSProjectile>(
+			AINSProjectile* PenetratedProj = GetWorld()->SpawnActorDeferred<AINSProjectile>(
 				this->GetClass(),
 				SpawnTransform,
 				this->GetOwnerWeapon()->GetOwnerCharacter()->GetController(),
 				this->GetOwnerWeapon()->GetOwnerCharacter(),
 				ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-			if (PenetratedProj&&GetCurrentPenetrateCount() < PenetrateCountThreshold)
+			if (PenetratedProj && GetCurrentPenetrateCount() < PenetrateCountThreshold)
 			{
 				PenetratedProj->GetProjectileMovementComp()->InitialSpeed = PenetrateVelocitySize;
 				PenetratedProj->DamageBase = DamageBase * 0.7f;
@@ -252,7 +252,7 @@ void AINSProjectile::CalAndSpawnPenetrateProjectile(const FHitResult& OriginHitR
 	if (bUsingDebugTrace)
 	{
 		DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 10.f);
-		DrawDebugSphere(GetWorld(), PrececionHit.Location + GetActorForwardVector()*25.f, 5.f, 10, FColor::Red, false, 10.f);
+		DrawDebugSphere(GetWorld(), PrececionHit.Location + GetActorForwardVector() * 25.f, 5.f, 10, FColor::Red, false, 10.f);
 	}
 #endif
 }
@@ -356,7 +356,7 @@ void AINSProjectile::GatherCurrentMovement()
 	//***************************************************************************************************/
 }
 
-void AINSProjectile::PreReplication(IRepChangedPropertyTracker & ChangedPropertyTracker)
+void AINSProjectile::PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker)
 {
 	Super::PreReplication(ChangedPropertyTracker);
 }
@@ -386,12 +386,12 @@ void AINSProjectile::InitClientFakeProjectile()
 	if (GetOwnerWeapon()->GetIsOwnerLocal())
 	{
 		SpawDir = GetOwnerWeapon()->WeaponMesh1PComp->GetMuzzleForwardVector();
-		SpawnLoc = GetOwnerWeapon()->WeaponMesh1PComp->GetMuzzleLocation() + 10.f*SpawDir;
+		SpawnLoc = GetOwnerWeapon()->WeaponMesh1PComp->GetMuzzleLocation() + 10.f * SpawDir;
 	}
 	else
 	{
 		SpawDir = GetOwnerWeapon()->WeaponMesh3PComp->GetMuzzleForwardVector();
-		SpawnLoc = GetOwnerWeapon()->WeaponMesh3PComp->GetMuzzleLocation() + 10.f*SpawDir;
+		SpawnLoc = GetOwnerWeapon()->WeaponMesh3PComp->GetMuzzleLocation() + 10.f * SpawDir;
 	}
 	const FTransform SpawnTransform(SpawDir.ToOrientationRotator(), SpawnLoc, FVector::OneVector);
 	ClientFakeProjectile = GetWorld()->SpawnActorDeferred<AINSProjectile>(

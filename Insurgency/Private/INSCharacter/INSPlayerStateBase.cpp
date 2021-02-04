@@ -57,7 +57,7 @@ void AINSPlayerStateBase::BeginPlay()
 
 void AINSPlayerStateBase::OnRep_TeamInfo()
 {
-
+	
 }
 
 void AINSPlayerStateBase::OnRep_MyScore()
@@ -75,11 +75,8 @@ void AINSPlayerStateBase::SetPlayerTeam(class AINSTeamInfo* NewTeam)
 {
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		PlayerTeam = NewTeam; 
-		if (GetPawn()&&GetPawn()->GetClass()->IsChildOf(AINSPlayerCharacter::StaticClass()))
-		{
-			GetPawn<AINSPlayerCharacter>()->SetCharacterTeam(PlayerTeam);
-		}
+		PlayerTeam = NewTeam;
+		OnRep_TeamInfo();
 	}
 }
 

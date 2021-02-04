@@ -160,6 +160,7 @@ public:
 	/**
 	 * @desc  given a point coordinate and calculate the coordinate of each part During each draw frame
 	 * @Param PivotPoint  Pivot
+	 * 
 	 */
 	void CalculateCoord(FVector2D PivotPoint)
 	{
@@ -343,6 +344,10 @@ class INSURGENCY_API AINSHUDBase : public AHUD
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "DrawPlayerKillList")
 		FDrawHitFeedBackIndicatorInfo DrawHitFeedBackInfo;
 
+	/** cache the player contorller of ins type */
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="OwningPlayerController")
+	    AINSPlayerController* OwningINSPlayerController;
+
 
 protected:
 	/** ~~--------------------------------------------------------------
@@ -375,9 +380,6 @@ protected:
 
 	/** create widgets needed for this game modes */
 	virtual void CreateWidgetInstances();
-
-	/** bind weapon delegate which meed to update screen drawing items */
-	virtual void BindDelegate();
 
 	/** remove all weapon delegate already binded */
 	virtual void RemoveAllDelegate();
@@ -453,6 +455,8 @@ public:
 	virtual void SetStartDrawHitFeedBack(FLinearColor NewDrawColor);
 
 	virtual void DrawScore();
+
+	virtual AINSPlayerController* GetINSOwingPlayerController()const { return OwningINSPlayerController; }
 
 	virtual void DrawWeaponFireMode();
 

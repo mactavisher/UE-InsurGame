@@ -14,17 +14,20 @@ class INSURGENCY_API AINSPlayerStart : public APlayerStart
 {
 	GENERATED_UCLASS_BODY()
 
-#if WITH_EDITOR&&!UE_BUILD_SHIPPING
-		/** indicates if enable drawing a player start point debug sphere */
-		uint8 bShowPlayerStartOverlapDebugSphere : 1;
-#endif
-
 protected:
-#if WITH_EDITOR&&!UE_BUILD_SHIPPING
-	/**
-	 * draw a debug sphere to show player overlap sphere for debug purpose
-	 */
-	virtual void DrawPlayerStartPointOverlapSphere();
-#endif
+
+//#if WITH_EDITOR&&!UE_BUILD_SHIPPING
+//		/** indicates if enable drawing a player start point debug sphere */
+//	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="Debug")
+//		uint8 bShowPlayerStartOverlapDebugSphere : 1;
+//#endif
+//
+//protected:
+//#if WITH_EDITOR&&!UE_BUILD_SHIPPING
+//	/**
+//	 * draw a debug sphere to show player overlap sphere for debug purpose
+//	 */
+//	virtual void DrawPlayerStartPointOverlapSphere();
+//#endif
 
 };

@@ -37,13 +37,13 @@ AINSZombieController::AINSZombieController(const FObjectInitializer& ObjectIniti
 	StimulateLevel = 0.f;
 	StimulateLocation = FVector(ForceInit);
 	LostEnemyTime = 10.f;
-#if WITH_EDITOR&&!UE_BUILD_SHIPPING
-	bDrawDebugLineOfSightLine = true;
-	AttackRangeComp->bHiddenInGame = false;
-#endif
-#if !WITH_EDITOR&&UE_BUILD_SHIPPING
-	AttackRangeComp->bHiddenInGame = true;
-#endif
+//#if WITH_EDITOR&&!UE_BUILD_SHIPPING
+//	bDrawDebugLineOfSightLine = true;
+//	AttackRangeComp->bHiddenInGame = false;
+//#endif
+//#if !WITH_EDITOR&&UE_BUILD_SHIPPING
+//	AttackRangeComp->bHiddenInGame = true;
+//#endif
 }
 
 
@@ -239,9 +239,9 @@ void AINSZombieController::TickEnemyVisibility()
 				GetWorldTimerManager().SetTimer(LostEnemyTimerHandle, this, &AINSZombieController::OnEnemyLost, 1.f, false, LostEnemyTime);
 			}
 		}
-#if WITH_EDITOR&&!UE_BUILD_SHIPPING
-		DrawLOSDebugLine();
-#endif
+//#if WITH_EDITOR&&!UE_BUILD_SHIPPING
+//		DrawLOSDebugLine();
+//#endif
 	}
 }
 
@@ -304,16 +304,16 @@ void AINSZombieController::OnZombieTakeDamage(float Damage, class AController* D
 	}
 }
 
-#if WITH_EDITOR && !UE_BUILD_SHIPPING
-void AINSZombieController::DrawLOSDebugLine()
-{
-	if (bDrawDebugLineOfSightLine)
-	{
-		FRotator ViewRotation;
-		FVector ViewPoint;
-		GetActorEyesViewPoint(ViewPoint, ViewRotation);
-		DrawDebugLine(GetWorld(), ViewPoint, GetMyTargetEnemy()->GetPawn()->GetActorLocation(), FColor::Green, false, 0.5f);
-	}
-}
-#endif
+//#if WITH_EDITOR && !UE_BUILD_SHIPPING
+//void AINSZombieController::DrawLOSDebugLine()
+//{
+//	if (bDrawDebugLineOfSightLine)
+//	{
+//		FRotator ViewRotation;
+//		FVector ViewPoint;
+//		GetActorEyesViewPoint(ViewPoint, ViewRotation);
+//		DrawDebugLine(GetWorld(), ViewPoint, GetMyTargetEnemy()->GetPawn()->GetActorLocation(), FColor::Green, false, 0.5f);
+//	}
+//}
+//#endif
 

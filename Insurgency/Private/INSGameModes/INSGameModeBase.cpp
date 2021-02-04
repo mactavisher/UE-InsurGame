@@ -130,7 +130,7 @@ void AINSGameModeBase::SpawnTerrorisTeam()
 		TerroristTeam->SetTeamType(ETeamType::REBEL);
 		static const FString TeamKey = TEXT("Rebel");
 		InGameTeams.Add(TeamKey, TerroristTeam);
-		UE_LOG(LogINSGameMode, Log, TEXT("Terrorist Team Has spawned for this game"));
+		UE_LOG(LogINSGameMode, Log, TEXT("Allie Team Has spawned for this game"));
 	}
 }
 
@@ -145,7 +145,7 @@ void AINSGameModeBase::SpawnCounterTerroristTeam()
 		CTTeam->SetTeamType(ETeamType::ALLIE);
 		static const FString TeamKey = TEXT("Allie");
 		InGameTeams.Add(TeamKey, CTTeam);
-		UE_LOG(LogINSGameMode, Log, TEXT("Counter Terrorist Team Has spawned for this game"));
+		UE_LOG(LogINSGameMode, Log, TEXT("Rebel Team Has spawned for this game"));
 	}
 }
 
@@ -302,8 +302,6 @@ void AINSGameModeBase::AssignPlayerTeam(class AINSPlayerController* NewPlayer)
 	}
 	if (SelectedTeam && NewPlayer)
 	{
-		AINSPlayerStateBase* PlayerState = CastChecked<AINSPlayerStateBase>(NewPlayer->PlayerState);
-		SelectedTeam->AddPlayerToThisTeam(PlayerState);
 		NewPlayer->SetPlayerTeam(SelectedTeam);
 	}
 }
@@ -351,11 +349,10 @@ AActor* AINSGameModeBase::FindPlayerStart_Implementation(AController* Player, co
 	}
 
 	UWorld* const World = GetWorld();
-	const UClass* const PlayerClass = Player->GetClass();
-	AINSPlayerController* const MyPlayeController = Cast<AINSPlayerController>(Player);
-	if (MyPlayeController)
+	AINSPlayerController* const PlayeController = Cast<AINSPlayerController>(Player);
+	if (PlayeController)
 	{
-		AINSTeamInfo* MyPlayerTeam = MyPlayeController->GetPlayerTeam();
+		AINSTeamInfo* PlayerTeam = PlayeController->GetPlayerTeam();
 		TArray<APlayerStart*> RebelPlayerStarts;
 		TArray<APlayerStart*> AlliePlayerStarts;
 		//Iterate the all player start spots that placed in map in advance,
@@ -375,10 +372,10 @@ AActor* AINSGameModeBase::FindPlayerStart_Implementation(AController* Player, co
 				}
 			}
 		}
-		const FName SelectePlayerTag = MyPlayerTeam->GetTeamType() == ETeamType::REBEL
+		const FName SelectePlayerTag = PlayerTeam->GetTeamType() == ETeamType::REBEL
 			? TeamName::Rebel
 			: TeamName::Allie;
-		const TArray<APlayerStart*> SeletedStarts = MyPlayerTeam->GetTeamType() == ETeamType::REBEL
+		const TArray<APlayerStart*> SeletedStarts = PlayerTeam->GetTeamType() == ETeamType::REBEL
 			? RebelPlayerStarts
 			: AlliePlayerStarts;
 		TArray<APlayerStart*> SafePlayerStarts;
@@ -408,7 +405,7 @@ AActor* AINSGameModeBase::FindPlayerStart_Implementation(AController* Player, co
 					{
 						AINSPlayerController* const ThatPlayer = Cast<AINSPlayerController>(FoundPlayers[i]);
 						const AINSTeamInfo* const ThatPlayerTeam = ThatPlayer->GetPlayerTeam();
-						if (MyPlayerTeam->GetTeamType() != ThatPlayerTeam->GetTeamType())
+						if (PlayerTeam->GetTeamType() != ThatPlayerTeam->GetTeamType())
 						{
 							bContainsEnemy = true;
 						}

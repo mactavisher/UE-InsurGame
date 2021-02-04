@@ -21,6 +21,7 @@
 #include "INSCharacter\INSCharacter.h"
 #include "INSGameModes/INSGameStateBase.h"
 #include "Components/PawnNoiseEmitterComponent.h"
+#include "Kismet/KismetStringLibrary.h"
 #ifndef GEngine
 #include "Engine/Engine.h"
 #endif // !GEngine
@@ -46,7 +47,6 @@ AINSCharacter::AINSCharacter(const FObjectInitializer& ObjectInitializer) :
 	bIsProne = false;
 	bIsSprint = false;
 	bIsCrouched = false;
-	DefaultBaseEyeHeight = 90.f;
 	bIsSuppressed = false;
 	CharacterCurrentStance = ECharacterStance::STAND;
 	FatalFallingSpeed = 2016.f;
@@ -86,9 +86,9 @@ void AINSCharacter::BeginPlay()
 void AINSCharacter::PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker)
 {
 	Super::PreReplication(ChangedPropertyTracker);
-// 	PRAGMA_DISABLE_DEPRECATION_WARNINGS
-// 		DOREPLIFETIME_ACTIVE_OVERRIDE(AINSCharacter, LastHitInfo, !LastHitInfo.bIsDirtyData);
-// 	PRAGMA_ENABLE_DEPRECATION_WARNINGS
+	PRAGMA_DISABLE_DEPRECATION_WARNINGS
+		DOREPLIFETIME_ACTIVE_OVERRIDE(AINSCharacter, LastHitInfo, !LastHitInfo.bIsDirtyData);
+	PRAGMA_ENABLE_DEPRECATION_WARNINGS
 }
 
 void AINSCharacter::GatherCurrentMovement()
@@ -99,6 +99,11 @@ void AINSCharacter::GatherCurrentMovement()
 void AINSCharacter::OnRep_ReplicatedMovement()
 {
 	Super::OnRep_ReplicatedMovement();
+}
+
+void AINSCharacter::GatherTakeHitInfo(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+
 }
 
 void AINSCharacter::PostInitializeComponents()
@@ -142,7 +147,7 @@ float AINSCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, A
 			// modify any damage according to game rules and other settings
 			if (GameMode)
 			{
-				GameMode->ModifyDamage(DamageAfterModify,DamageBeforeModify, EventInstigator, this->GetController(), DamageEvent, PointDamageEventPtr->HitInfo.BoneName);
+				GameMode->ModifyDamage(DamageAfterModify, DamageBeforeModify, EventInstigator, this->GetController(), DamageEvent, PointDamageEventPtr->HitInfo.BoneName);
 			}
 			if (PointDamageEventPtr)
 			{
@@ -155,10 +160,10 @@ float AINSCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, A
 				LastHitInfo.DamageType = DamageEvent.DamageTypeClass;
 				LastHitInfo.Momentum = DamageCauser->GetVelocity();
 				LastHitInfo.RelHitLocation = PointDamageEventPtr->HitInfo.ImpactPoint;
-// 				const FVector ShotDir = DamageCauser->GetActorForwardVector();
-// 				FRotator ShotRot = ShotDir.Rotation();
-// 				LastHitInfo.ShotDirPitch = FRotator::CompressAxisToByte(ShotRot.Pitch);
-// 				LastHitInfo.ShotDirYaw = FRotator::CompressAxisToByte(ShotRot.Yaw);
+				const FVector ShotDir = DamageCauser->GetActorForwardVector();
+				FRotator ShotRot = ShotDir.Rotation();
+				LastHitInfo.ShotDirPitch = FRotator::CompressAxisToByte(ShotRot.Pitch);
+				LastHitInfo.ShotDirYaw = FRotator::CompressAxisToByte(ShotRot.Yaw);
 				LastHitInfo.bIsDirtyData = false;
 				if (GetNetMode() == ENetMode::NM_Standalone || GetNetMode() == ENetMode::NM_ListenServer)
 				{
@@ -293,11 +298,11 @@ void AINSCharacter::OnRep_LastHitInfo()
 		}
 		UE_LOG(LogINSCharacter, Warning, TEXT("received Characters's:%s Hit Info,start handle take hit logic!"));
 		//spawn blood hit Impact
-		const FVector BloodSpawnLocation = LastHitInfo.DamageCauser->GetActorLocation();
-// 		const float ShotDirPitchDecompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirPitch);
-// 		const float ShotDirYawDeCompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirYaw);
-// 		const FRotator BloodSpawenRotation = FRotator(ShotDirPitchDecompressed, ShotDirYawDeCompressed, 0.f);
-		const FTransform BloodSpawnTrans = FTransform(LastHitInfo.DamageCauser->GetVelocity().ToOrientationRotator(), BloodSpawnLocation, FVector::OneVector);
+		const FVector BloodSpawnLocation = LastHitInfo.RelHitLocation;
+		const float ShotDirPitchDecompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirPitch);
+		const float ShotDirYawDeCompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirYaw);
+		const FRotator BloodSpawenRotation = FRotator(ShotDirPitchDecompressed, ShotDirYawDeCompressed, 0.f);
+		const FTransform BloodSpawnTrans = FTransform(BloodSpawenRotation, BloodSpawnLocation, FVector::OneVector);
 		const int32 BloodParticlesSize = BloodParticles.Num();
 		const int32 randomIndex = FMath::RandHelper(BloodParticlesSize - 1);
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BloodParticles[randomIndex], BloodSpawnTrans);
@@ -426,9 +431,12 @@ void AINSCharacter::HandleWeaponRealoadRequest()
 
 void AINSCharacter::HandleAimWeaponRequest()
 {
-	if (CurrentWeapon && CurrentWeapon->GetWeaponCurrentState() != EWeaponState::RELOADIND)
+	if (GetLocalRole() == ROLE_Authority)
 	{
-		CurrentWeapon->StartWeaponAim();
+		if (CurrentWeapon && CurrentWeapon->GetWeaponCurrentState() != EWeaponState::RELOADIND)
+		{
+			CurrentWeapon->StartWeaponAim();
+		}
 	}
 }
 
@@ -502,16 +510,7 @@ void AINSCharacter::HandleMoveRightRequest(float Value)
 
 void AINSCharacter::HandleCrouchRequest()
 {
-	if (bIsCrouched)
-	{
-		UnCrouch(true);
-		bIsCrouched = false;
-	}
-	else if (!bIsCrouched && CanCrouch())
-	{
-		Crouch(true);
-		bIsCrouched = true;
-	}
+	bIsCrouched = !bIsCrouched;
 }
 
 void AINSCharacter::HandleStartSprintRequest()
@@ -573,6 +572,15 @@ void AINSCharacter::SpawnWeaponPickup()
 	CurrentWeapon->Destroy(true);
 }
 
+void AINSCharacter::SetCharacterAiming(bool NewAimState)
+{
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		this->bIsAiming = NewAimState;
+		OnRep_Aim();
+	}
+}
+
 void AINSCharacter::SetCurrentWeapon(class AINSWeaponBase* NewWeapon)
 {
 	this->CurrentWeapon = NewWeapon;
@@ -612,6 +620,15 @@ void AINSCharacter::KilledBy(class AController* PlayerKilledMe, class AACtor* Ac
 void AINSCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	if (bIsCrouched)
+	{
+		CurrentEyeHeight = FMath::Clamp<float>(CurrentEyeHeight - 10.f, CrouchedEyeHeight, CurrentEyeHeight);
+	}
+	if (!bIsCrouched)
+	{
+		CurrentEyeHeight = FMath::Clamp<float>(CurrentEyeHeight + 10.f, CurrentEyeHeight, BaseEyeHeight);
+	}
+	//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Green,UKismetStringLibrary::Conv_BoolToString(bIsAiming));
 }
 
 // Called to bind functionality to input

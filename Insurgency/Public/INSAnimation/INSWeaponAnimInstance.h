@@ -57,9 +57,6 @@ public:
 	/** do nothing by default now */
 	virtual void PlayStopAimAnim() {};
 
-	virtual void BindWeaponAnimDelegate() override;
-
-	virtual void UnbindWeaponAnimDelegate() override;
 	//~end  INSWeaponAnim Interface
 
 public:

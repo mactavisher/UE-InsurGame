@@ -234,7 +234,7 @@ public:
 		virtual FRotator GetLastRotationInput()const { return LastPlayerInputRot; };
 
 	/** return s default weapon */
-	virtual  void GetGameModeRandomWeapon();
+	virtual UClass* GetGameModeRandomWeapon();
 
 	/** return s default weapon */
 	UFUNCTION(Server,Unreliable,WithValidation)

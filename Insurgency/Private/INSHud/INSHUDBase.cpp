@@ -35,6 +35,7 @@ AINSHUDBase::AINSHUDBase(const FObjectInitializer& ObjectInitializer) :Super(Obj
 void AINSHUDBase::BeginPlay()
 {
 	Super::BeginPlay();
+	OwningINSPlayerController = Cast<AINSPlayerController>(GetOwningPlayerController());
 	CreateWidgetInstances();
 }
 
@@ -43,18 +44,18 @@ void AINSHUDBase::DrawHUD()
 	Super::DrawHUD();
 
 	//HUD cross hair
-	if (bUsingHudCrossHair&&CurrentWeapon.Get() && bShowCrossHair&&CurrentWeapon.Get()->GetWeaponCurrentState()!=EWeaponState::RELOADIND)
+	if (bUsingHudCrossHair && CurrentWeapon.Get() && bShowCrossHair && CurrentWeapon.Get()->GetWeaponCurrentState() != EWeaponState::RELOADIND)
 	{
 		DrawHudCrossHair();
 	}
 	//Respawn Message if waiting for respawn
-    AINSPlayerStateBase* MyPlayerState = PlayerOwner->PlayerState==nullptr?nullptr: Cast<AINSPlayerStateBase>(PlayerOwner->PlayerState);
-	if (MyPlayerState&&MyPlayerState->GetIsWaitingForRespawn())
+	AINSPlayerStateBase* MyPlayerState = PlayerOwner->PlayerState == nullptr ? nullptr : Cast<AINSPlayerStateBase>(PlayerOwner->PlayerState);
+	if (MyPlayerState && MyPlayerState->GetIsWaitingForRespawn())
 	{
 		DrawWaitingForRespawnMessage();
 	}
 	//Prepare match Message
-	AINSGameStateBase*CurrentGameState = PlayerOwner->GetWorld()->GetGameState<AINSGameStateBase>();
+	AINSGameStateBase* CurrentGameState = PlayerOwner->GetWorld()->GetGameState<AINSGameStateBase>();
 	if (CurrentGameState)
 	{
 		if (CurrentGameState->GetIsPreparingMatch())
@@ -77,22 +78,27 @@ void AINSHUDBase::DrawHUD()
 
 void AINSHUDBase::DrawMyTeamInfo()
 {
-	AINSPlayerStateBase* MyPlayerState = PlayerOwner->PlayerState == nullptr ? nullptr : Cast<AINSPlayerStateBase>(PlayerOwner->PlayerState);
-	if (MyPlayerState)
+	if (!OwningINSPlayerController)
 	{
-		FString MyTeamName("Team:");
-		const AINSTeamInfo* MyTeamInfo = MyPlayerState->GetPlayerTeam();
-		if (MyTeamInfo)
+		return;
+	}
+	AINSPlayerStateBase* const MyPlayerState = OwningINSPlayerController->GetINSPlayerState();
+	if (!MyPlayerState)
+	{
+		return;
+	}
+	const AINSTeamInfo* MyTeamInfo = MyPlayerState->GetPlayerTeam();
+	FString MyTeamName("Team:");
+	if (MyTeamInfo)
+	{
+		const ETeamType MyTeamType = MyTeamInfo->GetTeamType();
+		switch (MyTeamType)
 		{
-			const ETeamType MyTeamType = MyTeamInfo->GetTeamType();
-			switch (MyTeamType)
-			{
-			case ETeamType::ALLIE:MyTeamName.Append("Allie"); break;
-			case ETeamType::REBEL:MyTeamName.Append("Rebel"); break;
-			default: MyTeamName.Append("None"); break;
-			}
-			DrawText(MyTeamName, FLinearColor::White, Canvas->SizeX*0.1f, Canvas->SizeY*0.95f, GEngine->GetSmallFont(), 1.2f, false);
+		case ETeamType::ALLIE:MyTeamName.Append(TeamName::Allie.ToString()); break;
+		case ETeamType::REBEL:MyTeamName.Append(TeamName::Rebel.ToString()); break;
+		default: MyTeamName.Append("None"); break;
 		}
+		DrawText(MyTeamName, FLinearColor::White, Canvas->SizeX * 0.1f, Canvas->SizeY * 0.95f, GEngine->GetSmallFont(), 1.2f, false);
 	}
 }
 
@@ -108,20 +114,6 @@ void AINSHUDBase::CreateWidgetInstances()
 	}
 }
 
-void AINSHUDBase::BindDelegate()
-{
-	if (CurrentWeapon.Get())
-	{
-		WeaponAimDelegate.BindUFunction(this, TEXT("OnAimWeapon"));
-		WeaponStopAimDelegate.BindUFunction(this, TEXT("OnStopAimWeapon"));
-		WeaponReloadDelegate.BindUFunction(this, TEXT("OnReloadWeapon"));
-		WeaponFinishReloadDelegate.BindUFunction(this, TEXT("OnFinishReloadWeapon"));
-		CurrentWeapon->OnWeaponAim.AddUnique(WeaponAimDelegate);
-		CurrentWeapon->OnStopWeaponAim.AddUnique(WeaponStopAimDelegate);
-		CurrentWeapon->OnWeaponStartReload.AddUnique(WeaponReloadDelegate);
-		CurrentWeapon->OnFinishReloadWeapon.AddUnique(WeaponFinishReloadDelegate);
-	}
-}
 
 void AINSHUDBase::RemoveAllDelegate()
 {
@@ -136,15 +128,15 @@ void AINSHUDBase::DrawHudCrossHair()
 	const float ScaleX = Canvas->SizeX / StandardSizeX;
 	const float ScaleY = Canvas->SizeY / StandardSizeY;
 	const float WeaponSpreadModifier = CurrentWeapon.Get()->GetWeaponCurrentSpread();
-	float BiasX = (CenterRadius + WeaponSpreadModifier)*ScaleX*2.f;
-	float BiasY = (CenterRadius + WeaponSpreadModifier)* ScaleY*2.f;
-	if (BiasX >= 400.f*ScaleX)
+	float BiasX = (CenterRadius + WeaponSpreadModifier) * ScaleX * 2.f;
+	float BiasY = (CenterRadius + WeaponSpreadModifier) * ScaleY * 2.f;
+	if (BiasX >= 400.f * ScaleX)
 	{
-		BiasX = 400.f*ScaleX;
+		BiasX = 400.f * ScaleX;
 	}
-	if (BiasY >= 400.f*ScaleY)
+	if (BiasY >= 400.f * ScaleY)
 	{
-		BiasY = 400.f*ScaleY;
+		BiasY = 400.f * ScaleY;
 	}
 	const float LeftLineCoordX = Canvas->SizeX / 2 - BiasX;
 	const float LeftLineEndCoordX = LeftLineCoordX - CrossHairLineLength * ScaleX;
@@ -177,28 +169,28 @@ void AINSHUDBase::DrawHitFeedBackIndicator()
 {
 	if (DrawHitFeedBackInfo.bShowHitFeedBackIndicator)
 	{
-		DrawHitFeedBackInfo.CalculateCoord(FVector2D(Canvas->ClipX/2.f, Canvas->ClipY/2.f));
-		DrawLine(DrawHitFeedBackInfo.LeftUpBegin.X,DrawHitFeedBackInfo.LeftUpBegin.Y,
-			DrawHitFeedBackInfo.LeftUpEnd.X,DrawHitFeedBackInfo.LeftUpEnd.Y,
+		DrawHitFeedBackInfo.CalculateCoord(FVector2D(Canvas->ClipX / 2.f, Canvas->ClipY / 2.f));
+		DrawLine(DrawHitFeedBackInfo.LeftUpBegin.X, DrawHitFeedBackInfo.LeftUpBegin.Y,
+			DrawHitFeedBackInfo.LeftUpEnd.X, DrawHitFeedBackInfo.LeftUpEnd.Y,
 			DrawHitFeedBackInfo.DrawColor,
 			2.f);
 
-		DrawLine(DrawHitFeedBackInfo.RightUpBegin.X,DrawHitFeedBackInfo.RightUpBegin.Y,
-			DrawHitFeedBackInfo.RightUpEnd.X,DrawHitFeedBackInfo.RightUpEnd.Y,
+		DrawLine(DrawHitFeedBackInfo.RightUpBegin.X, DrawHitFeedBackInfo.RightUpBegin.Y,
+			DrawHitFeedBackInfo.RightUpEnd.X, DrawHitFeedBackInfo.RightUpEnd.Y,
 			DrawHitFeedBackInfo.DrawColor,
 			2.f);
 
-		DrawLine(DrawHitFeedBackInfo.LeftDownBegin.X,DrawHitFeedBackInfo.LeftDownBegin.Y,
-			DrawHitFeedBackInfo.LeftDownEnd.X,DrawHitFeedBackInfo.LeftDownEnd.Y,
+		DrawLine(DrawHitFeedBackInfo.LeftDownBegin.X, DrawHitFeedBackInfo.LeftDownBegin.Y,
+			DrawHitFeedBackInfo.LeftDownEnd.X, DrawHitFeedBackInfo.LeftDownEnd.Y,
 			DrawHitFeedBackInfo.DrawColor,
 			2.f);
 
-		DrawLine(DrawHitFeedBackInfo.RightDownBegin.X,DrawHitFeedBackInfo.RightDownBegin.Y,
-			DrawHitFeedBackInfo.RightDownEnd.X,DrawHitFeedBackInfo.RightDownEnd.Y,
+		DrawLine(DrawHitFeedBackInfo.RightDownBegin.X, DrawHitFeedBackInfo.RightDownBegin.Y,
+			DrawHitFeedBackInfo.RightDownEnd.X, DrawHitFeedBackInfo.RightDownEnd.Y,
 			DrawHitFeedBackInfo.DrawColor,
 			2.f);
 
-		DrawHitFeedBackInfo.BaseLineOffSet = DrawHitFeedBackInfo.BaseLineOffSet*0.9f;
+		DrawHitFeedBackInfo.BaseLineOffSet = DrawHitFeedBackInfo.BaseLineOffSet * 0.9f;
 
 		if (DrawHitFeedBackInfo.BaseLineOffSet <= 8.f)
 		{
@@ -212,13 +204,13 @@ void AINSHUDBase::DrawPickupItemInfo()
 {
 	if (ItemTexture)
 	{
-		DrawTexture(ItemTexture, Canvas->ClipX / 2, Canvas->ClipY*0.8f
+		DrawTexture(ItemTexture, Canvas->ClipX / 2, Canvas->ClipY * 0.8f
 			, Canvas->ClipX, Canvas->ClipY, ItemTexture->GetSizeX()
 			, ItemTexture->GetSizeY(), ItemTexture->GetSizeX()
 			, ItemTexture->GetSizeY());
 	}
 	FString DrawMessage("See pickupable Weapon");
-	DrawText(DrawMessage, FLinearColor::White, Canvas->ClipX / 0.4, Canvas->ClipY / 0.5f, GEngine->GetMediumFont(),1.f,false);
+	DrawText(DrawMessage, FLinearColor::White, Canvas->ClipX / 0.4, Canvas->ClipY / 0.5f, GEngine->GetMediumFont(), 1.f, false);
 }
 
 void AINSHUDBase::OnAimWeapon()
@@ -282,14 +274,6 @@ void AINSHUDBase::SetCurrentWeapon(class AINSWeaponBase* CurrentNewWeapon)
 {
 	RemoveAllDelegate();
 	CurrentWeapon = CurrentNewWeapon;
-	if (CurrentWeapon.Get())
-	{
-		BindDelegate();
-	}
-	if (!CurrentWeapon.Get())
-	{
-		RemoveAllDelegate();
-	}
 	bShowCrossHair = true;
 }
 
@@ -305,17 +289,17 @@ void AINSHUDBase::DrawWaitingForRespawnMessage()
 	const AINSPlayerStateBase* const MyPlayerState = CastChecked<AINSPlayerStateBase>(GetINSOwingPlayerController()->PlayerState);
 	RespawnMessage.Append(FString::FromInt(MyPlayerState->GetReplicatedRespawnRemainingTime()));
 	RespawnMessage.Append(" Seconds");
-	DrawText(RespawnMessage, FLinearColor::White, Canvas->SizeX*0.45f, Canvas->SizeY*0.8f, GEngine->GetSmallFont(),1.f,false);
+	DrawText(RespawnMessage, FLinearColor::White, Canvas->SizeX * 0.45f, Canvas->SizeY * 0.8f, GEngine->GetSmallFont(), 1.f, false);
 }
 
 void AINSHUDBase::DrawMatchPrepareMessage()
 {
 	FString PrepareMessage;
 	PrepareMessage.Append("match starts in ....");
-	const AINSGameStateBase* const CurrentGameState =GetWorld()->GetGameState<AINSGameStateBase>();
+	const AINSGameStateBase* const CurrentGameState = GetWorld()->GetGameState<AINSGameStateBase>();
 	PrepareMessage.Append(FString::FromInt(CurrentGameState->GetReplicatedMatchPrepareRemainingTime()));
 	PrepareMessage.Append(" Seconds");
-	DrawText(PrepareMessage, FLinearColor::White, Canvas->SizeX*0.4f, Canvas->SizeY*0.2f, GEngine->GetMediumFont(),1.f,false);
+	DrawText(PrepareMessage, FLinearColor::White, Canvas->SizeX * 0.4f, Canvas->SizeY * 0.2f, GEngine->GetMediumFont(), 1.f, false);
 }
 
 void AINSHUDBase::SetPickupItemInfo(UTexture2D* NewItemTexture, bool ShowItemsStatus)
@@ -332,7 +316,7 @@ void AINSHUDBase::DrawAmmoInfo()
 		AmmoMessage.Append(FString::FromInt(CurrentWeapon.Get()->CurrentClipAmmo));
 		AmmoMessage.Append("/");
 		AmmoMessage.Append(FString::FromInt(CurrentWeapon.Get()->AmmoLeft));
-		DrawText(AmmoMessage, FLinearColor::White, Canvas->SizeX*0.9f, Canvas->SizeY*0.95f, GEngine->GetMediumFont(), 1.f, false);
+		DrawText(AmmoMessage, FLinearColor::White, Canvas->SizeX * 0.9f, Canvas->SizeY * 0.95f, GEngine->GetMediumFont(), 1.f, false);
 	}
 }
 
@@ -343,9 +327,9 @@ void AINSHUDBase::DrawHealth()
 		FString AmmoMessage;
 		AmmoMessage.Append("HP:");
 		AmmoMessage.Append(FString::SanitizeFloat(GetINSOwingPlayerController()->GetINSPlayerCharacter()->GetCharacterCurrentHealth()));
-		const AINSPlayerCharacter*PlayerCharacter = GetINSOwingPlayerController()->GetINSPlayerCharacter();
+		const AINSPlayerCharacter* PlayerCharacter = GetINSOwingPlayerController()->GetINSPlayerCharacter();
 		FLinearColor HealthColor = PlayerCharacter->GetIsLowHealth() ? FLinearColor::Red : FLinearColor::White;
-		DrawText(AmmoMessage, HealthColor, Canvas->SizeX*0.9f, Canvas->SizeY*0.91f, GEngine->GetMediumFont(), 1.f, false);
+		DrawText(AmmoMessage, HealthColor, Canvas->SizeX * 0.9f, Canvas->SizeY * 0.91f, GEngine->GetMediumFont(), 1.f, false);
 	}
 }
 
@@ -355,7 +339,7 @@ void AINSHUDBase::SetStartDrawScore(bool NewDrawState, int32 InScoreForDrawing)
 	//DrawScoreInfo.ResetDrawStatus();
 	DrawScoreStatus = NewDrawState;
 	DrawScoreInfo.ScoreToDraw = InScoreForDrawing;
-	
+
 }
 
 void AINSHUDBase::SetStartDrawHitFeedBack(FLinearColor NewDrawColor)
@@ -370,14 +354,14 @@ void AINSHUDBase::DrawScore()
 	if (DrawScoreStatus)
 	{
 		const float CurrentWorldTime = GetWorld()->GetTimeSeconds();
-		DrawScoreInfo.CurrentFrameScoreValue += FMath::CeilToInt(GetWorld()->GetDeltaSeconds()*DrawScoreInfo.DrawScoreInterpSpeed);
+		DrawScoreInfo.CurrentFrameScoreValue += FMath::CeilToInt(GetWorld()->GetDeltaSeconds() * DrawScoreInfo.DrawScoreInterpSpeed);
 		if (DrawScoreInfo.CurrentFrameScoreValue >= DrawScoreInfo.ScoreToDraw)
 		{
 			DrawScoreInfo.CurrentFrameScoreValue = DrawScoreInfo.ScoreToDraw;
 		}
-		DrawText(FString(TEXT("+")).Append(FString::FromInt(DrawScoreInfo.CurrentFrameScoreValue)), FLinearColor::Yellow, Canvas->SizeX*0.55f, Canvas->SizeY*0.50f, GEngine->GetSmallFont(), 1.f, false);
+		DrawText(FString(TEXT("+")).Append(FString::FromInt(DrawScoreInfo.CurrentFrameScoreValue)), FLinearColor::Yellow, Canvas->SizeX * 0.55f, Canvas->SizeY * 0.50f, GEngine->GetSmallFont(), 1.f, false);
 		DrawScoreInfo.DrawTimeEclapsed += GetWorld()->GetDeltaSeconds();
-		DrawScoreInfo.DrawScoreInterpSpeed = DrawScoreInfo.DrawScoreInterpSpeed*0.8f;
+		DrawScoreInfo.DrawScoreInterpSpeed = DrawScoreInfo.DrawScoreInterpSpeed * 0.8f;
 		if (DrawScoreInfo.DrawScoreInterpSpeed <= 1.f)
 		{
 			DrawScoreInfo.DrawScoreInterpSpeed = 1.f;
@@ -393,7 +377,7 @@ void AINSHUDBase::DrawScore()
 
 void AINSHUDBase::DrawWeaponFireMode()
 {
-	if (CurrentWeapon.Get()&&!GetINSOwingPlayerController()->GetINSPlayerCharacter()->GetIsCharacterDead())
+	if (CurrentWeapon.Get() && !GetINSOwingPlayerController()->GetINSPlayerCharacter()->GetIsCharacterDead())
 	{
 		FString FireMode;
 		EWeaponFireMode CurrentWeaponFireMode = CurrentWeapon->GetCurrentWeaponFireMode();
@@ -405,7 +389,7 @@ void AINSHUDBase::DrawWeaponFireMode()
 		default:
 			break;
 		}
-		DrawText(FireMode, FLinearColor::White, Canvas->SizeX*0.95f, Canvas->SizeY*0.95f, GEngine->GetSmallFont(), 1.f, false);
+		DrawText(FireMode, FLinearColor::White, Canvas->SizeX * 0.95f, Canvas->SizeY * 0.95f, GEngine->GetSmallFont(), 1.f, false);
 	}
 }
 

@@ -46,7 +46,7 @@ void AINSTeamInfo::SetTeamType(ETeamType NewTeamType)
 
 void AINSTeamInfo::OnRep_TeamType()
 {
-	OnTeamTypeChange.Broadcast();
+
 }
 
 void AINSTeamInfo::AddPlayerToThisTeam(class AINSPlayerStateBase* NewPlayer)

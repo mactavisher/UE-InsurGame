@@ -14,7 +14,8 @@ class AINSCharacter;
 class AINSPlayerCharacter;
 class AINSPlayerController;
 class UCharacterMovementComponent;
-struct FAimAnim;
+class UINSStaticAnimData;
+class AINSWeaponBase;
 
 INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogINSCharacterAimInstance, Log, All);
 
@@ -22,11 +23,11 @@ INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogINSCharacterAimInstance, Log, All)
  *
  */
 UCLASS()
-class INSURGENCY_API UINSCharacterAimInstance : public UAnimInstance,public IINSWeaponAnimInterface
+class INSURGENCY_API UINSCharacterAimInstance : public UAnimInstance, public IINSWeaponAnimInterface
 {
 	GENERATED_UCLASS_BODY()
-protected:
 
+protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|State")
 		uint8 bIsMoving : 1;
 
@@ -40,9 +41,6 @@ protected:
 		uint8 bIsSprinting : 1;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|State")
-		uint8 bSprintPressed : 1;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|State")
 		uint8 bIsArmed : 1;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BFCharacterAnim|State")
@@ -53,54 +51,8 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|Transform")
 		uint8 bStartJump : 1;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BlendSpace")
-		float StandStopMoveAlpha;
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|Transform")
-		FVector LastInputVector;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|Transform")
-		FRotator LastInputRotator;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|Transform")
-		FRotator DeltaRotation;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|Transform")
-		uint8 bIsTurning : 1;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|Transform")
-		uint8 bCanTurnInPlace : 1;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BlendSpace")
-		float Direction;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Blendspace")
-		UBlendSpace* StandWalkBlendSpace;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Blendspace")
-		UBlendSpace* CrouchWalkBlendSpace;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Blendspace")
-		UBlendSpace* StandJogBlendSpace;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Blendspace")
-		UBlendSpace* CrouchJogBlendSpace;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Blendspace")
-		UBlendSpace* ProneMoveBlendSpace;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Blendspace")
-		uint8 bCanEnterSprint : 1;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Blendspace")
-		uint8 bCanEnterJogFromSprint : 1;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Blendspace")
-		uint8 CanStopSprint : 1;
-
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="State")
-	uint8 bCanEnterJog:1;
+		uint8 bSprintPressed : 1;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BlendSpace")
 		float Yaw;
@@ -111,24 +63,6 @@ protected:
 	/** is this character is landed ,default is landed ,which is 1.0f */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BlendSpace")
 		float CustomNotIsFallingAlpha;
-
-	/** how much to apply additive base on ads time alpha value */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BlendSpace")
-		float JogPlayRate;
-
-	/** how much to apply additive base on ads time alpha value */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BlendSpace")
-		float JogSpeed;
-
-	/** how much to apply additive base on ads time alpha value */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BlendSpace")
-		float WalkPlayRate;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Stanima")
-		float WalkToStopAlpha;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Stanima")
-		float SprintToWalkAlpha;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControl")
 		float LeftHandIkAlpha;
@@ -143,7 +77,7 @@ protected:
 		float VerticalSpeed;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Blend")
-	    float SprintPlaySpeed;
+		float SprintPlaySpeed;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControl")
 		FVector WeaponIKRootOffSetEffector;
@@ -151,8 +85,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControl")
 		FVector BaseHandIKEffector;
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="IKControl")
-	    FVector ADSHandIKEffector;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControl")
+		FVector ADSHandIKEffector;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControl")
 		FVector CurrentHandIKEffector;
@@ -172,11 +106,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AnimationMode")
 		EViewMode CurrentViewMode;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AnimationMode")
-		float ADSAlpha;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BlendSpace")
+		float Direction;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSway")
-	    float MaxWeaponSwayPitch;
+		float MaxWeaponSwayPitch;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSway")
 		float MaxWeaponSwayYaw;
@@ -190,21 +124,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AnimationMode")
 		EWeaponBasePoseType CurrentWeaponBaseType;
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="Stance")
-	   ECharacterStance CurrentStance;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Stance")
+		ECharacterStance CurrentStance;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ADS")
 		struct FAimAnim AimAnimdata;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Turn")
-		uint8 TPShouldTurnLeft90 : 1;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Turn")
-		uint8 TPShouldTurnRight90 : 1;
-
-	protected:
-		UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AnimDelegate")
-			uint8 bWeaponAnimDelegateBindingFinished : 1;
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AnimDelegate")
+		uint8 bWeaponAnimDelegateBindingFinished : 1;
 
 #if WITH_EDITORONLY_DATA
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "INSCharacter|Debug")
@@ -212,79 +140,66 @@ protected:
 #endif
 
 protected:
-	UPROPERTY()
-		AINSCharacter* OwnerPlayerCharacter;
-
+	/** cached player controller */
 	UPROPERTY()
 		AINSPlayerController* OwnerPlayerController;
 
+	/** cached player character */
 	UPROPERTY()
 		UCharacterMovementComponent* CharacterMovementComponent;
 
+	/** cached weapon that currently in use */
 	UPROPERTY()
-		class AINSWeaponBase* CurrentWeaponRef;
+		AINSWeaponBase* CurrentWeapon;
 
+	/** cached player Animation data*/
 	UPROPERTY()
-		class UINSWeaponAssets* CurrentWeaponAsstetsRef;
+		UINSStaticAnimData* CurrentWeaponAnimData;
 
-	FScriptDelegate StartWeaponIdleDelegate;
-
-	FScriptDelegate OutWeaponIdleDelegate;
-
-	FScriptDelegate StartMoveDelegate;
-
-	FScriptDelegate StartSprintDelegate;
+	/** cached player character */
+	UPROPERTY()
+		AINSCharacter* OwnerPlayerCharacter;
 
 
 public:
-
-	virtual void SetIsFalling(bool bIsFallingNow) { this->bIsFalling = bIsFallingNow; }
-
 	virtual void SetWeaponBasePoseType(EWeaponBasePoseType NewBasePoseType) { this->CurrentWeaponBaseType = NewBasePoseType; }
 
 	virtual bool GetIsFalling()const { return bIsFalling; };
 
 	virtual void SetIsSprinting(bool bIsSprintingNow) { this->bIsSprinting = bIsSprintingNow; }
 
+	virtual void SetSprintPressed(bool NewSprintPressed) { this->bSprintPressed = NewSprintPressed; }
+
 	virtual void SetIsCrouching(bool bIsCrouchingNow) { this->bIsCrouching = bIsCrouchingNow; }
 
 	virtual void SetIsArmed(bool NewAremdState) { this->bIsArmed = NewAremdState; }
-
-	virtual void SetIsTuring(bool NewState) { this->bIsTurning = NewState; }
-
-	virtual bool GetIsTurning()const { return bIsTurning; }
 
 	virtual void SetIsAiming(bool IsAiming);
 
 	virtual bool GetIsAiming()const { return bIsAiming; }
 
-	virtual void UpdateWalkToStopAlpha();
-
-	virtual void UpdateSprintToWalkAlpha();
-
-	virtual void UpdateTurnConditions();
-
-	virtual void UpdateJogSpeed();
-
-	virtual void UpdateCanEnterSprint();
-
-	virtual void UpdateEnterJogState();
-
-	virtual void UpdateADSAlpha(float DeltaTimeSeconds);
-
 	virtual void SetStartJump(bool NewJumpState) { this->bStartJump = NewJumpState; }
 
-	virtual void SetCurrentWeaponRef(class AINSWeaponBase* NewWeaponRef);
+	/**
+	 * Set the currently used weapon and weapon animation data
+	 * @Param NewWeapon   AINSWeaponBase
+	 */
+	virtual void SetCurrentWeaponAndAnimationData(class AINSWeaponBase* NewWeapon);
 
+	/**
+	 * Set the currently view mode could either be FPS or TPS
+	 * @Param NewViewMode   EViewMode
+	 */
 	virtual void SetViewMode(EViewMode NewViewMode) { CurrentViewMode = NewViewMode; }
 
+
+	/**
+	 * Set the currently Stance pose to play
+	 * @Param NewStance   ECharacterStance
+	 */
 	virtual void SetCurrentStance(ECharacterStance NewStance) { CurrentStance = NewStance; }
 
 	virtual void PlayWeaponStartEquipAnim(bool bHasForeGrip)override;
-
-	virtual void BindWeaponAnimDelegate() override;
-
-	virtual void UnbindWeaponAnimDelegate() override;
 
 
 protected:
@@ -303,13 +218,9 @@ protected:
 	/** perform a check before playing any kind of animation */
 	virtual bool CheckValid();
 
-	virtual void SetRotationOffset(FRotator OffsetValue) { this->DeltaRotation = OffsetValue; }
-
 	virtual bool IsFPPlayingWeaponIdleAnim();
 
 	virtual void UpdateDirection();
-
-	virtual void UpdateStandStopMoveAlpha();
 
 	virtual void UpdatePitchAndYaw();
 
@@ -319,7 +230,7 @@ protected:
 
 	virtual void UpdateIsMoving();
 
-	virtual void UpdateCanEnterJogFromSprint();
+
 
 	virtual void UpdatePredictFallingToLandAlpha();
 
@@ -327,9 +238,9 @@ protected:
 
 	//~ begin INSWeaponAnim Interface
 
-	public:
+public:
 	/** play animation when firing, additive animations are shared between FP and TP */
-	virtual void PlayFireAnim(bool bHasForeGrip,bool bIsDry)override;
+	virtual void PlayFireAnim(bool bHasForeGrip, bool bIsDry)override;
 
 	virtual void PlayReloadAnim(bool bHasForeGrip, bool bIsDry)override;
 
@@ -357,11 +268,9 @@ protected:
 	virtual void OnWeaponAnimDelegateBindingFinished()override;
 
 	UFUNCTION()
-	virtual void FPPlayWeaponIdleAnim();
+		virtual void FPPlayWeaponIdleAnim();
 
 	virtual void PlayWeaponIdleAnim()override;
-
-	virtual void SetSprintPressed(bool NewSprintPress) { bSprintPressed = NewSprintPress; }
 
 	//~ end INSWeaponAnim Interface
 

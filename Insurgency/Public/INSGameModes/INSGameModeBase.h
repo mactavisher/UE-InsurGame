@@ -141,6 +141,12 @@ protected:
 	virtual void SpawnCounterTerroristTeam();
 	virtual void PlayerScore(class AINSPlayerController* ScoringPlayer);
 	virtual void EndMatchPerparing();
+
+	/**
+	 * add the specific player to the team
+	 * 
+	 * @Param NewPlayer The player to add to team
+	 */
 	virtual void AssignPlayerTeam(class AINSPlayerController* NewPlayer);
 	virtual void Tick(float DeltaSeconds)override;
 	virtual void ScorePlayer(class AINSPlayerController* PlayerToScore, int32 Score);

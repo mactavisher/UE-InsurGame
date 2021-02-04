@@ -31,10 +31,10 @@
 
 #define ECC_Penetrate                                              ECC_EngineTraceChannel1
 
-	/** ~~--------------------------------------------------------------
-	   define INS Game Types-------------------------------------------*/
+/** ~~--------------------------------------------------------------
+   define INS Game Types-------------------------------------------*/
 
-	   /** specify a character' gender,can be assigned via blueprint */
+/** specify a character' gender,can be assigned via blueprint */
 UENUM(BlueprintType)
 enum class ECharacterGender :uint8
 {
@@ -42,7 +42,7 @@ enum class ECharacterGender :uint8
 	FEMALE                       UMETA(DisplayName = "female"),
 };
 
-/** specify a character' gender,can be assigned via blueprint */
+/** specify a character' view mode,relative to the local player  */
 UENUM(BlueprintType)
 enum class EViewMode :uint8
 {
@@ -50,19 +50,20 @@ enum class EViewMode :uint8
 	TPS                         UMETA(DisplayName = "TPS"),
 };
 
+/** specify a character' stance types */
 UENUM(BlueprintType)
 enum class ECharacterStance :uint8 {
 	STAND,
 	CROUCH,
 	PRONE,
-	SWING,
 };
 
+/** specify a weapon's fire mode */
 UENUM(BlueprintType)
 enum class EWeaponFireMode :uint8 {
 	SEMI,
 	SEMIAUTO,
-	FULLAUTO
+	FULLAUTO,
 };
 
 UENUM(BlueprintType)

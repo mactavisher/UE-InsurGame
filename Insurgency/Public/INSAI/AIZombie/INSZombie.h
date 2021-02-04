@@ -17,6 +17,8 @@ INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogZombiePawn, Log, All);
 USTRUCT(BlueprintType)
 struct FAttackAnimMontages
 {
+	GENERATED_USTRUCT_BODY()
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animations")
 		UAnimMontage* LeftHandAttackMontage;
 
@@ -33,9 +35,9 @@ struct FAttackAnimMontages
 UENUM(BlueprintType)
 enum class EZombieMoveMode :uint8
 {
-	Walk                 UMETA(DisplayName = "Walk"),
-	Shamble              UMETA(DisplayName = "Shamble"),
-	Chase                UMETA(DisplayName = "Chase"),
+	Walk                     UMETA(DisplayName = "Walk"),
+	Shamble                  UMETA(DisplayName = "Shamble"),
+	Chase                    UMETA(DisplayName = "Chase"),
 };
 
 /**
@@ -45,8 +47,8 @@ UENUM(BlueprintType)
 enum class EZombieAttackMode :uint8
 {
 	LeftHand                 UMETA(DisplayName = "LeftHand"),
-	RightHand              UMETA(DisplayName = "RightHand"),
-	Hyper                UMETA(DisplayName = "Hyper"),
+	RightHand                UMETA(DisplayName = "RightHand"),
+	Hyper                    UMETA(DisplayName = "Hyper"),
 };
 
 /**
@@ -82,6 +84,9 @@ protected:
 	/** cached zombie AnimInstance */
 	UPROPERTY()
 		UINSZombieAnimInstance* CachedZombieAnimInstance;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Damage")
+	float AttackDamage;
 
 protected:
 
@@ -152,7 +157,7 @@ public:
 	 * Handles zombie attack request from zombie controller
 	 * @param ZombieController From which zombie controller that the attack request is passed
 	 */
-	virtual void HandlesAttackRequest(class AINSZombieController* ZombieController);
+	virtual void HandlesAttackRequest(class AINSZombieController* RequestZombieController);
 
 	/**
 	 * Get the current zombie attack mode
@@ -164,4 +169,9 @@ public:
 	 * @param NewAttakMode New Attack Mode to set for this zombie
 	 */
 	virtual void SetZombieCurrentAttackMode(EZombieAttackMode NewAttakMode) { this->CurrenAttackMode = NewAttakMode; };
+
+	/**
+	 * performs a line trace damage
+	 */
+	virtual void PerfromLineTraceDamage();
 };

@@ -59,11 +59,13 @@ protected:
 
 
 
+/*
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
 	/** indicates if need to show a line of sight line */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Debug")
-		uint8 bDrawDebugLineOfSightLine : 1;
-#endif
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Debug")
+		//uint8 bDrawDebugLineOfSightLine : 1;
+//#endif
+//*/
 
 	/** timer handle for zombies to lost a target enemy if the enemy can't seen for a certain time */
 	UPROPERTY()
@@ -199,10 +201,12 @@ public:
 	 */
 	virtual void OnZombieTakeDamage(float Damage, class AController* DamageEventInstigator, class AActor* DamageCausedBy);
 
+	/*
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
 	/**
 	 * draw a debug line to provide lines of sight visual
 	 */
-	virtual void DrawLOSDebugLine();
-#endif
+	//virtual void DrawLOSDebugLine();
+//#endif
+//	*/
 };

@@ -8,12 +8,19 @@
 #include "INSAnimation/INSZombieAnimInstance.h"
 #include "INSAI/AIZombie/INSZombieController.h"
 #include "Net/UnrealNetwork.h"
+#ifndef UCapsuleComponent
+#include "Components/CapsuleComponent.h"
+#endif
+#include "INSCharacter/INSPlayerCharacter.h"
+#if WITH_EDITOR&&!UE_BUILD_SHIPPING
+#include "DrawDebugHelpers.h"
+#endif
 
 DEFINE_LOG_CATEGORY(LogZombiePawn);
 
 AINSZombie::AINSZombie(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
 {
-
+	AttackDamage = 20.f;
 }
 
 void AINSZombie::OnRep_Dead()
@@ -45,7 +52,7 @@ float AINSZombie::TakeDamage(float Damage, struct FDamageEvent const& DamageEven
 	return DamageApplied;
 }
 
-void AINSZombie::HandlesAttackRequest(class AINSZombieController* ZombieController)
+void AINSZombie::HandlesAttackRequest(class AINSZombieController* RequestZombieController)
 {
 	if (GetLocalRole() == ROLE_Authority)
 	{
@@ -67,6 +74,44 @@ void AINSZombie::HandlesAttackRequest(class AINSZombieController* ZombieControll
 		{
 			//line trace damage
 		}
+	}
+}
+
+void AINSZombie::PerfromLineTraceDamage()
+{
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		FRotator ViewRotation;
+		FVector ViewPoint;
+		GetActorEyesViewPoint(ViewPoint, ViewRotation);
+		const float DamageRange = 100.f;
+		FHitResult HitResult(ForceInit);
+		FCollisionQueryParams CollisionQueryParams;
+		CollisionQueryParams.AddIgnoredActor(this);
+		CollisionQueryParams.AddIgnoredComponent(GetCapsuleComponent());
+		CollisionQueryParams.AddIgnoredComponent(GetMesh());
+		GetWorld()->LineTraceSingleByChannel(HitResult, ViewPoint, ViewRotation.Vector()*DamageRange+ViewPoint, ECollisionChannel::ECC_Camera, CollisionQueryParams);
+		if (HitResult.bBlockingHit)
+		{
+			ACharacter* const HitCharacter = Cast<ACharacter>(HitResult.GetActor());
+			if (HitCharacter)
+			{
+				if (HitCharacter->GetClass()->IsChildOf(AINSZombie::StaticClass()))
+				{
+					return;
+				}
+				else if (HitCharacter->GetClass()->IsChildOf(AINSPlayerCharacter::StaticClass()))
+				{
+					FPointDamageEvent ZombieDamageEvent;
+					ZombieDamageEvent.HitInfo = HitResult;
+					ZombieDamageEvent.Damage = AttackDamage;
+					HitCharacter->TakeDamage(AttackDamage, ZombieDamageEvent, ZombieController, this);
+				}
+			}
+		}
+#if WITH_EDITOR&&!UE_BUILD_SHIPPING
+		DrawDebugLine(GetWorld(), ViewPoint, ViewRotation.Vector() * DamageRange + ViewPoint, FColor::Red, false, 5.f);
+#endif
 	}
 }
 

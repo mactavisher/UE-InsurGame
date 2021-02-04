@@ -32,9 +32,17 @@ struct FTakeHitInfo
 {
 	GENERATED_USTRUCT_BODY()
 
-	/** the amount of damage actually applied,after game mode modify the damage */
+	/** shot direction pitch, manually compressed and decompressed */
 	UPROPERTY()
-		uint8 bIsDirtyData : 1;
+		uint8 ShotDirPitch;
+
+	/** shot direction yaw, manually compressed and decompressed */
+	UPROPERTY()
+		uint8 ShotDirYaw;
+
+	/** actor that actually cause this damage */
+	UPROPERTY()
+		class AActor* DamageCauser;
 
 	/** the amount of damage actually applied,after game mode modify the damage */
 	UPROPERTY()
@@ -56,18 +64,6 @@ struct FTakeHitInfo
 	UPROPERTY()
 		TSubclassOf<UDamageType> DamageType;
 
-	/** shot direction pitch, manually compressed and decompressed */
-	UPROPERTY()
-		uint8 ShotDirPitch;
-
-	/** shot direction yaw, manually compressed and decompressed */
-	UPROPERTY()
-		uint8 ShotDirYaw;
-
-	/** actor that actually cause this damage */
-	UPROPERTY()
-		class AActor* DamageCauser;
-
 	/** will this damage make the victim dead? */
 	UPROPERTY()
 		uint8 bVictimDead : 1;
@@ -84,20 +80,25 @@ struct FTakeHitInfo
 	UPROPERTY()
 		FName HitBoneName;
 
+	/** the amount of damage actually applied,after game mode modify the damage */
+	UPROPERTY()
+		uint8 bIsDirtyData : 1;
+
+
 	FTakeHitInfo()
-		: bIsDirtyData(true)
+		: ShotDirPitch(0)
+		, ShotDirYaw(0)
+		, DamageCauser(NULL)
 		, Damage(0)
 		, originalDamage(0)
 		, RelHitLocation(ForceInit)
 		, Momentum(ForceInit)
 		, DamageType(NULL)
-		, ShotDirPitch(0)
-		, ShotDirYaw(0)
-		, DamageCauser(NULL)
 		, bVictimDead(false)
 		, bVictimAlreadyDead(false)
 		, bIsTeamDamage(false)
 		, HitBoneName(NAME_None)
+		, bIsDirtyData(true)
 	{
 	}
 };
@@ -227,14 +228,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "CharacterAudioComp", meta = (AllowPrivateAccess = "true"))
 		UINSCharacterAudioComponent* CharacterAudioComp;
 
-	/** characters default eye height */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "EyeHeight")
-		float DefaultBaseEyeHeight;
-
-	/** characters default eye height */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "EyeHeight")
-		float CurrentEyeHeight;
-
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="FallingDamage")
 	    float FatalFallingSpeed;
 
@@ -247,6 +240,9 @@ protected:
 	/** bone mapped damage modifier */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BoneDamageModifier")
 		FBoneDamageModifier  BoneNameMappedDamageModifier;
+
+	UPROPERTY(VisibleDefaultsOnly,BlueprintReadOnly,Category="Camera")
+	    float CurrentEyeHeight;
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintAssignable)
@@ -277,6 +273,8 @@ protected:
 	virtual void GatherCurrentMovement()override;
 
 	virtual void OnRep_ReplicatedMovement()override;
+
+	virtual void GatherTakeHitInfo(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser);
 
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -372,7 +370,7 @@ public:
 	/** returns the character's audio comp */
 	FORCEINLINE virtual class UINSCharacterAudioComponent* GetCharacterAudioComp()const { return CharacterAudioComp; }
 
-	/** take damage ,if you call Super::TakeDamage(),the super function has broadcast take certain type of damage base on damageEnvent::clasId
+	/** take damage ,if you call Super::TakeDamage(),the super function has broadcast take certain type of damage base on damageEnvent::classId
 	 *  such as point damageEvents,Radius damageEvents,otherwise you will need to broadcast those take damage event manually
 	 */
 	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)override;
@@ -434,7 +432,7 @@ public:
 	 * @desc set is character is in a Aim State
 	 * @param     NewAimState   NewAimState to set
 	 */
-	virtual void SetIsAiming(bool NewAimState) { this->bIsAiming = NewAimState; }
+	virtual void SetCharacterAiming(bool NewAimState);
 
 	/**
 	 * @desc set the character's current using weapon
