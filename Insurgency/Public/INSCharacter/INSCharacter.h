@@ -414,7 +414,7 @@ public:
 	virtual void HandleMoveRightRequest(float Value);
 
 	/** handles crouch request from player*/
-	virtual void HandleCrouchRequest();
+	virtual void HandleCrouchRequest(bool bCrouchPressed);
 
 	/** handles sprint request from player*/
 	virtual void HandleStartSprintRequest();

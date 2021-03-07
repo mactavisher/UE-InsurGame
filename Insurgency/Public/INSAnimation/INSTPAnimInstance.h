@@ -28,7 +28,13 @@ class INSURGENCY_API UINSTPAnimInstance : public UINSCharacterAimInstance
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|Transform")
 		uint8 bIsTurning : 1;
-	
+
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|Transform")
+		float StandToJogAlpha;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|Transform")
+	    uint8 bCanEnterJog:1;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|Transform")
 		uint8 bCanTurnInPlace : 1;
@@ -75,20 +81,57 @@ class INSURGENCY_API UINSTPAnimInstance : public UINSCharacterAimInstance
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Stanima")
 		float SprintToWalkAlpha;
 
+	/**
+	 * @Desc tick variables that drives animation playing
+	 * 
+	 * @Params DeltaSeconds Tick interval
+	 */
 	virtual void NativeUpdateAnimation(float DeltaSeconds)override;
-	virtual void UpdateStandStopMoveAlpha();
 
-	virtual void UpdateCanEnterJogFromSprint();
+	/**
+	 * @Desc initialize animation set owner ptr
+	 */
+	virtual void NativeInitializeAnimation()override;
 
-	virtual void UpdateWalkToStopAlpha();
+	/**
+	 * @Desc set up current weapon and animation assets
+	 * 
+	 * @Param NewWeapon Weapon to use in this animation
+	 */
+	virtual void SetCurrentWeaponAndAnimationData(class AINSWeaponBase* NewWeapon)override;
 
-	virtual void UpdateSprintToWalkAlpha();
+	/**
+	 * used for entry state for jog
+	 */
+	virtual void UpdateCanEnterJogCondition();
 
+	/**
+	 * @desc update play turn in place animation conditions
+	 */
 	virtual void UpdateTurnConditions();
 
+	/**
+	 * @Desc update jog speed ,use for jog blend space blending
+	 */
 	virtual void UpdateJogSpeed();
+
+
 	virtual void UpdateCanEnterSprint();
 
+	virtual void PlayReloadAnim(bool bIsDry)override;
+
+	virtual void PlayWeaponBasePose()override;
+
+	virtual void PlayFireAnim()override;
+
+	virtual void UpdateIsAiming();
+
 	virtual void UpdateEnterJogState();
+
+	virtual void SetIsAiming(bool IsAiming)override;
+
+	virtual void PlayWeaponStartEquipAnim()override;
+
+	virtual void UpdatePredictFallingToLandAlpha();
 
 };

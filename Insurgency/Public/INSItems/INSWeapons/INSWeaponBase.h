@@ -28,36 +28,36 @@ struct FWeaponConfigData
 {
 	GENERATED_USTRUCT_BODY()
 
-	/** the maximum ammo can be hold in a single clip */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Ammo")
+		/** the maximum ammo can be hold in a single clip */
+		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		int32 AmmoPerClip;
 
 	/**the max ammo can carry with this weapon */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Ammo")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		int32 MaxAmmo;
 
 	/** fire interval */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TimeBetweenShots")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		float TimeBetweenShots;
 
 	/** time spent used to zoom in */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Zooming")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		float ZoomingInTime;
 
 	/** time spent used to zoom out */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Zooming")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		float ZoomingOutTime;
 
 	/** base damage of this weapon */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Damage")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		float BaseDamage;
 
 	/** muzzle speed , used to init projectile initial velocity */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "MuzzleSpeed")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		float MuzzleSpeed;
 
 	/** muzzle speed , used to init projectile initial velocity */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ScanTrace")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		float ScanTraceRange;
 
 public:
@@ -68,7 +68,7 @@ public:
 		, ZoomingInTime(0.15f)
 		, ZoomingOutTime(0.1f)
 		, BaseDamage(20.f)
-		, MuzzleSpeed(40000.f)
+		, MuzzleSpeed(8000.f)
 		, ScanTraceRange(1000.f)
 	{
 	}
@@ -132,19 +132,19 @@ struct FWeaponAttachmentSlot {
 	GENERATED_USTRUCT_BODY()
 
 		/**attachment class */
-		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AttachmentClass")
+		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		TSubclassOf<AActor> WeaponAttachementClass;
 
 	/** attachment instance */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AttachmentInstance")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		class AActor* WeaponAttachmentInstance;
 
 	/** attachment instance */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Availablility")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		uint8 bIsAvailable : 1;
 
 	/** Weapon attachment type */
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "AttachmentType")
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly)
 		EWeaponAttachmentType WeaponAttachmentType;
 
 public:
@@ -215,36 +215,36 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 {
 	GENERATED_UCLASS_BODY()
 
-	/** stores available fire modes to switch between */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+		/** stores available fire modes to switch between */
+		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FireMode")
 		TArray<EWeaponFireMode> AvailableFireModes;
 
 	/** weapon animation data */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animation")
 		TSubclassOf<UINSStaticAnimData> WeaponAnimationClass;
 
 	/** weapon animation data */
-	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Animation")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Animation")
 		UINSStaticAnimData* WeaponAnimation;
 
 	/** current selected(active) fire mode */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_CurrentFireMode, Category = "Config")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_CurrentFireMode, Category = "FireMode")
 		EWeaponFireMode CurrentWeaponFireMode;
 
 	/** current weapon state */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_CurrentWeaponState, Category = "Config")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_CurrentWeaponState, Category = "WeaponState")
 		EWeaponState CurrentWeaponState;
 
 	/** rep counter to tell clients fire just happened and things will happen */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponFireCount, Category = "Config")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponFireCount, Category = "WeaponFire")
 		uint8 RepWeaponFireCount;
 
 	/** simulate fire muzzle particles effects */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponFireCount, Category = "Config")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponFireCount, Category = "Effects")
 		UParticleSystemComponent* WeaponParticleComp;
 
 	/** stores weapon config data */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponConfig")
 		FWeaponConfigData WeaponConfigData;
 
 	/** ammo count in a current clip */
@@ -260,19 +260,19 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 		uint8 bInfinitAmmo : 1;
 
 	/** is this weapon equip a fore grip */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = "Ammo")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Ammo")
 		uint8 bForeGripEquipt : 1;
 
 	/** count fire shots when in a semi-auto mode for control taking  */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = "Ammo")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = "FireMode")
 		uint8 SemiAutoCurrentRoundCount;
 
 	/** stores last fire time , used for validate if weapon can fire it's next shot */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "States")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		float LastFireTime;
 
 	/** how much time it's gonna take to finish aim weapon  */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "States")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Aiming")
 		float AimTime;
 
 	/** if enable ,weapon will reload automatically when current clip ammo hit 0 */
@@ -280,19 +280,15 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 		uint8 bEnableAutoReload : 1;
 
 	/** if enable ,weapon will reload automatically when current clip ammo hit 0 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = "Ammo")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ammo")
 		uint8 bDryReload : 1;
 
 	/** if enable ,weapon will reload automatically when current clip ammo hit 0 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_AimWeapon, Category = "Aim")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_AimWeapon, Category = "Aiming")
 		uint8 bIsAimingWeapon : 1;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_Equipping, Category = "WeaponActions")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_Equipping, Category = "Equipping")
 		uint8 bWantsToEquip : 1;
-
-	/** modify weapon IK To adjust weapon position */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "IKControl")
-		FVector AdjustADSHandsIK;
 
 	/** mesh 1p */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WeaponMesh1PComp", meta = (AllowPrivateAccess = "true"))
@@ -330,10 +326,6 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
 		TSubclassOf<AINSProjectileShell> ProjectileShellClass;
 
-	/** weapon assets data,contains animation montage ,etc */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponAssets")
-		UINSWeaponAssets* WeaponAssetsptr;
-
 	/** pawn that owns this weapon */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_OwnerCharacter, Category = "OwnerCharacter")
 		AINSCharacter* OwnerCharacter;
@@ -341,6 +333,9 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	/** Max weapon spread value*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSpread")
 		FWeaponSpreadData WeaponSpreadData;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponBasePoseType, Category = "WeaponPose")
+		EWeaponBasePoseType CurrentWeaponBasePoseType;
 
 	/** current used weapon Spread */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSpread")
@@ -393,27 +388,45 @@ protected:
 	//~ begin Actor interface
 	virtual void Tick(float DeltaTime)override;
 
+	/**
+	 *  @desc called after all components get initialized
+	 */
 	virtual void PostInitializeComponents()override;
+
+	/**
+	 * @desc called before any components get initialized
+	 */
+	virtual void PreInitializeComponents()override;
 
 	virtual void BeginPlay()override;
 	//~ end actor interface
 
-	/** play weapon fire effects */
+	/**
+	 *  @Desc play weapon fire effects
+	 */
 	virtual void SimulateWeaponFireFX();
 
-	/** perform a trace to detect hit actor and adjust projectile spawn rotation */
+	/**
+	 * @Desc perform a trace to detect hit actor and adjust projectile spawn rotation
+	 */
 	virtual void SimulateScanTrace(FHitResult& Hit);
 
-	/** adjust projectile spawn rotation to hit center of the screen */
+	/**
+	 * @Desc adjust projectile spawn rotation to hit center of the screen
+	 */
 	virtual void AdjustProjectileDir(FVector& OutDir);
 
 	/** check if can enter fire state */
 	virtual bool CheckCanFire();
 
-	/** check if can enter reload  state */
+	/**
+	 * @Desc check if can enter reload  state
+	 */
 	virtual bool CheckCanReload();
 
-	/** handles semi-auto fire if available for this weapon */
+	/**
+	 * @Desc handles semi-auto fire if available for this weapon
+	 */
 	virtual void InternalHandleSemiAutoFire();
 
 	/** handles full auto fire if available for this weapon */
@@ -472,6 +485,8 @@ protected:
 	UFUNCTION()
 		virtual void OnRep_AimWeapon();
 
+	UFUNCTION()
+		virtual void OnRep_WeaponBasePoseType();
 	virtual void OnRep_Owner()override;
 
 
@@ -555,10 +570,6 @@ public:
 	/** things need to set after weapon fire mode switched */
 	virtual void FinishSwitchFireMode();
 
-	/** server,things need to set after weapon fire mode switched */
-	UFUNCTION(Unreliable, Server, WithValidation)
-		virtual void ServerFinishSwitchFireMode();
-
 	/** fires weapon once */
 	virtual void FireWeapon();
 
@@ -569,11 +580,6 @@ public:
 	virtual void WeaponGoToIdleState();
 
 	virtual void PlayWeaponReloadAnim();
-
-	/**
-	 * @desc called before any components get initialized
-	 */
-	virtual void PreInitializeComponents()override;
 
 	/**
 	 * @desc init and create default attachment slot that this weapon will possess by default
@@ -616,17 +622,17 @@ public:
 	 */
 	virtual void SetOwnerCharacter(class AINSCharacter* NewOwnerCharacter);
 
-	/** set this weapon current state */
+	/**
+	 * @Desc set this weapon current state
+	 * @Param NewWeaponState new weapon state to set
+	 */
 	virtual void SetWeaponState(EWeaponState NewWeaponState);
 
+	/**
+	 * @Desc returns the current weapon state
+	 * @Return EWeaponState the weapon current state
+	 */
 	inline virtual EWeaponState GetWeaponCurrentState()const { return CurrentWeaponState; }
-
-	/** server,set this weapon current state */
-	UFUNCTION(Server, Reliable, WithValidation)
-		virtual void ServerSetWeaponState(EWeaponState NewWeaponState);
-
-	/** return weapon assets ref */
-	FORCEINLINE virtual UINSWeaponAssets* GetWeaponAssets()const { return WeaponAssetsptr; };
 
 	FORCEINLINE virtual class UINSWeaponAnimInstance* GetWeapon1PAnimInstance();
 
@@ -693,4 +699,7 @@ public:
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure)
 		virtual EWeaponState GetCurrentWeaponState()const { return CurrentWeaponState; }
+
+
+	virtual EWeaponBasePoseType GetCurrentWeaponBasePose()const { return CurrentWeaponBasePoseType; }
 };

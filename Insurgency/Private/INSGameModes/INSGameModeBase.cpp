@@ -72,17 +72,6 @@ bool AINSGameModeBase::HasMatchStarted() const
 void AINSGameModeBase::PostLogin(APlayerController* NewPlayer)
 {
 	Super::PostLogin(NewPlayer);
-	// 	static const FString CTTeamKey = TEXT("CT");
-	// 	static const FString TTeamKey = TEXT("T");
-	// 	const bool RandomBool = FMath::RandBool();
-	// 	class AINSTeamInfo* SelectedTeam = RandomBool ? GetGameState<AINSGameStateBase>()->GetCTTeamInfo() : GetGameState<AINSGameStateBase>()->GetTerroristTeamInfo();
-	// 	class AINSPlayerController* Player = Cast<AINSPlayerController>(NewPlayer);
-	// 	if (Player)
-	// 	{
-	// 		AINSPlayerStateBase* PlayerState = CastChecked<AINSPlayerStateBase>(NewPlayer->PlayerState);
-	// 		SelectedTeam->AddPlayerToThisTeam(Player);
-	// 		Player->SetPlayerTeam(SelectedTeam);
-	// 	}
 	UE_LOG(LogINSGameMode, Log, TEXT("Player %s Has Called postLogin"), *NewPlayer->GetName());
 }
 
@@ -176,7 +165,7 @@ void AINSGameModeBase::ModifyDamage(float& OutDamage, const float& OriginDamage,
 		FBoneDamageModifier BoneDamageModifierStruct;
 		VictimCharacter->GetBoneDamageModifierStruct(BoneDamageModifierStruct);
 		const float BoneDamageModifier = BoneDamageModifierStruct.GetBoneDamageModifier(BoneName);
-		const float ModifiedDamage = OutDamage * BoneDamageModifier;
+		const float ModifiedDamage = OriginDamage * BoneDamageModifier;
 		OutDamage = ModifiedDamage;
 		if (BoneName.ToString().Contains("Head", ESearchCase::IgnoreCase))
 		{

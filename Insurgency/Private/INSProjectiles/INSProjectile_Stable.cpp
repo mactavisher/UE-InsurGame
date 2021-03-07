@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "INSProjectiles/INSProjectile.h"
+#include "INSProjectiles/INSProjectile_Stable.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/EngineTypes.h"
 #include "Engine/World.h"
@@ -24,9 +24,10 @@
 #include "INSComponents/INSWeaponMeshComponent.h"
 #include "Curves/CurveFloat.h"
 
-DEFINE_LOG_CATEGORY(LogINSProjectile);
+DEFINE_LOG_CATEGORY(LogINSProjectile_Stable);
+
 // Sets default values
-AINSProjectile::AINSProjectile(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
+AINSProjectile_Stable::AINSProjectile_Stable(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
 {
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.SetTickFunctionEnable(true);
@@ -48,26 +49,23 @@ AINSProjectile::AINSProjectile(const FObjectInitializer& ObjectInitializer) :Sup
 	TracerParticle->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	InitialLifeSpan = 5.f;
 	SetReplicatingMovement(true);
-	bIsGatheringMovement = false;
-	MovementRepInterval = 0.1f;
-	LastMovementRepTime = 0.f;
-	bForceMovementReplication = true;
+	//bIsGatheringMovement = false;
+	//MovementRepInterval = 0.1f;
+	//LastMovementRepTime = 0.f;
+	//bForceMovementReplication = true;
 	CollisionComp->SetCollisionProfileName(FName(TEXT("Projectile")));
 	/** turn this on because projectile's collision should be accurate to detect hit events and it's fast moving  */
 	CollisionComp->SetAllUseCCD(true);
 	CollisionComp->SetSphereRadius(5.f);
 	bClientFakeProjectile = false;
-#if WITH_EDITOR&&!UE_BUILD_SHIPPING
-	bUsingDebugTrace = true;
-#endif
 }
 
-void AINSProjectile::OnRep_Explode()
+void AINSProjectile_Stable::OnRep_Explode()
 {
 
 }
 
-void AINSProjectile::OnRep_HitCounter()
+void AINSProjectile_Stable::OnRep_HitCounter()
 {
 	if (HitCounter > 0)
 	{
@@ -121,12 +119,6 @@ void AINSProjectile::OnRep_HitCounter()
 				UGameplayStatics::FinishSpawningActor(EffctActor, EffctActorTransform);
 			}
 		}
-#if WITH_EDITOR&&!UE_BUILD_SHIPPING
-		if (bUsingDebugTrace)
-		{
-			DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 3.0f);
-		}
-#endif
 	}
 	if (ClientFakeProjectile)
 	{
@@ -134,10 +126,13 @@ void AINSProjectile::OnRep_HitCounter()
 	}
 }
 
-void AINSProjectile::OnRep_OwnerWeapon()
+void AINSProjectile_Stable::OnRep_OwnerWeapon()
 {
 	if (OwnerWeapon)
 	{
+		UE_LOG(LogINSProjectile_Stable,
+			Log,
+			TEXT("Projectile:%s Weapon owner Replicated,Init a client fake Projectile Now"));
 		if (GetNetMode() == ENetMode::NM_ListenServer)
 		{
 			return;
@@ -146,18 +141,17 @@ void AINSProjectile::OnRep_OwnerWeapon()
 	}
 }
 
-void AINSProjectile::EnableFakeProjVisual()
+void AINSProjectile_Stable::EnableFakeProjVisual()
 {
-	GetProjectileMesh()->SetHiddenInGame(false);
+	
 }
 
-void AINSProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+void AINSProjectile_Stable::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		CollisionComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		CollisionComp->SetCollisionResponseToAllChannels(ECR_Ignore);
-		UE_LOG(LogINSProjectile,
+		ProjectHitDelegate.Unbind();
+		UE_LOG(LogINSProjectile_Stable,
 			Log,
 			TEXT("Projectile hit something,this hit component name:%s,hit other component name:%s,other actor name :%s")
 			, HitComponent == nullptr ? TEXT("NULL") : *HitComponent->GetName()
@@ -166,22 +160,20 @@ void AINSProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* 
 		if (OtherActor && OtherActor->GetClass()->IsChildOf(AINSCharacter::StaticClass()))
 		{
 			AINSCharacter* HitCharacter = CastChecked<AINSCharacter>(OtherActor);
+			FHitResult PoitHit;
 			FPointDamageEvent PointDamageEvent;
-			/*PoitHit.Actor = HitCharacter;
+			PoitHit.Actor = HitCharacter;
 			PoitHit.Location = Hit.Location;
 			PoitHit.ImpactPoint = Hit.ImpactPoint;
-			PoitHit.ImpactNormal = Hit.ImpactNormal;*/
-			PointDamageEvent.HitInfo = Hit;
+			PoitHit.ImpactNormal = Hit.ImpactNormal;
+			PointDamageEvent.HitInfo = PoitHit;
 			PointDamageEvent.Damage = DamageBase;
 			PointDamageEvent.ShotDirection = this->GetVelocity().GetSafeNormal();
 			HitCharacter->TakeDamage(DamageBase, PointDamageEvent, InstigatorPlayer.Get(), this);
 		}
-		bForceMovementReplication = true;
-		bIsGatheringMovement = false;
-		GatherCurrentMovement();
 		//force a transformation update to clients
 		HitCounter++;
-		UE_LOG(LogINSProjectile
+		UE_LOG(LogINSProjectile_Stable
 			, Log
 			, TEXT("Projectile%s Hit Happened,Will Force Send a Movement info to all Conected Clients")
 			, *GetName());
@@ -192,103 +184,49 @@ void AINSProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* 
 		//CalAndSpawnPenetrateProjectile(Hit, GetVelocity());
 		SetLifeSpan(1.f);
 		GetProjectileMovementComp()->StopMovementImmediately();
+		CollisionComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		CollisionComp->SetCollisionResponseToAllChannels(ECR_Ignore);
 	}
 }
 
-void AINSProjectile::CalAndSpawnPenetrateProjectile(const FHitResult& OriginHitResult, const FVector& OriginVelocity)
+void AINSProjectile_Stable::CalAndSpawnPenetrateProjectile(const FHitResult& OriginHitResult, const FVector& OriginVelocity)
 {
-	const float PenetrateMinDistance = 2.f;
-	const float PenetrateMaxThresholdRange = 30.f;
-	const float MinPenetrateVelSize = 5000.f;
-	FHitResult PrececionHit;
-	const FVector TraceDir = GetActorForwardVector();
-	const FVector TraceStart = OriginHitResult.Location + TraceDir * 2.f;
-	const FVector TraceEnd = TraceStart + TraceDir * PenetrateMaxThresholdRange;
-	FCollisionQueryParams CollisionQueryParam;
-	CollisionQueryParam.AddIgnoredActor(this);
-	CollisionQueryParam.bReturnPhysicalMaterial = true;
-	GetWorld()->LineTraceSingleByChannel(
-		PrececionHit,
-		TraceStart,
-		TraceEnd,
-		ECollisionChannel::ECC_Camera,
-		CollisionQueryParam, ECR_Block);
-	if (PrececionHit.bBlockingHit)
-	{
-		const UPhysicalMaterial* const HitMat = PrececionHit.PhysMaterial.Get();
-		EPhysicalSurface HitSurface = UPhysicalMaterial::DetermineSurfaceType(HitMat);
-		float PenetrateVelocitySize = 0.f;
-		switch (HitSurface)
-		{
-		case SurfaceType_Default:PenetrateVelocitySize = HitMat->Density * (FVector::Distance(OriginHitResult.Location, PrececionHit.Location) / 10) * 0.6f * OriginVelocity.Size();
-		}
-		if (PenetrateVelocitySize > MinPenetrateVelSize)
-		{
-			FTransform SpawnTransform(
-				GetActorForwardVector().ToOrientationRotator(),
-				PrececionHit.Location +
-				GetActorForwardVector() * 25.f,
-				FVector::OneVector);
-			AINSProjectile* PenetratedProj = GetWorld()->SpawnActorDeferred<AINSProjectile>(
-				this->GetClass(),
-				SpawnTransform,
-				this->GetOwnerWeapon()->GetOwnerCharacter()->GetController(),
-				this->GetOwnerWeapon()->GetOwnerCharacter(),
-				ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-			if (PenetratedProj && GetCurrentPenetrateCount() < PenetrateCountThreshold)
-			{
-				PenetratedProj->GetProjectileMovementComp()->InitialSpeed = PenetrateVelocitySize;
-				PenetratedProj->DamageBase = DamageBase * 0.7f;
-				PenetratedProj->SetCurrentPenetrateCount(GetCurrentPenetrateCount() + 1);
-				PenetratedProj->SetOwnerWeapon(this->GetOwnerWeapon());
-				PenetratedProj->SetIsFakeProjectile(false);
-				PenetratedProj->SetInstigatedPlayer(InstigatorPlayer.Get());
-				UGameplayStatics::FinishSpawningActor(PenetratedProj, SpawnTransform);
-			}
-		}
-	}
-#if WITH_EDITOR&&!UE_BUILD_SHIPPING
-	if (bUsingDebugTrace)
-	{
-		DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 10.f);
-		DrawDebugSphere(GetWorld(), PrececionHit.Location + GetActorForwardVector() * 25.f, 5.f, 10, FColor::Red, false, 10.f);
-	}
-#endif
+
 }
 
-// Called when the game starts or when spawned
-void AINSProjectile::BeginPlay()
+void AINSProjectile_Stable::BeginPlay()
 {
 	Super::BeginPlay();
-	if (GetClientFakeProjectile())
-	{
-
-		if (GetClientFakeProjectile()->CurrentPenetrateCount > 1)
-		{
-			GetProjectileMesh()->SetHiddenInGame(true);
-			GetWorldTimerManager().SetTimer(FakeProjVisibilityTimer, this, &AINSProjectile::EnableFakeProjVisual, 1.f, false, 0.5f);
-		}
-		else
-		{
-			//hide this fake projectile for one frame-time
-			GetProjectileMesh()->SetHiddenInGame(false);
-		}
-	}
+	
 }
 
-void AINSProjectile::PostInitializeComponents()
+void AINSProjectile_Stable::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+	Super::Tick(DeltaTime);
+	if (!bClientFakeProjectile)
+	{
+		//invalid shot,just destroy it
+		if (GetActorLocation().Z >= 150000.f || GetActorLocation().Z <= -50000.f)
+		{
+			Destroy(false, true);
+		}
+	}
+
+}
+
+void AINSProjectile_Stable::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 	//SetActorHiddenInGame(true);
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		FScriptDelegate Delegate;
-		Delegate.BindUFunction(this, TEXT("OnProjectileHit"));
-		CollisionComp->OnComponentHit.AddUnique(Delegate);
+		ProjectHitDelegate.BindUFunction(this, TEXT("OnProjectileHit"));
+		CollisionComp->OnComponentHit.AddUnique(ProjectHitDelegate);
 	}
 }
 
-void AINSProjectile::PostNetReceiveVelocity(const FVector& NewVelocity)
+void AINSProjectile_Stable::PostNetReceiveVelocity(const FVector& NewVelocity)
 {
 	Super::PostNetReceiveVelocity(NewVelocity);
 	if (GetClientFakeProjectile())
@@ -298,7 +236,7 @@ void AINSProjectile::PostNetReceiveVelocity(const FVector& NewVelocity)
 	}
 }
 
-void AINSProjectile::PostNetReceiveLocationAndRotation()
+void AINSProjectile_Stable::PostNetReceiveLocationAndRotation()
 {
 	Super::PostNetReceiveLocationAndRotation();
 	if (GetClientFakeProjectile())
@@ -312,77 +250,34 @@ void AINSProjectile::PostNetReceiveLocationAndRotation()
 	}
 }
 
-void AINSProjectile::GatherCurrentMovement()
+void AINSProjectile_Stable::GatherCurrentMovement()
 {
-	if (GetLocalRole() != ROLE_Authority)
-	{
-		return;
-	}
-	const bool bRepDeltaTimeAllowed = GetWorld()->GetRealTimeSeconds() - LastMovementRepTime >= MovementRepInterval;
-	if (bRepDeltaTimeAllowed || bForceMovementReplication)
-	{
-		if (bIsGatheringMovement)
-		{
-			return;
-		}
-		else
-		{
-			bIsGatheringMovement = true;
-			Super::GatherCurrentMovement();
-			FRepMovement OptRepMovement = GetReplicatedMovement();
-			OptRepMovement.bRepPhysics = true;
-			OptRepMovement.LocationQuantizationLevel = bForceMovementReplication ? EVectorQuantization::RoundWholeNumber : EVectorQuantization::RoundOneDecimal;
-			OptRepMovement.RotationQuantizationLevel = ERotatorQuantization::ByteComponents;
-			OptRepMovement.VelocityQuantizationLevel = bForceMovementReplication ? EVectorQuantization::RoundWholeNumber : EVectorQuantization::RoundOneDecimal;
-			SetReplicatedMovement(OptRepMovement);
-			if (bForceMovementReplication)
-			{
-				bForceMovementReplication = false;
-			}
-			bIsGatheringMovement = false;
-			LastMovementRepTime = GetWorld()->GetRealTimeSeconds();
-		}
-	}
-	//****************************************************************************************************/
-	//      API Deprecation handling version
-	//      compress and less byte will be sent
-	// 	    PRAGMA_DISABLE_DEPRECATION_WARNINGS
-	// 		ReplicatedMovement.bRepPhysics = true;
-	// 		ReplicatedMovement.LocationQuantizationLevel = EVectorQuantization::RoundOneDecimal;
-	// 		ReplicatedMovement.RotationQuantizationLevel = ERotatorQuantization::ByteComponents;
-	// 		ReplicatedMovement.VelocityQuantizationLevel = EVectorQuantization::RoundOneDecimal;
-	// 		PRAGMA_DISABLE_DEPRECATION_WARNINGS
-	// 		LastMovementRepTime = GetWorld()->GetTimeSeconds();
-	//***************************************************************************************************/
+	Super::GatherCurrentMovement();
 }
 
-void AINSProjectile::PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker)
+void AINSProjectile_Stable::PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker)
 {
 	Super::PreReplication(ChangedPropertyTracker);
 }
 
-void AINSProjectile::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+void AINSProjectile_Stable::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(AINSProjectile, HitCounter);
-	DOREPLIFETIME(AINSProjectile, OwnerWeapon);
-	DOREPLIFETIME(AINSProjectile, CurrentPenetrateCount);
+	DOREPLIFETIME(AINSProjectile_Stable, HitCounter);
+	DOREPLIFETIME(AINSProjectile_Stable, OwnerWeapon);
+	DOREPLIFETIME(AINSProjectile_Stable, CurrentPenetrateCount);
 }
 
-void AINSProjectile::OnRep_ReplicatedMovement()
+void AINSProjectile_Stable::OnRep_ReplicatedMovement()
 {
-	if (GetClientFakeProjectile())
-	{
-		GetClientFakeProjectile()->SetReplicatedMovement(GetReplicatedMovement());
-	}
 	Super::OnRep_ReplicatedMovement();
 }
 
-void AINSProjectile::InitClientFakeProjectile()
+void AINSProjectile_Stable::InitClientFakeProjectile()
 {
 	FVector SpawnLoc(ForceInit);
 	FVector SpawDir(ForceInit);
-	if (GetOwnerWeapon()->GetLocalRole()==ROLE_AutonomousProxy||GetLocalRole()==ROLE_Authority)
+	if (GetOwnerWeapon()->GetLocalRole() == ROLE_AutonomousProxy || GetLocalRole() == ROLE_Authority)
 	{
 		SpawDir = GetOwnerWeapon()->WeaponMesh1PComp->GetMuzzleForwardVector();
 		SpawnLoc = GetOwnerWeapon()->WeaponMesh1PComp->GetMuzzleLocation() + 10.f * SpawDir;
@@ -393,7 +288,7 @@ void AINSProjectile::InitClientFakeProjectile()
 		SpawnLoc = GetOwnerWeapon()->WeaponMesh3PComp->GetMuzzleLocation() + 10.f * SpawDir;
 	}
 	const FTransform SpawnTransform(SpawDir.ToOrientationRotator(), SpawnLoc, FVector::OneVector);
-	ClientFakeProjectile = GetWorld()->SpawnActorDeferred<AINSProjectile>(
+	ClientFakeProjectile = GetWorld()->SpawnActorDeferred<AINSProjectile_Stable>(
 		this->GetClass(),
 		SpawnTransform,
 		this,
@@ -401,9 +296,6 @@ void AINSProjectile::InitClientFakeProjectile()
 		ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 	if (ClientFakeProjectile)
 	{
-#if WITH_EDITOR&&!UE_BUILD_SHIPPING
-		GetClientFakeProjectile()->bUsingDebugTrace = false;
-#endif
 		GetClientFakeProjectile()->SetIsFakeProjectile(true);
 		GetClientFakeProjectile()->NetAuthrotyProjectile = this;
 		GetClientFakeProjectile()->SetOwnerWeapon(GetOwnerWeapon());
@@ -417,32 +309,17 @@ void AINSProjectile::InitClientFakeProjectile()
 	}
 }
 
-void AINSProjectile::SendInitialReplication()
+void AINSProjectile_Stable::SendInitialReplication()
 {
 
 }
 
-void AINSProjectile::SetMuzzleSpeed(float NewSpeed)
+void AINSProjectile_Stable::SetMuzzleSpeed(float NewSpeed)
 {
-	ProjectileMoveComp->InitialSpeed = NewSpeed;
+
 }
 
-float AINSProjectile::GetDamageTaken()
+float AINSProjectile_Stable::GetDamageTaken()
 {
 	return 0.f;
-}
-
-
-// Called every frame
-void AINSProjectile::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-	if (!bClientFakeProjectile)
-	{
-		//invalid shot,just destroy it
-		if (GetActorLocation().Z >= 150000.f || GetActorLocation().Z <= -50000.f)
-		{
-			Destroy(false, true);
-		}
-	}
 }

@@ -32,8 +32,7 @@ UINSCharacterAimInstance::UINSCharacterAimInstance(const FObjectInitializer& Obj
 	bStartJump = false;
 	bIsCrouching = false;
 	WeaponIKSwayRotationAlpha = 0.f;
-	CurrentViewMode = EViewMode::FPS;
-	MaxWeaponSwayPitch = 5.f;
+	CurrentWeaponBaseType = EWeaponBasePoseType::FOREGRIP;
 #if WITH_EDITORONLY_DATA
 	bShowDebugTrace = true;
 #endif
@@ -52,17 +51,19 @@ void UINSCharacterAimInstance::NativeInitializeAnimation()
 void UINSCharacterAimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
-	if (OwnerPlayerCharacter && CharacterMovementComponent && !OwnerPlayerCharacter->GetIsCharacterDead() && OwnerPlayerCharacter->GetNetMode() != ENetMode::NM_DedicatedServer)
+	if (!OwnerPlayerCharacter || !CharacterMovementComponent || OwnerPlayerCharacter->GetIsCharacterDead())
 	{
-		UpdatePredictFallingToLandAlpha();
-		UpdateDirection();
-		UpdateHorizontalSpeed();
-		UpdateVerticalSpeed();
-		UpdatePitchAndYaw();
-		UpdateWeaponIkSwayRotation(DeltaSeconds);
-		UpdateIsMoving();
-		UpdateSprintPlaySpeed();
+		return;
 	}
+	UpdateDirection();
+	UpdateHorizontalSpeed();
+	UpdateVerticalSpeed();
+	UpdatePitchAndYaw();
+	UpdateIsMoving();
+	UpdateSprintPlaySpeed();
+	UpdateIsFalling();
+	UpdateIsAiming();
+	UpdateWeaponBasePoseType();
 }
 
 void UINSCharacterAimInstance::UpdateHorizontalSpeed()
@@ -200,6 +201,19 @@ void UINSCharacterAimInstance::UpdatePitchAndYaw()
 	}
 }
 
+void UINSCharacterAimInstance::UpdateIsAiming()
+{
+	bIsAiming = OwnerPlayerCharacter && OwnerPlayerCharacter->GetIsAiming();
+}
+
+void UINSCharacterAimInstance::UpdateWeaponBasePoseType()
+{
+	if (CurrentWeapon)
+	{
+		CurrentWeaponBaseType = CurrentWeapon->GetCurrentWeaponBasePose();
+	}
+}
+
 void UINSCharacterAimInstance::UpdateHandsIk()
 {
 	/*if (CurrentWeaponRef)
@@ -220,376 +234,11 @@ void UINSCharacterAimInstance::UpdateIsMoving()
 }
 
 
-
-void UINSCharacterAimInstance::UpdatePredictFallingToLandAlpha()
+void UINSCharacterAimInstance::UpdateIsFalling()
 {
-	// from this distance we start to update falling Alpha value ,any distance beyond this value will ignore and falling alpha is 0
-	// means this character is full falling state and not prepared to land,with trace start hit frame , prepare to land and from where start 
-	// to update falling alpha ,used for land and moving animation blending
-	const float FallingCalMinDistance = 30.f;
-	if (CharacterMovementComponent->IsFalling())
-	{
-		if (CurrentViewMode == EViewMode::TPS)
-		{
-			FCollisionQueryParams QueryParams;
-			QueryParams.AddIgnoredActor(OwnerPlayerCharacter);
-			const FVector CharacterCurrentLocation = OwnerPlayerCharacter->GetActorLocation();
-
-			const FVector TraceStartLocation = FVector(
-				CharacterCurrentLocation.X,
-				CharacterCurrentLocation.Y,
-				CharacterCurrentLocation.Z - FMath::Abs(OwnerPlayerCharacter->BaseEyeHeight));
-			const FVector TraceEndLocation = TraceStartLocation + FVector::DownVector * FallingCalMinDistance;
-
-			FHitResult LandPredictHit(ForceInit);
-			GetWorld()->LineTraceSingleByChannel(
-				LandPredictHit,
-				TraceStartLocation,
-				TraceEndLocation,
-				ECollisionChannel::ECC_Visibility,
-				QueryParams);
-			if (!LandPredictHit.bBlockingHit)
-			{
-				CustomNotIsFallingAlpha = 0.f;
-			}
-			else if (LandPredictHit.bBlockingHit)
-			{
-				const float Distance = FVector::Distance(TraceStartLocation, LandPredictHit.Location);
-				CustomNotIsFallingAlpha = (1 - (Distance / FallingCalMinDistance));
-				//if very close ,just set this to 1
-				if (CustomNotIsFallingAlpha >= 1 - KINDA_SMALL_NUMBER)
-				{
-					CustomNotIsFallingAlpha = 1.0f;
-				}
-			}
-#if WITH_EDITOR&&!UE_BUILD_SHIPPING
-			if (bShowDebugTrace)
-			{
-				DrawDebugLine(GetWorld(), TraceStartLocation, TraceEndLocation, FColor::Black, false, 0.1f);
-			}
-#endif
-		}
-	}
-	else
-	{
-		CustomNotIsFallingAlpha = 1.f;
-	}
+	bIsFalling = CharacterMovementComponent->IsFalling();
 }
 
-void UINSCharacterAimInstance::UpdateWeaponIkSwayRotation(float deltaSeconds)
-{
-	if (CurrentViewMode == EViewMode::FPS && OwnerPlayerController)
-	{
-		const float RotYaw = OwnerPlayerController->GetInputAxisValue(TEXT("Turn"));
-		const float RotPitch = OwnerPlayerController->GetInputAxisValue(TEXT("LookUp"));
-		if (RotYaw == 0.f)
-		{
-			if (WeaponIKSwayRotation.Yaw > 0.f)
-			{
-				WeaponIKSwayRotation.Yaw = FMath::Clamp<float>(WeaponIKSwayRotation.Yaw -= GetWorld()->GetDeltaSeconds() * WeaponSwayRecoverySpeed, 0.f, MaxWeaponSwayYaw);
-			}
-			if (WeaponIKSwayRotation.Yaw < 0.f)
-			{
-				WeaponIKSwayRotation.Yaw = FMath::Clamp<float>(WeaponIKSwayRotation.Yaw += GetWorld()->GetDeltaSeconds() * WeaponSwayRecoverySpeed, -MaxWeaponSwayYaw, 0.f);
-			}
-		}
-		else
-		{
-			WeaponIKSwayRotation.Yaw = FMath::Clamp<float>(WeaponIKSwayRotation.Yaw += GetWorld()->GetDeltaSeconds() * RotYaw * WeaponSwayScale, -MaxWeaponSwayYaw, MaxWeaponSwayYaw);
-		}
-		if (RotPitch == 0.f)
-		{
-			if (WeaponIKSwayRotation.Pitch > 0.f)
-			{
-				WeaponIKSwayRotation.Pitch = FMath::Clamp<float>(WeaponIKSwayRotation.Pitch -= GetWorld()->GetDeltaSeconds() * WeaponSwayRecoverySpeed, 0.f, MaxWeaponSwayPitch);
-			}
-			if (WeaponIKSwayRotation.Pitch < 0.f)
-			{
-				WeaponIKSwayRotation.Pitch = FMath::Clamp<float>(WeaponIKSwayRotation.Pitch += GetWorld()->GetDeltaSeconds() * WeaponSwayRecoverySpeed, -MaxWeaponSwayPitch, 0.f);
-			}
-		}
-		else
-		{
-			WeaponIKSwayRotation.Pitch = FMath::Clamp<float>(WeaponIKSwayRotation.Pitch -= GetWorld()->GetDeltaSeconds() * RotPitch * WeaponSwayScale, -MaxWeaponSwayPitch, MaxWeaponSwayPitch);
-		}
-	}
-}
-
-void UINSCharacterAimInstance::PlayFireAnim(bool bHasForeGrip, bool bIsDry)
-{
-	if (!CheckValid())
-	{
-		return;
-	}
-	/*UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("received weapon %s fire event"), *CurrentWeaponRef->GetName());
-	
-	Montage_Play(CurrentWeaponAnimData->FPFireHandsRecoilAnims);
-	Montage_Play(CurrentWeaponAnimData->FireAnimFPTP.FireSwayAim);
-	if (!GetIsAiming())
-	{
-		const uint8 FireRecoilMontageNum = CurrentWeaponAsstetsRef->FireAnimFPTP.CharFireRecoilMontages.Num();
-		if (FireRecoilMontageNum > 0)
-		{
-			const uint8 RandomIndex = FMath::RandHelper(FireRecoilMontageNum - 1);
-			Montage_Play(CurrentWeaponAsstetsRef->FireAnimFPTP.CharFireRecoilMontages[RandomIndex]);
-		}
-	}
-	else
-	{
-		const uint8 FireRecoilMontageADSNum = CurrentWeaponAsstetsRef->FireAnimFPTP.CharFireRecoilMontagesADS.Num();
-		if (FireRecoilMontageADSNum > 0)
-		{
-			const uint8 RandomIndex = FMath::RandHelper(FireRecoilMontageADSNum - 1);
-			Montage_Play(CurrentWeaponAsstetsRef->FireAnimFPTP.CharFireRecoilMontagesADS[RandomIndex]);
-		}
-	}*/
-}
-
-void UINSCharacterAimInstance::PlayReloadAnim(bool bHasForeGrip, bool bIsDry)
-{
-	if (!CheckValid())
-	{
-		return;
-	}
-	/*UE_LOG(LogINSCharacterAimInstance,
-		Warning,
-		TEXT("character:%s received weapon:%s Start reload event"),
-		*OwnerPlayerCharacter->GetName(),
-		*CurrentWeaponRef->GetName());
-	bHasForeGrip = CurrentWeapon->bForeGripEquipt;
-	bIsDry = CurrentWeapon->bDryReload;
-
-	if (CurrentViewMode == EViewMode::FPS)
-	{
-		UAnimMontage* SelectedFPReloadMontage = nullptr;
-		if (bHasForeGrip && !bIsDry)
-		{
-			SelectedFPReloadMontage = CurrentWeaponAnimData->ReloadForeGripFP.CharReloadModeMontage;
-		}
-		if (bHasForeGrip && bIsDry)
-		{
-			SelectedFPReloadMontage = CurrentWeaponAnimData->ReloadDryForeGripFP.CharReloadDryModeMontage;
-		}
-		if (!bHasForeGrip && !bIsDry)
-		{
-			SelectedFPReloadMontage = CurrentWeaponAnimData->ReloadAltGripFP.CharReloadModeMontage;
-		}
-		if (!bHasForeGrip && bIsDry)
-		{
-			SelectedFPReloadMontage = CurrentWeaponAnimData->ReloadDryAltGripFP.CharReloadDryModeMontage;
-		}
-		if (!SelectedFPReloadMontage)
-		{
-			UE_LOG(LogINSCharacterAimInstance,
-				Warning,
-				TEXT("character %s In FPS view mode Is trying to play Reload montage,but selectd reload Montage is missing,abort!!!"),
-				*OwnerPlayerCharacter->GetName());
-			return;
-		}
-		Montage_Play(SelectedFPReloadMontage);
-		UE_LOG(LogINSCharacterAimInstance,
-			Log,
-			TEXT("character %s In FPS view mode Is  playing Reload montage,reload Montage Name is %s"),
-			*OwnerPlayerCharacter->GetName(),
-			*SelectedFPReloadMontage->GetName());
-	}
-	else if (CurrentViewMode == EViewMode::TPS)
-	{
-		UAnimMontage* SelectedTPReloadMontage = nullptr;
-		if (bHasForeGrip && !bIsDry)
-		{
-			SelectedTPReloadMontage = CurrentWeaponAnimData->ReloadForeGripTP.CharReloadModeMontage;
-		}
-		else if (bHasForeGrip && bIsDry)
-		{
-			SelectedTPReloadMontage = CurrentWeaponAnimData->ReloadDryForeGripTP.CharReloadDryModeMontage;
-		}
-		else if (!bHasForeGrip && !bIsDry)
-		{
-			SelectedTPReloadMontage = CurrentWeaponAnimData->ReloadAltGripTP.CharReloadModeMontage;
-		}
-		else if (!bHasForeGrip && bIsDry)
-		{
-			SelectedTPReloadMontage = CurrentWeaponAnimData->ReloadDryAltGripTP.CharReloadDryModeMontage;
-		}
-		if (!SelectedTPReloadMontage)
-		{
-			UE_LOG(LogINSCharacterAimInstance, Warning
-				, TEXT("character %s In TPS view mode Is trying to play Reload montage,but selectd reload Montage is missing,abort!!!"),
-				*OwnerPlayerCharacter->GetName());
-			return;
-		}
-		Montage_Play(SelectedTPReloadMontage);
-		UE_LOG(LogINSCharacterAimInstance,
-			Log,
-			TEXT("character %s In TPS view mode Is playing Reload montage,reload Montage Name is %s"),
-			*OwnerPlayerCharacter->GetName(),
-			*SelectedTPReloadMontage->GetName());
-	}*/
-}
-
-void UINSCharacterAimInstance::PlaySwitchFireModeAnim(bool bHasForeGrip)
-{
-	if (!CheckValid())
-	{
-		return;
-	}
-	/*UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("character:%s received weapon:%s switch fire mode event"),
-		*OwnerPlayerCharacter->GetName(),
-		*CurrentWeaponRef->GetName());
-	if (CurrentViewMode == EViewMode::FPS)
-	{
-		UAnimMontage* SelectedFPFireModeSwitchMontage = nullptr;
-		if (bHasForeGrip)
-		{
-			SelectedFPFireModeSwitchMontage = CurrentWeaponAnimData->FireModeSwitchForeGripFP.CharSwitchFireModeMontage;
-		}
-		else
-		{
-			SelectedFPFireModeSwitchMontage = CurrentWeaponAnimData->FireModeSwitchAltGripFP.CharSwitchFireModeMontage;
-		}
-		if (!SelectedFPFireModeSwitchMontage)
-		{
-			UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("character %s In FPS view mode Is trying to play FireMode Switch montage,but selectd FireMode Switch montage is missing,abort!!!"),
-				*OwnerPlayerCharacter->GetName());
-			return;
-		}
-		Montage_Play(SelectedFPFireModeSwitchMontage);
-		UE_LOG(LogINSCharacterAimInstance, Log, TEXT("character %s In FPS view mode Is playing FireMode Switch montage,FireMode Switch montage Name is %s"),
-			*OwnerPlayerCharacter->GetName(),
-			*SelectedFPFireModeSwitchMontage->GetName());
-	}
-	else if (CurrentViewMode == EViewMode::TPS)
-	{
-		UAnimMontage* SelectedTPFireModeSwitchMontage = nullptr;
-		if (bHasForeGrip)
-		{
-			SelectedTPFireModeSwitchMontage = CurrentWeaponAnimData->FireModeSwitchForeGripTP.CharSwitchFireModeMontage;
-		}
-		else
-		{
-			SelectedTPFireModeSwitchMontage = CurrentWeaponAnimData->FireModeSwitchAltGripTP.CharSwitchFireModeMontage;
-		}
-		if (!SelectedTPFireModeSwitchMontage)
-		{
-			UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("character %s In FPS view mode Is trying to play FireMode Switch montage,but selectd FireMode Switch montage is missing,abort!!!"),
-				*OwnerPlayerCharacter->GetName());
-			return;
-		}
-		Montage_Play(SelectedTPFireModeSwitchMontage);
-		UE_LOG(LogINSCharacterAimInstance, Log, TEXT("character %s In FPS view mode Is playing FireMode Switch montage,FireMode Switch montage Name is %s"),
-			*OwnerPlayerCharacter->GetName(),
-			*SelectedTPFireModeSwitchMontage->GetName());
-	}*/
-}
-
-void UINSCharacterAimInstance::PlayWeaponBasePose(bool bHasForeGrip)
-{
-	if (!CheckValid())
-	{
-		return;
-	}
-	//if (CurrentViewMode == EViewMode::FPS)
-	//{
-	//	UAnimMontage* SelectedBaseFPWeaponAnimMontage = nullptr;
-	//	bHasForeGrip = CurrentWeapon->bForeGripEquipt;
-
-	//	if (bHasForeGrip)
-	//	{
-	//		SelectedBaseFPWeaponAnimMontage = CurrentWeaponAnimData->BasePoseForeGripFP.CharBasePoseMontage;
-	//	}
-	//	else if (!bHasForeGrip)
-	//	{
-	//		SelectedBaseFPWeaponAnimMontage = CurrentWeaponAnimData->BasePoseAltGripFP.CharBasePoseMontage;
-	//	}
-	//	if (!SelectedBaseFPWeaponAnimMontage)
-	//	{
-	//		UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("character %s In FPS view mode Is trying to play weapon base pose montage,but selectd base pose  montage is missing,abort!!!"),
-	//			*OwnerPlayerCharacter->GetName());
-	//		return;
-	//	}
-	//	Montage_Play(SelectedBaseFPWeaponAnimMontage);
-	//	//UE_LOG(LogINSCharacterAimInstance, Log, TEXT("character %s In FPS view mode Is playing FireMode Switch montage,FireMode Switch montage Name is %s"), *OwnerPlayerCharacter->GetName(), *SelectedBaseFPWeaponAnimMontage->GetName());
-	//}
-
-	////@TODO Character stance,Stand,crouch,prone
-	//if (CurrentViewMode == EViewMode::TPS)
-	//{
-	//	UAnimMontage* SelectedBaseTPWeaponAnimMontage = nullptr;
-	//	bHasForeGrip = CurrentWeapon->bForeGripEquipt;
-	//	if (bHasForeGrip)
-	//	{
-	//		SelectedBaseTPWeaponAnimMontage = CurrentWeaponAnimData->BasePoseForeGripTP.CharBasePoseMontage;
-	//	}
-	//	else if (!bHasForeGrip)
-	//	{
-	//		SelectedBaseTPWeaponAnimMontage = CurrentWeaponAnimData->BasePoseAltGripTP.CharBasePoseMontage;
-	//	}
-	//	if (!SelectedBaseTPWeaponAnimMontage)
-	//	{
-	//		UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("character %s In TPS view mode Is trying to play weapon base pose montage,but selectd base pose  montage is missing,abort!!!"),
-	//			*OwnerPlayerCharacter->GetName());
-	//		return;
-	//	}
-	//	Montage_Play(SelectedBaseTPWeaponAnimMontage);
-	//}
-}
-
-void UINSCharacterAimInstance::PlayWeaponStartEquipAnim(bool bHasForeGrip)
-{
-	if (!CheckValid())
-	{
-		return;
-	}
-	/*UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("character:%s received weapon:%s start equip event"),
-		*OwnerPlayerCharacter->GetName(),
-		*CurrentWeaponRef->GetName());
-	if (CurrentViewMode == EViewMode::FPS)
-	{
-		UAnimMontage* SelectedFPEquipMontage = nullptr;
-		if (bHasForeGrip)
-		{
-			SelectedFPEquipMontage = CurrentWeaponAnimData->EquipForeGripFP.CharEquipMontage;
-		}
-		else
-		{
-			SelectedFPEquipMontage = CurrentWeaponAnimData->EquipAltGripFP.CharEquipMontage;
-		}
-		if (!SelectedFPEquipMontage)
-		{
-			UE_LOG(LogINSCharacterAimInstance, Warning,
-				TEXT("character %s In FPS view mode Is trying to play weapon equip montage,but selectd deploy montage is missing,abort!!!"),
-				*OwnerPlayerCharacter->GetName());
-			return;
-		}
-		Montage_Play(SelectedFPEquipMontage);
-		UE_LOG(LogINSCharacterAimInstance, Log, TEXT("character %s In FPS view mode Is playing weapon equip montage, montage Name is %s"),
-			*OwnerPlayerCharacter->GetName(),
-			*SelectedFPEquipMontage->GetName());
-	}
-	else if (CurrentViewMode == EViewMode::TPS)
-	{
-		UAnimMontage* SelectedTPEquipMontage = nullptr;
-		if (bHasForeGrip)
-		{
-			SelectedTPEquipMontage = CurrentWeaponAnimData->EquipForeGripTP.CharEquipMontage;
-		}
-		else if (!bHasForeGrip)
-		{
-			SelectedTPEquipMontage = CurrentWeaponAnimData->EquipAltGripTP.CharEquipMontage;
-		}
-		if (!SelectedTPEquipMontage)
-		{
-			UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("character %s In FPS view mode Is trying to play weapon equip montage,but selectd deploy montage is missing,abort!!!"),
-				*OwnerPlayerCharacter->GetName());
-			return;
-		}
-		Montage_Play(SelectedTPEquipMontage);
-		UE_LOG(LogINSCharacterAimInstance, Log, TEXT("character %s In FPS view mode Is playing weapon equip montage, montage Name is %s"),
-			*OwnerPlayerCharacter->GetName(),
-			*SelectedTPEquipMontage->GetName());
-	}*/
-}
 
 void UINSCharacterAimInstance::PlayAimAnim()
 {
@@ -630,7 +279,7 @@ void UINSCharacterAimInstance::StopPlaySprintAnim()
 void UINSCharacterAimInstance::OnWeaponAnimDelegateBindingFinished()
 {
 	bWeaponAnimDelegateBindingFinished = true;
-	PlayWeaponStartEquipAnim(CurrentWeapon->bForeGripEquipt);
+	PlayWeaponStartEquipAnim();
 }
 
 void UINSCharacterAimInstance::FPPlayWeaponIdleAnim()
@@ -657,19 +306,6 @@ void UINSCharacterAimInstance::PlayWeaponIdleAnim()
 void UINSCharacterAimInstance::SetIsAiming(bool IsAiming)
 {
 	bIsAiming = IsAiming;
-	if (bIsAiming)
-	{
-		WeaponSwayScale = 2.f;
-		MaxWeaponSwayPitch *= 0.2f;
-		MaxWeaponSwayYaw *= 0.2f;
-	}
-	else
-	{
-		ADSHandIKEffector = FVector(0.f, 0.f, 0.f);
-		WeaponSwayScale = 5.f;
-		MaxWeaponSwayPitch = 5.f;
-		MaxWeaponSwayYaw = 5.f;
-	}
 }
 
 

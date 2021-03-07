@@ -187,10 +187,10 @@ void AINSPlayerController::Crouch()
 	{
 		if (GetINSPlayerCharacter())
 		{
-			GetINSPlayerCharacter()->HandleCrouchRequest();
+			GetINSPlayerCharacter()->HandleCrouchRequest(true);
 		}
 	}
-	else
+	else if(GetLocalRole()==ROLE_AutonomousProxy)
 	{
 		ServerCrouch();
 	}
@@ -208,7 +208,17 @@ bool AINSPlayerController::ServerCrouch_Validate()
 
 void AINSPlayerController::UnCrouch()
 {
-	
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		if (GetINSPlayerCharacter())
+		{
+			GetINSPlayerCharacter()->HandleCrouchRequest(false);
+		}
+	}
+	else if(GetLocalRole()==ROLE_AutonomousProxy)
+	{
+		ServerCrouch();
+	}
 }
 
 void AINSPlayerController::ServerUnCrouch_Implementation()

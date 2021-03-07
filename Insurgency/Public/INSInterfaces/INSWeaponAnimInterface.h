@@ -54,30 +54,30 @@ public:
 	FScriptDelegate StopSprintDelegate;
 
 
-protected:
+public:
 
 	/** ~~--------------------------------------------------------------
 	   declare interface Functions ------------------------------------*/
 
 	/** fire interface function*/
 	UFUNCTION()
-	virtual void PlayFireAnim(bool bHasForeGrip, bool bIsDry) {};
+	virtual void PlayFireAnim() {};
 
 	/** switch fire mode interface function */
 	UFUNCTION()
-	virtual void PlaySwitchFireModeAnim(bool bHasForeGrip) {};
+	virtual void PlaySwitchFireModeAnim() {};
 
 	/** Reload interface function */
 	UFUNCTION()
-	virtual void PlayReloadAnim(bool bHasForeGrip, bool bIsDry) {};
+	virtual void PlayReloadAnim( bool bIsDry) {};
 
 	/** equip weapon interface function */
 	UFUNCTION()
-	virtual void PlayWeaponStartEquipAnim(bool bHasForeGrip) {};
+	virtual void PlayWeaponStartEquipAnim() {};
 
 	/** base weapon pose interface function */
 	UFUNCTION()
-	virtual void PlayWeaponBasePose(bool bHasForeGrip) {};
+	virtual void PlayWeaponBasePose() {};
 
 	/** base weapon pose interface function */
 	UFUNCTION()
@@ -103,4 +103,6 @@ protected:
 
 	/** unbind interface functions from events */
 	virtual void UnbindWeaponAnimDelegate() {};
+
+	virtual void SetWeaponBasePoseType(EWeaponBasePoseType NewWeaponBasePoseType) {}
 };

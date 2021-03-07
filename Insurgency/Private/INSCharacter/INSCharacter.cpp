@@ -137,7 +137,7 @@ float AINSCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, A
 {
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		const float DamageToApply = Super::TakeDamage(LastHitInfo.Damage, DamageEvent, EventInstigator, DamageCauser);
+		const float DamageToApply = Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
 		if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
 		{
 			float DamageBeforeModify = DamageToApply;
@@ -147,24 +147,29 @@ float AINSCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, A
 			// modify any damage according to game rules and other settings
 			if (GameMode)
 			{
-				GameMode->ModifyDamage(DamageAfterModify, DamageBeforeModify, EventInstigator, this->GetController(), DamageEvent, PointDamageEventPtr->HitInfo.BoneName);
+				GameMode->ModifyDamage(DamageAfterModify, DamageBeforeModify, EventInstigator
+					, this->GetController()
+					, DamageEvent
+					, PointDamageEventPtr->HitInfo.BoneName);
 			}
 			if (PointDamageEventPtr)
 			{
-				//LastHitInfo.bIsDirtyData = true;
-				LastHitInfo.bIsTeamDamage = GameMode->GetIsTeamDamage(EventInstigator, GetController());
-				LastHitInfo.originalDamage = DamageBeforeModify;
-				LastHitInfo.Damage = GetIsCharacterDead() ? 0.f : DamageAfterModify;
-				LastHitInfo.DamageCauser = DamageCauser;
-				LastHitInfo.bVictimDead = GetIsCharacterDead();
-				LastHitInfo.DamageType = DamageEvent.DamageTypeClass;
-				LastHitInfo.Momentum = DamageCauser->GetVelocity();
-				LastHitInfo.RelHitLocation = PointDamageEventPtr->HitInfo.ImpactPoint;
+				FTakeHitInfo HitInfo;
+				//HitInfo.bIsDirtyData = true;
+				HitInfo.bIsTeamDamage = GameMode->GetIsTeamDamage(EventInstigator, GetController());
+				HitInfo.originalDamage = DamageBeforeModify;
+				HitInfo.Damage = GetIsCharacterDead() ? 0.f : DamageAfterModify;
+				HitInfo.DamageCauser = DamageCauser;
+				HitInfo.bVictimDead = GetIsCharacterDead();
+				HitInfo.DamageType = DamageEvent.DamageTypeClass;
+				HitInfo.Momentum = DamageCauser->GetVelocity();
+				HitInfo.RelHitLocation = PointDamageEventPtr->HitInfo.ImpactPoint;
 				const FVector ShotDir = DamageCauser->GetActorForwardVector();
 				FRotator ShotRot = ShotDir.Rotation();
-				LastHitInfo.ShotDirPitch = FRotator::CompressAxisToByte(ShotRot.Pitch);
-				LastHitInfo.ShotDirYaw = FRotator::CompressAxisToByte(ShotRot.Yaw);
-				LastHitInfo.bIsDirtyData = false;
+				HitInfo.ShotDirPitch = FRotator::CompressAxisToByte(ShotRot.Pitch);
+				HitInfo.ShotDirYaw = FRotator::CompressAxisToByte(ShotRot.Yaw);
+				HitInfo.bIsDirtyData = false;
+				LastHitInfo = HitInfo;
 				if (GetNetMode() == ENetMode::NM_Standalone || GetNetMode() == ENetMode::NM_ListenServer)
 				{
 					OnRep_LastHitInfo();
@@ -196,12 +201,7 @@ float AINSCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, A
 
 bool AINSCharacter::ShouldTakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)const
 {
-	bool bShouldTakeDamage = Super::ShouldTakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
-	if (!bShouldTakeDamage)
-	{
-		return bShouldTakeDamage;
-	}
-	return true;
+	return Super::ShouldTakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
 }
 
 void AINSCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -262,7 +262,14 @@ void AINSCharacter::CastBloodDecal(FVector HitLocation, FVector HitDir)
 				const int RamdIndex = FMath::RandHelper(DecalNums);
 				FRotator RandomDecalRotation = TraceHit.ImpactNormal.ToOrientationRotator();
 				RandomDecalRotation.Roll = FMath::FRandRange(-180.0f, 180.0f);
-				UGameplayStatics::SpawnDecalAttached(BloodSprayDecalMaterials[RamdIndex], FVector(12.f, 12.f, 12.f), TraceHit.Component.Get(), TraceHit.BoneName, TraceHit.ImpactPoint, RandomDecalRotation, EAttachLocation::KeepWorldPosition, 10.f);
+				UGameplayStatics::SpawnDecalAttached(BloodSprayDecalMaterials[RamdIndex]
+					, FVector(12.f, 12.f, 12.f)
+					, TraceHit.Component.Get()
+					, TraceHit.BoneName
+					, TraceHit.ImpactPoint
+					, RandomDecalRotation
+					, EAttachLocation::KeepWorldPosition
+					, 10.f);
 			}
 			UE_LOG(LogINSCharacter, Warning, TEXT("No blood decal to spawn,please config at least one in your blueprint setting!"));
 		}
@@ -291,14 +298,9 @@ void AINSCharacter::OnRep_LastHitInfo()
 {
 	if (GetNetMode() != ENetMode::NM_DedicatedServer)
 	{
-		if (LastHitInfo.bIsDirtyData)
-		{
-			UE_LOG(LogINSCharacter, Warning, TEXT("received Characters's:%s Dirty Hit Info!"));
-			return;
-		}
-		UE_LOG(LogINSCharacter, Warning, TEXT("received Characters's:%s Hit Info,start handle take hit logic!"));
+		UE_LOG(LogINSCharacter, Warning, TEXT("received Characters's:%s Hit Info,start handle take hit logic!"),*GetName());
 		//spawn blood hit Impact
-		const FVector BloodSpawnLocation = LastHitInfo.RelHitLocation;
+		const FVector BloodSpawnLocation = FVector(LastHitInfo.RelHitLocation);
 		const float ShotDirPitchDecompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirPitch);
 		const float ShotDirYawDeCompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirYaw);
 		const FRotator BloodSpawenRotation = FRotator(ShotDirPitchDecompressed, ShotDirYawDeCompressed, 0.f);
@@ -508,9 +510,17 @@ void AINSCharacter::HandleMoveRightRequest(float Value)
 	}
 }
 
-void AINSCharacter::HandleCrouchRequest()
+void AINSCharacter::HandleCrouchRequest(bool bCrouchPressed)
 {
-	bIsCrouched = !bIsCrouched;
+	//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Red, TEXT("Crouch button pressed"));
+	if (bCrouchPressed)
+	{
+		Crouch(false);
+	}
+	else
+	{
+		UnCrouch(false);
+	}
 }
 
 void AINSCharacter::HandleStartSprintRequest()
@@ -542,6 +552,7 @@ void AINSCharacter::OnRep_IsCrouched()
 			GetINSCharacterMovement()->StartCrouch();
 		}
 	}
+	GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Red, TEXT("Crouch replicated"));
 }
 
 void AINSCharacter::SpawnWeaponPickup()

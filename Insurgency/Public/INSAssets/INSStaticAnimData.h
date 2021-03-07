@@ -10,6 +10,7 @@ class UAnimMontage;
 class UAnimationAsset;
 class UBlendSpace;
 class UBlendSpace1D;
+class UAnimSequence;
 class UAimOffsetBlendSpace;
 class UAimOffsetBlendSpace1D;
 
@@ -22,12 +23,25 @@ struct FCustomWeaponAnim
 {
 	GENERATED_USTRUCT_BODY()
 		//shared additive animation between different weapons
-		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Deploy")
+		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		UAnimMontage* CharAnim;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Deploy")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		UAnimMontage* WeaponAnim;
 };
+
+USTRUCT(BlueprintType)
+struct FWeaponBasePose
+{
+	GENERATED_USTRUCT_BODY()
+		//shared additive animation between different weapons
+		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+		UAnimMontage* CharAnim;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+		UAnimMontage* WeaponAnim;
+};
+
 
 /**
  * default pose animations
@@ -36,8 +50,6 @@ USTRUCT(BlueprintType)
 struct FCustomDefaultPoseWeaponAnim
 {
 	GENERATED_USTRUCT_BODY()
-		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-		FCustomWeaponAnim BasePoseAnim;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		FCustomWeaponAnim DeployAnim;
@@ -59,9 +71,6 @@ USTRUCT(BlueprintType)
 struct FCustomAltGripWeaponAnim
 {
 	GENERATED_USTRUCT_BODY()
-		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-		FCustomWeaponAnim BasePoseAnim;
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		FCustomWeaponAnim DeployAnim;
 
@@ -82,8 +91,6 @@ USTRUCT(BlueprintType)
 struct FCustomForeGripWeaponAnim
 {
 	GENERATED_USTRUCT_BODY()
-		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-		FCustomWeaponAnim BasePoseAnim;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		FCustomWeaponAnim DeployAnim;
@@ -106,9 +113,13 @@ class INSURGENCY_API UINSStaticAnimData : public UObject
 	friend class UINSWeaponAnimInstance;
 
 public:
+
 	//shared additive animation between different weapons
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim|SharedAddtive")
 		UAnimMontage* FPIdleAnim;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim|SharedAddtive")
+		UAnimMontage* FPAimIdleAnim;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim|SharedAddtive")
 		UAnimMontage* FPMoveAnim;
@@ -119,8 +130,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim|SharedAddtive")
 		UAnimMontage* FPSprintAnim;
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category ="FPAnim|Ads")
-	    UAnimationAsset* AdjustableAdsRefPose;
+	/** weapon fire trigger and bolt animation */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim|SharedAddtive")
+		UAnimMontage* WeaponFireAnim;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim|SharedAddtive")
 		TArray<UAnimMontage*> FPFireHandsRecoilAnims;
@@ -134,28 +146,60 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim|SharedAddtive")
 		TArray<UAnimMontage*> FPAdsFireHandsHighCalibers;
 
+	//shared additive animation between different weapons
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim")
+		FWeaponBasePose FPDefaultBasePose;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim")
+		FWeaponBasePose FPAltGripBasePose;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim")
+		FWeaponBasePose FPForeGripBasePose;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim")
+		FCustomWeaponAnim FPPulltriggerAnim;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim|Ads")
+		UAnimSequence* AdjustableAdsRefPose;
+
 	//FP default pose
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim|CustomWeaponAnim|DefaultPose")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim|CustomWeaponAnim")
 		FCustomDefaultPoseWeaponAnim FPWeaponDefaultPoseAnim;
 
 	//FP alt grip pose
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim|CustomWeaponAnim|AltGripPose")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim|CustomWeaponAnim")
 		FCustomAltGripWeaponAnim FPWeaponAltGripAnim;
 
 	//FP fore grip pose
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim|CustomWeaponAnim|ForeGripPose")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim|CustomWeaponAnim")
 		FCustomForeGripWeaponAnim FPWeaponForeGripAnim;
 
-	//TP default pose
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TPAnim|CustomWeaponAnim|DefaultPose")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TPAnim|SharedAddtive")
+		TArray<UAnimMontage*> TPFireRecoilAnims;
+
+	//shared additive animation between different weapons
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TPAnim")
+		FWeaponBasePose TPDefaultBasePose;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TPAnim")
+		FWeaponBasePose TPAltGripBasePose;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TPAnim")
+		FWeaponBasePose TPForeGripBasePose;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TPAnim")
+		FCustomWeaponAnim TPPulltriggerAnim;
+
+	//TP default pose CustomAinm
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TPAnim|CustomWeaponAnim")
 		FCustomDefaultPoseWeaponAnim TPWeaponDefaultPoseAnim;
 
-	//TP alt grip pose
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TPAnim|CustomWeaponAnim|AltGripPose")
+	//TP alt grip pose CustomAinm
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TPAnim|CustomWeaponAnim")
 		FCustomAltGripWeaponAnim TPWeaponAltGripAnim;
 
-	//TP fore grip pose
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TPAnim|CustomWeaponAnim|ForeGripPose")
+	//TP fore grip pose CustomAinm
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TPAnim|CustomWeaponAnim")
 		FCustomForeGripWeaponAnim TPWeaponForeGripAnim;
 
 	//TP StandJogBlendSpace

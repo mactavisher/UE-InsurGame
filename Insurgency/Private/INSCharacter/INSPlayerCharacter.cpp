@@ -29,15 +29,16 @@ AINSPlayerCharacter::AINSPlayerCharacter(const FObjectInitializer& ObjectInitial
 	SetReplicateMovement(true);
 	GetCapsuleComponent()->SetCapsuleHalfHeight(86.f);
 	GetCapsuleComponent()->SetCapsuleRadius(36.f);
-	BaseEyeHeight = GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight() + 58.f;
-	CrouchedEyeHeight = BaseEyeHeight-BaseEyeHeight * 0.4f;
+	BaseEyeHeight = GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight();
+	CrouchedEyeHeight = BaseEyeHeight - BaseEyeHeight * 0.4f;
 	CurrentEyeHeight = BaseEyeHeight;
 	RootComponent = GetCapsuleComponent();
 	FirstPersonCamera = ObjectInitializer.CreateDefaultSubobject<UCameraComponent>(this, TEXT("FirstPersonCamera"));
 	SpringArm = ObjectInitializer.CreateDefaultSubobject<USpringArmComponent>(this, TEXT("SpringArmComp"));
-	SpringArm->SetupAttachment(RootComponent);
-	SpringArm->AddRelativeLocation(FVector(0.f, 0.f, 58.f));
-	SpringArm->TargetArmLength = 1.0f;
+	SpringArmAligner = ObjectInitializer.CreateDefaultSubobject<USceneComponent>(this, TEXT("SpringArmDummyAligner"));
+	SpringArmAligner->SetupAttachment(RootComponent);
+	SpringArm->SetupAttachment(SpringArmAligner);
+	SpringArm->TargetArmLength = 0.1f;
 	SpringArm->bUsePawnControlRotation = true;
 	CharacterMesh3P = Cast<UINSCharSkeletalMeshComponent>(GetMesh());
 	CharacterMesh3P->AddRelativeLocation(FVector(0.f, 0.f, -GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight()));
@@ -56,7 +57,8 @@ AINSPlayerCharacter::AINSPlayerCharacter(const FObjectInitializer& ObjectInitial
 	CharacterMesh3P->bLightAttachmentsAsGroup = true;
 	CharacterMesh3P->LightingChannels.bChannel1 = true;
 	CharacterMesh3P->bCastCapsuleIndirectShadow = true;
-	CharacterMesh1P->AddRelativeLocation(FVector(0.f, 0.f, -CurrentEyeHeight));
+	SpringArmAligner->AddRelativeLocation(FVector(0.f, 0.f, CurrentEyeHeight));
+	CharacterMesh1P->AddRelativeLocation(FVector(0.f, 0.f, -174.f));
 #if WITH_EDITORONLY_DATA&&!UE_BUILD_SHIPPING
 	bShowDebugTrace = false;
 #endif
@@ -91,7 +93,6 @@ void AINSPlayerCharacter::Tick(float DeltaTime)
 	{
 		SimulateViewTrace();
 	}
-	SpringArm->SetRelativeLocation(FVector(0.f, 0.f, CurrentEyeHeight));
 }
 
 void AINSPlayerCharacter::PossessedBy(AController* NewController)
@@ -114,15 +115,21 @@ void AINSPlayerCharacter::PossessedBy(AController* NewController)
 	{
 		return;
 	}
-	SetCurrentWeapon(GetWorld()->SpawnActorDeferred<AINSWeaponBase>(CurrentWeaponClass, GetActorTransform(), GetINSPlayerController(), this, ESpawnActorCollisionHandlingMethod::AlwaysSpawn));
-	if (CurrentWeapon)
+	class AINSWeaponBase* NewWeapon = GetWorld()->SpawnActorDeferred<AINSWeaponBase>(CurrentWeaponClass
+		, GetActorTransform()
+		, GetINSPlayerController()
+		, this
+		, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+	if (NewWeapon)
 	{
-		UGameplayStatics::FinishSpawningActor(CurrentWeapon, GetActorTransform());
-		CurrentWeapon->SetAutonomousProxy(true);
-		CurrentWeapon->SetWeaponState(EWeaponState::NONE);
-		CurrentWeapon->SetOwner(NewController);
-		CurrentWeapon->SetOwnerCharacter(this);
+		NewWeapon->SetAutonomousProxy(true);
+		NewWeapon->SetWeaponState(EWeaponState::NONE);
+		NewWeapon->SetOwner(NewController);
+		NewWeapon->SetOwnerCharacter(this);
+		UGameplayStatics::FinishSpawningActor(NewWeapon, GetActorTransform());
+
 	}
+	SetCurrentWeapon(NewWeapon);
 }
 
 void AINSPlayerCharacter::OnThreatenSpoted(AActor* ThreatenActor, AController* ThreatenInstigator)
@@ -206,9 +213,9 @@ void AINSPlayerCharacter::OnRep_CurrentWeapon()
 	{
 		SetupWeaponAttachment();
 		Get1PAnimInstance()->SetCurrentWeaponAndAnimationData(CurrentWeapon);
-		Get1PAnimInstance()->PlayWeaponStartEquipAnim(CurrentWeapon->bForeGripEquipt);
+		Get1PAnimInstance()->PlayWeaponStartEquipAnim();
 		Get3PAnimInstance()->SetCurrentWeaponAndAnimationData(CurrentWeapon);
-		Get3PAnimInstance()->PlayWeaponStartEquipAnim(CurrentWeapon->bForeGripEquipt);
+		Get3PAnimInstance()->PlayWeaponStartEquipAnim();
 	}
 	else
 	{
@@ -270,17 +277,19 @@ void AINSPlayerCharacter::OnRep_Dead()
 void AINSPlayerCharacter::OnRep_Aim()
 {
 	Super::OnRep_Aim();
-	if (!CurrentWeapon||GetNetMode() == ENetMode::NM_DedicatedServer|| !GetINSPlayerController())
+	if (!CurrentWeapon || GetNetMode() == ENetMode::NM_DedicatedServer
+		|| !GetINSPlayerController())
 	{
 		return;
 	}
-	AINSPlayerCameraManager* CameraManager = Cast<AINSPlayerCameraManager>(GetINSPlayerController()->PlayerCameraManager);
+	AINSPlayerCameraManager* CameraManager =
+		Cast<AINSPlayerCameraManager>(GetINSPlayerController()->PlayerCameraManager);
 	if (!CameraManager)
 	{
 		return;
 	}
-	bIsAiming ? CameraManager->OnAim(CurrentWeapon->GetWeaponAimTime()) 
-		       : CameraManager->OnStopAim(CurrentWeapon->GetWeaponAimTime());
+	bIsAiming ? CameraManager->OnAim(CurrentWeapon->GetWeaponAimTime())
+		: CameraManager->OnStopAim(CurrentWeapon->GetWeaponAimTime());
 	//update and perform aiming animation
 	if (Get1PAnimInstance())
 	{
@@ -297,6 +306,8 @@ void AINSPlayerCharacter::OnRep_IsCrouched()
 	Super::OnRep_IsCrouched();
 	Get1PAnimInstance()->SetCurrentStance(ECharacterStance::CROUCH);
 	Get3PAnimInstance()->SetCurrentStance(ECharacterStance::CROUCH);
+	Get1PAnimInstance()->SetIsCrouching(bIsCrouched);
+	Get3PAnimInstance()->SetIsCrouching(bIsCrouched);
 }
 
 void AINSPlayerCharacter::OnRep_Sprint()
@@ -330,10 +341,9 @@ void AINSPlayerCharacter::OnRep_LastHitInfo()
 	}
 }
 
-void AINSPlayerCharacter::HandleCrouchRequest()
+void AINSPlayerCharacter::HandleCrouchRequest(bool bCrouchPressed)
 {
-	//Super::HandleCrouchRequest();
-	bIsCrouched = !bIsCrouched;
+	Super::HandleCrouchRequest(bCrouchPressed);
 }
 
 void AINSPlayerCharacter::OnRep_TeamType()
@@ -352,7 +362,7 @@ void AINSPlayerCharacter::OnRep_TeamType()
 
 void AINSPlayerCharacter::SetupMeshVisibility()
 {
-	if (GetLocalRole() == ROLE_Authority || GetLocalRole() == ROLE_AutonomousProxy)
+	/*if (GetLocalRole() == ROLE_Authority || GetLocalRole() == ROLE_AutonomousProxy)
 	{
 		CharacterMesh1P->SetHiddenInGame(false);
 		CharacterMesh3P->SetHiddenInGame(true);
@@ -374,7 +384,9 @@ void AINSPlayerCharacter::SetupMeshVisibility()
 		CharacterMesh1P->bCastDynamicShadow = false;
 		CharacterMesh3P->SetCastShadow(true);
 		CharacterMesh3P->bCastDynamicShadow = true;
-	}
+	}*/
+	CharacterMesh3P->SetOwnerNoSee(true);
+	CharacterMesh1P->SetOnlyOwnerSee(true);
 }
 
 void AINSPlayerCharacter::OnRep_Owner()

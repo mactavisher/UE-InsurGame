@@ -109,26 +109,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BlendSpace")
 		float Direction;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSway")
-		float MaxWeaponSwayPitch;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSway")
-		float MaxWeaponSwayYaw;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSway")
-		float WeaponSwayRecoverySpeed;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSway")
-		float WeaponSwayScale;
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AnimationMode")
 		EWeaponBasePoseType CurrentWeaponBaseType;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Stance")
 		ECharacterStance CurrentStance;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ADS")
-		struct FAimAnim AimAnimdata;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AnimDelegate")
@@ -140,24 +125,20 @@ protected:
 #endif
 
 protected:
-	/** cached player controller */
-	UPROPERTY()
-		AINSPlayerController* OwnerPlayerController;
-
 	/** cached player character */
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		UCharacterMovementComponent* CharacterMovementComponent;
 
 	/** cached weapon that currently in use */
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly)
 		AINSWeaponBase* CurrentWeapon;
 
 	/** cached player Animation data*/
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		UINSStaticAnimData* CurrentWeaponAnimData;
 
 	/** cached player character */
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 		AINSCharacter* OwnerPlayerCharacter;
 
 
@@ -199,8 +180,6 @@ public:
 	 */
 	virtual void SetCurrentStance(ECharacterStance NewStance) { CurrentStance = NewStance; }
 
-	virtual void PlayWeaponStartEquipAnim(bool bHasForeGrip)override;
-
 
 protected:
 	/** native update for variables tick */
@@ -224,29 +203,20 @@ protected:
 
 	virtual void UpdatePitchAndYaw();
 
+	virtual void UpdateIsAiming();
+
+	virtual void UpdateWeaponBasePoseType();
+
 	virtual void UpdateHandsIk();
 
 	virtual void UpdateSprintPlaySpeed();
 
 	virtual void UpdateIsMoving();
 
-
-
-	virtual void UpdatePredictFallingToLandAlpha();
-
-	virtual void UpdateWeaponIkSwayRotation(float deltaSeconds);
+	virtual void UpdateIsFalling();
 
 	//~ begin INSWeaponAnim Interface
-
 public:
-	/** play animation when firing, additive animations are shared between FP and TP */
-	virtual void PlayFireAnim(bool bHasForeGrip, bool bIsDry)override;
-
-	virtual void PlayReloadAnim(bool bHasForeGrip, bool bIsDry)override;
-
-	virtual void PlaySwitchFireModeAnim(bool bHasForeGrip)override;
-
-	virtual void PlayWeaponBasePose(bool bHasForeGrip)override;
 
 	virtual void PlayAimAnim()override;
 
@@ -271,7 +241,6 @@ public:
 		virtual void FPPlayWeaponIdleAnim();
 
 	virtual void PlayWeaponIdleAnim()override;
-
 	//~ end INSWeaponAnim Interface
 
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING

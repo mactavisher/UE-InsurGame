@@ -18,13 +18,18 @@ class INSURGENCY_API UINSWeaponAnimInstance : public UAnimInstance,public IINSWe
 	GENERATED_UCLASS_BODY()
 protected:
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="WeaponRef")
-	class AINSWeaponBase* CurrentWeaponRef;
+	class AINSWeaponBase* OwnerWeapon;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "WeaponRef")
-	class UINSWeaponMeshComponent* CurrentWeaponSkeletonRef;
+	class UINSWeaponMeshComponent* OwnerWeaponMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "WeaponRef")
-	class UINSWeaponAssets* WeaponAssetsptr;
+	class UINSStaticAnimData* WeaponAnimData;
+
+	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="CurrentWeaponBaseType")
+	EWeaponBasePoseType CurrentWeaponBasePoseType;
+
+
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AnimDelegate")
@@ -41,15 +46,17 @@ protected:
 
 public:
 	//~begin INSWeaponAnim Interface
-	virtual void PlayFireAnim(bool bhasForeGrip,bool bIsDry)override;
+	virtual void PlayFireAnim()override;
 
-	virtual void PlayReloadAnim(bool bHasForeGrip, bool bIsDry)override;
+	virtual void PlayReloadAnim(bool bIsDry)override;
 
-	virtual void PlaySwitchFireModeAnim(bool bHasForeGrip)override;
+	virtual void PlaySwitchFireModeAnim()override;
 
 	virtual void OnWeaponAnimDelegateBindingFinished()override;
 
-	virtual void PlayWeaponBasePose(bool bHasForeGrip)override;
+	virtual void PlayWeaponBasePose()override;
+
+	virtual void SetWeaponBasePoseType(EWeaponBasePoseType NewWeaponBasePoseType);
 
 	/** do nothing by default now */
 	virtual void PlayAimAnim() {};
@@ -60,5 +67,5 @@ public:
 	//~end  INSWeaponAnim Interface
 
 public:
-	virtual void PlayWeaponStartEquipAnim(bool bHasForeGrip)override;
+	virtual void PlayWeaponStartEquipAnim()override;
 };

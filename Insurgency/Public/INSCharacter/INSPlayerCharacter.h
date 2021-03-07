@@ -38,24 +38,27 @@ protected:
 		UCameraComponent* FirstPersonCamera;
 
 	/* Camera arm comp*/ 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"), Category = "CameraArmComp")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"), Category = "FirstPersonCamera")
 		USpringArmComponent* SpringArm;
 		
+	/* a dummy helper aligner to help align the sprint arm*/
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"), Category = "FirstPersonCamera")
+		USceneComponent* SpringArmAligner;
 
 	/** player character's 1P mesh comp,only visible to owner player */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "INSCharacter|CharacterMovement")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "CharacterMesh")
 		FDefaultPlayerMesh CTDefaultMesh;
 
 	/** Player character's 3P mesh comp,only visible to non-owner player */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "INSCharacter|CharacterMovement")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "CharacterMesh")
 		FDefaultPlayerMesh TerroristDefaultMesh;
 
 	/** player character's 1P mesh comp,only visible to owner player */
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "INSCharacter|CharacterMovement")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "CharacterMesh")
 		UINSCharSkeletalMeshComponent* CharacterMesh1P;
 
 	/** Player character's 3P mesh comp,only visible to non-owner player */
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "INSCharacter|CharacterMovement")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "CharacterMesh")
 		UINSCharSkeletalMeshComponent* CharacterMesh3P;
 
 	/** Player character's 3P mesh comp,only visible to non-owner player */
@@ -69,9 +72,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Camera")
 		float SpringArmRelLocCrouched;
 	
-
-
-
 
 protected:
 
@@ -185,7 +185,7 @@ public:
 	/** handles a stop sprint request from player controller */
 	virtual void HandleStartSprintRequest()override;
 
-	virtual void HandleCrouchRequest()override;
+	virtual void HandleCrouchRequest(bool bCrouchPressed)override;
 
 	/**
 	 * return if Mesh1p is hidden in game currently

@@ -4,7 +4,7 @@
 #include "INSAnimation/INSWeaponAnimInstance.h"
 #include "INSComponents/INSWeaponMeshComponent.h"
 #include "INSItems/INSWeapons/INSWeaponBase.h"
-#include "INSAssets/INSWeaponAssets.h"
+#include "INSAssets/INSStaticAnimData.h"
 #include "Engine/Engine.h"
 
 DEFINE_LOG_CATEGORY(LogINSWeaponAimInstance);
@@ -17,193 +17,134 @@ UINSWeaponAnimInstance::UINSWeaponAnimInstance(const FObjectInitializer& ObjectI
 void UINSWeaponAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
-	if (CurrentWeaponRef)
+	OwnerWeaponMesh = Cast<UINSWeaponMeshComponent>(GetSkelMeshComponent());
+	if (OwnerWeaponMesh)
 	{
-		PlayWeaponBasePose(CurrentWeaponRef->bForeGripEquipt);
+		OwnerWeapon = Cast<AINSWeaponBase>(OwnerWeaponMesh->GetOwner());
+		WeaponAnimData = OwnerWeapon->GetWeaponAnim();
+	}
+	if (OwnerWeapon)
+	{
+		PlayWeaponBasePose();
 	}
 }
 
 void UINSWeaponAnimInstance::NativeInitializeAnimation()
 {
-	CurrentWeaponSkeletonRef = Cast<UINSWeaponMeshComponent>(GetSkelMeshComponent());
-	if (CurrentWeaponSkeletonRef)
-	{
-		CurrentWeaponRef = Cast<AINSWeaponBase>(CurrentWeaponSkeletonRef->GetOwner());
-		WeaponAssetsptr = CurrentWeaponRef->GetWeaponAssets();
-	}
-	if (CurrentWeaponRef && !bWeaponAnimDelegateBindingFinished)
-	{
-		BindWeaponAnimDelegate();
-	}
+	Super::NativeInitializeAnimation();
+	
 }
 
-void UINSWeaponAnimInstance::PlayFireAnim(bool bhasForeGrip, bool bIsDry)
+void UINSWeaponAnimInstance::PlayFireAnim()
 {
 	if (!CheckValid())
 	{
 		return;
 	}
-	//never play fire visual animation on dedicated server side 
-	if (CurrentWeaponRef->GetNetMode() == ENetMode::NM_DedicatedServer)
-	{
-		return;
-	}
-	Montage_Play(WeaponAssetsptr->FireAnimFPTP.GunFireMontage);
+	Montage_Play(WeaponAnimData->FPPulltriggerAnim.WeaponAnim);
 }
 
-void UINSWeaponAnimInstance::PlayReloadAnim(bool bHasForeGrip, bool bIsDry)
+void UINSWeaponAnimInstance::PlayReloadAnim(bool bIsDry)
 {
 	if (!CheckValid())
 	{
 		return;
 	}
-	//never play reload visual animation on dedicated server side 
-	if (CurrentWeaponRef->GetNetMode() == ENetMode::NM_DedicatedServer)
+	UAnimMontage* SelectedReloadAnim = nullptr;
+	switch (CurrentWeaponBasePoseType)
 	{
-		return;
+	case EWeaponBasePoseType::ALTGRIP:SelectedReloadAnim = bIsDry
+		? WeaponAnimData->FPWeaponAltGripAnim.ReloadDryAnim.WeaponAnim
+		: WeaponAnimData->FPWeaponAltGripAnim.ReloadAnim.WeaponAnim;
+		break;
+	case EWeaponBasePoseType::FOREGRIP:SelectedReloadAnim = bIsDry
+		? WeaponAnimData->FPWeaponForeGripAnim.ReloadDryAnim.WeaponAnim
+		: WeaponAnimData->FPWeaponForeGripAnim.ReloadAnim.WeaponAnim;
+		break;
+	case EWeaponBasePoseType::DEFAULT:SelectedReloadAnim = bIsDry
+		? WeaponAnimData->FPWeaponDefaultPoseAnim.ReloadDryAnim.WeaponAnim
+		: WeaponAnimData->FPWeaponDefaultPoseAnim.ReloadAnim.WeaponAnim;
+		break;
+	default:SelectedReloadAnim = nullptr;
+		break;
 	}
-	UAnimMontage* SelectedGunReloadMontage = nullptr;
-	if (bHasForeGrip && !bIsDry)
-	{
-		SelectedGunReloadMontage = WeaponAssetsptr->ReloadForeGripFP.GunReloadMontage;
-	}
-	if (bHasForeGrip && bIsDry)
-	{
-		SelectedGunReloadMontage = WeaponAssetsptr->ReloadDryForeGripFP.GunReloadDryMontage;
-	}
-	if (!bHasForeGrip && !bIsDry)
-	{
-		SelectedGunReloadMontage = WeaponAssetsptr->ReloadAltGripFP.GunReloadMontage;
-	}
-	if (!bHasForeGrip && bIsDry)
-	{
-		SelectedGunReloadMontage = WeaponAssetsptr->ReloadDryAltGripFP.GunReloadDryMontage;
-	}
-	if (!SelectedGunReloadMontage)
-	{
-		UE_LOG(LogINSWeaponAimInstance
-			, Warning
-			, TEXT("weapon %s is trying to play Reload montage,but selectd reload Montage is missing,abort!!!")
-			, *CurrentWeaponRef->GetName());
-		return;
-	}
-	Montage_Play(SelectedGunReloadMontage);
-	UE_LOG(LogINSWeaponAimInstance
-		, Log
-		, TEXT("weapon:%s Is playing Reload montage,reload Montage Name is %s")
-		, *CurrentWeaponRef->GetName()
-		, *SelectedGunReloadMontage->GetName());
+	Montage_Play(SelectedReloadAnim);
 }
 
-void UINSWeaponAnimInstance::PlaySwitchFireModeAnim(bool bHasForeGrip)
+void UINSWeaponAnimInstance::PlaySwitchFireModeAnim()
 {
 	if (!CheckValid())
 	{
 		return;
 	}
-	//never play reload visual animation on dedicated server side 
-	if (CurrentWeaponRef->GetNetMode() == ENetMode::NM_DedicatedServer)
-	{
-		return;
-	}
-	UAnimMontage* SelectedGunFireModeSwitchAnim = nullptr;
-	if (bHasForeGrip)
-	{
-		SelectedGunFireModeSwitchAnim = WeaponAssetsptr->FireModeSwitchAltGripFP.GunSwitchFireModeMontage;
-	}
-	else
-	{
-		SelectedGunFireModeSwitchAnim = WeaponAssetsptr->FireModeSwitchAltGripFP.GunSwitchFireModeMontage;
-	}
-	if (!SelectedGunFireModeSwitchAnim)
-	{
-		UE_LOG(LogINSWeaponAimInstance
-			, Warning
-			, TEXT("weapon %s is trying to play Reload montage,but selectd reload Montage is missing,abort!!!")
-			, *CurrentWeaponRef->GetName());
-		return;
-	}
-	Montage_Play(SelectedGunFireModeSwitchAnim);
-	UE_LOG(LogINSWeaponAimInstance
-		, Log
-		, TEXT("weapon:%s Is playing Reload montage,reload Montage Name is %s")
-		, *CurrentWeaponRef->GetName()
-		, *SelectedGunFireModeSwitchAnim->GetName());
 }
 
 void UINSWeaponAnimInstance::OnWeaponAnimDelegateBindingFinished()
 {
 	bWeaponAnimDelegateBindingFinished = true;
-	PlayWeaponStartEquipAnim(CurrentWeaponRef->bForeGripEquipt);
+	PlayWeaponStartEquipAnim();
 }
 
-void UINSWeaponAnimInstance::PlayWeaponBasePose(bool bHasForeGrip)
+void UINSWeaponAnimInstance::PlayWeaponBasePose()
 {
 	if (!CheckValid())
 	{
 		return;
 	}
-	UAnimMontage* SelectedWeaponBasePose = nullptr;
-	bHasForeGrip = CurrentWeaponRef->bForeGripEquipt;
-	SelectedWeaponBasePose = bHasForeGrip
-		? WeaponAssetsptr->BasePoseForeGripFP.GunBasePoseMontage
-		: WeaponAssetsptr->BasePoseAltGripFP.GunBasePoseMontage;
+	UAnimMontage* SelectedBasePoseAnim = nullptr;
+	switch (CurrentWeaponBasePoseType)
+	{
+	case EWeaponBasePoseType::ALTGRIP:SelectedBasePoseAnim = WeaponAnimData->FPAltGripBasePose.WeaponAnim;
+		break;
+	case EWeaponBasePoseType::FOREGRIP:SelectedBasePoseAnim = WeaponAnimData->FPForeGripBasePose.WeaponAnim;
+		break;
+	case EWeaponBasePoseType::DEFAULT:SelectedBasePoseAnim = WeaponAnimData->FPDefaultBasePose.WeaponAnim;
+		break;
+	default:SelectedBasePoseAnim = nullptr;
+		break;
+	}
+	Montage_Play(SelectedBasePoseAnim);
 }
 
-void UINSWeaponAnimInstance::PlayWeaponStartEquipAnim(bool bHasForeGrip)
+void UINSWeaponAnimInstance::SetWeaponBasePoseType(EWeaponBasePoseType NewWeaponBasePoseType)
+{
+	CurrentWeaponBasePoseType = NewWeaponBasePoseType;
+}
+
+void UINSWeaponAnimInstance::PlayWeaponStartEquipAnim()
 {
 	if (!CheckValid())
 	{
 		return;
 	}
-	//never play equip visual animation on dedicated server side 
-	if (CurrentWeaponRef->GetNetMode() == ENetMode::NM_DedicatedServer)
+	UAnimMontage* SelectedEquipAnim = nullptr;
+	switch (CurrentWeaponBasePoseType)
 	{
-		return;
+	case EWeaponBasePoseType::ALTGRIP:SelectedEquipAnim =
+		WeaponAnimData->FPWeaponAltGripAnim.DeployAnim.WeaponAnim;
+		break;
+	case EWeaponBasePoseType::FOREGRIP:SelectedEquipAnim =
+		WeaponAnimData->FPWeaponForeGripAnim.DeployAnim.WeaponAnim;
+		break;
+	case EWeaponBasePoseType::DEFAULT:SelectedEquipAnim =
+		WeaponAnimData->FPWeaponDefaultPoseAnim.DeployAnim.WeaponAnim;
+		break;
+	default:SelectedEquipAnim = nullptr;
+		break;
 	}
-	bHasForeGrip = CurrentWeaponRef->bForeGripEquipt;
-	UAnimMontage* SelectedGunEquipMontage = nullptr;
-	if (bHasForeGrip)
-	{
-		SelectedGunEquipMontage = WeaponAssetsptr->EquipForeGripFP.GunEquipMontage;
-	}
-	else
-	{
-		SelectedGunEquipMontage = WeaponAssetsptr->EquipAltGripFP.GunEquipMontage;
-	}
-	if (!SelectedGunEquipMontage)
-	{
-		UE_LOG(LogINSWeaponAimInstance
-			, Warning
-			, TEXT("weapon %s is trying to play equip montage,but selectd reload Montage is missing,abort!!!")
-			, *CurrentWeaponRef->GetName());
-		return;
-	}
-	Montage_Play(SelectedGunEquipMontage);
-	UE_LOG(LogINSWeaponAimInstance
-		, Log
-		, TEXT("weapon:%s Is playing equip montage,reload Montage Name is %s")
-		, *CurrentWeaponRef->GetName()
-		, *SelectedGunEquipMontage->GetName());
+	Montage_Play(SelectedEquipAnim);
 }
 
 bool UINSWeaponAnimInstance::CheckValid()
 {
-	if (!bWeaponAnimDelegateBindingFinished)
-	{
-		UE_LOG(LogINSWeaponAimInstance
-			, Warning
-			, TEXT("waiting for delegate binding finished,can't play animations"));
-		return false;
-	}
-	if (!CurrentWeaponRef)
+	if (!OwnerWeapon)
 	{
 		UE_LOG(LogINSWeaponAimInstance
 			, Warning
 			, TEXT("Missing Current Weapon Ref,invalid for playing any weapon anim"));
 		return false;
 	}
-	if (!WeaponAssetsptr)
+	if (!WeaponAnimData)
 	{
 		UE_LOG(LogINSWeaponAimInstance
 			, Warning

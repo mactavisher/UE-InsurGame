@@ -4,102 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "INSProjectile.generated.h"
+#include "INSProjectile_Stable.generated.h"
 
-class AINSWeaponBase;
-class USphereComponent;
-class UStaticMeshComponent;
-class UParticleSystemComponent;
-class UProjectileMovementComponent;
-class UStaticMeshComponent;
-class UProjectileMovementComponent;
-class UParticleSystemComponent;
-class AINSImpactEffect;
-class UCameraShake;
-class UDamageType;
-class UCurveFloat;
-class AINSWeaponBase;
-
-INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogINSProjectile, Log, All);
-
-//no need to override engine's replicate movement system,since it has be optimized
-/*USTRUCT()
-struct FRepINSProjMovement
-{
-	GENERATED_USTRUCT_BODY()
-
-	UPROPERTY()
-		FVector_NetQuantize LinearVelocity;
-
-	UPROPERTY()
-		FVector_NetQuantize Location;
-
-	UPROPERTY()
-		FRotator Rotation;
-
-	FRepINSProjMovement()
-		: LinearVelocity(ForceInit)
-		, Location(ForceInit)
-		, Rotation(ForceInit)
-	{}
-
-	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
-	{
-		bOutSuccess = true;
-
-		bool bOutSuccessLocal = true;
-
-		// update location, linear velocity
-		Location.NetSerialize(Ar, Map, bOutSuccessLocal);
-		bOutSuccess &= bOutSuccessLocal;
-		Rotation.SerializeCompressed(Ar);
-		LinearVelocity.NetSerialize(Ar, Map, bOutSuccessLocal);
-		bOutSuccess &= bOutSuccessLocal;
-
-		return true;
-	}
-
-	bool operator==(const FRepINSProjMovement& Other) const
-	{
-		if (LinearVelocity != Other.LinearVelocity)
-		{
-			return false;
-		}
-
-		if (Location != Other.Location)
-		{
-			return false;
-		}
-
-		if (Rotation != Other.Rotation)
-		{
-			return false;
-		}
-		return true;
-	}
-
-	bool operator!=(const FRepINSProjMovement& Other) const
-	{
-		return !(*this == Other);
-	}
-};*/
-
-
-/**
- * master class of weapon projectiles
- * when in a multi player mode,this projectile will be replicated to
- * all clients and besides,when this projectiles is replicated ,it will
- * spawn a client fake projectile to provide visuals,if use the replicated one
- * the movement of this projectile may be choppy if velocity is not Replicated or
- * quantized,so we can make a client fake projectile and init it just as the server
- * version doses but from where we can optimize movement replication,and sync some
- * data that drives this projectile movement replicated from server
- */
-UCLASS(Abstract, Blueprintable)
-class INSURGENCY_API AINSProjectile : public AActor
+INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogINSProjectile_Stable, Log, All);
+UCLASS()
+class INSURGENCY_API AINSProjectile_Stable : public AActor
 {
 	GENERATED_UCLASS_BODY()
-
+	
 protected:
 
 	/** collision comp */
@@ -188,11 +100,11 @@ protected:
 
 	/** Net authority version */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BFProjectile")
-		AINSProjectile* NetAuthrotyProjectile;
+		AINSProjectile_Stable* NetAuthrotyProjectile;
 
 	/** client fake version ,only provide visual*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BFProjectile")
-		AINSProjectile* ClientFakeProjectile;
+		AINSProjectile_Stable* ClientFakeProjectile;
 
 	/** weapon that fires me */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_OwnerWeapon, Category = "WeaponOwner")
@@ -201,26 +113,10 @@ protected:
 	/** weak ptr type ,player that actually fire this projectile */
 	TWeakObjectPtr<AController> InstigatorPlayer;
 
-	/** force a update to clients */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MovementReplication")
-		uint8 bForceMovementReplication : 1;
-
-	/** force a update to clients */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MovementReplication")
-		uint8 bIsGatheringMovement : 1;
-
-
-	/** force a update to clients */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MovementReplication")
-		uint8 bUsingScanTrace : 1;
-
-#if WITH_EDITORONLY_DATA
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Projectile|Debug")
-		uint8 bUsingDebugTrace : 1;
-#endif
-
 private:
 	FTimerHandle FakeProjVisibilityTimer;
+
+	FScriptDelegate ProjectHitDelegate;
 protected:
 
 	/** notify clients this projectile is exploded */
@@ -270,7 +166,7 @@ protected:
 	virtual void GatherCurrentMovement()override;
 
 	/** happens right before replication occurs,override some properties */
-	virtual void PreReplication(IRepChangedPropertyTracker & ChangedPropertyTracker)override;
+	virtual void PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker)override;
 
 	/**
 	 * @desc override function, to support custom replicated properties
@@ -331,13 +227,13 @@ public:
 	/** get owner weapon */
 	virtual class AINSWeaponBase* GetOwnerWeapon()const { return OwnerWeapon; }
 
-	virtual class AINSProjectile* GetClientFakeProjectile()const { return ClientFakeProjectile; }
+	virtual class AINSProjectile_Stable* GetClientFakeProjectile()const { return ClientFakeProjectile; }
 
 	/**
 	 * Set the fake projectile of the net Authority one,Each client will have one of this fake projectile
 	 * @param NewFakeProjectile  New Fake Projectile to set
 	 */
-	virtual void SetClientFakeProjectile(class AINSProjectile* NewFakeProjectile) { ClientFakeProjectile = NewFakeProjectile; };
+	virtual void SetClientFakeProjectile(class AINSProjectile_Stable* NewFakeProjectile) { ClientFakeProjectile = NewFakeProjectile; };
 
 	/** get actual damage taken */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "BFProjectile")
@@ -351,4 +247,5 @@ public:
 
 	/** return projectile movement comp */
 	FORCEINLINE UProjectileMovementComponent* GetProjectileMovementComp()const { return ProjectileMoveComp; }
+
 };
