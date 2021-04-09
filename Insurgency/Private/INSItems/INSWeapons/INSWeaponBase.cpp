@@ -4,7 +4,6 @@
 #include "INSItems/INSWeapons/INSWeaponBase.h"
 #include "Camera/CameraComponent.h"
 #include "Engine/World.h"
-#include "INSProjectiles/INSProjectile_Stable.h"
 #include "INSCharacter/INSPlayerController.h"
 #include "Kismet/GameplayStatics.h"
 #include "INSCharacter/INSPlayerCharacter.h"
@@ -43,7 +42,6 @@ AINSWeaponBase::AINSWeaponBase(const FObjectInitializer& ObjectInitializer) :Sup
 	RepWeaponFireCount = 0;
 	bIsAimingWeapon = false;
 	bInfinitAmmo = false;
-	bForeGripEquipt = false;
 	SemiAutoCurrentRoundCount = 0;
 	AimTime = 0.3f;
 	RecoilVerticallyFactor = -3.f;
@@ -101,7 +99,6 @@ void AINSWeaponBase::BeginPlay()
 {
 	Super::BeginPlay();
 	SetupWeaponMeshRenderings();
-	CurrentWeaponBasePoseType = bForeGripEquipt ? EWeaponBasePoseType::FOREGRIP : EWeaponBasePoseType::ALTGRIP;
 	if (GetLocalRole() == ROLE_Authority)
 	{
 		OnRep_WeaponBasePoseType();
@@ -764,7 +761,6 @@ bool AINSWeaponBase::CheckCanReload()
 
 void AINSWeaponBase::SimulateEachSingleShoot()
 {
-	RepWeaponFireCount++;
 	FTransform ProjectileSpawnTransform;
 	FVector AdjustDir(ForceInit);
 	AdjustProjectileDir(AdjustDir);
@@ -797,6 +793,7 @@ void AINSWeaponBase::SimulateEachSingleShoot()
 		DrawDebugSphere(GetWorld(), ProjectileSpawnTransform.GetLocation(), 5.f, 5, FColor::Red, false, 10.f);
 	}
 #endif
+	RepWeaponFireCount++;
 }
 
 void AINSWeaponBase::AddWeaponSpread(FVector& OutSpreadDir, FVector& BaseDirection)
@@ -843,6 +840,8 @@ void AINSWeaponBase::ConsumeAmmo()
 		}
 		if (CurrentClipAmmo == 0)
 		{
+			GetWorldTimerManager().ClearTimer(WeaponBurstTimerHandle);
+			GetWorldTimerManager().ClearTimer(WeaponSemiAutoTimerHandle);
 			StopWeaponFire();
 			bDryReload = true;
 			StartReloadWeapon();
@@ -908,9 +907,9 @@ void AINSWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AINSWeaponBase, OwnerCharacter);
 	DOREPLIFETIME(AINSWeaponBase, bIsAimingWeapon);
 	DOREPLIFETIME(AINSWeaponBase, bWantsToEquip);
-	DOREPLIFETIME(AINSWeaponBase, CurrentClipAmmo);
-	DOREPLIFETIME(AINSWeaponBase, bWantsToEquip);
+	DOREPLIFETIME_CONDITION(AINSWeaponBase, CurrentClipAmmo,COND_OwnerOnly);
 	DOREPLIFETIME(AINSWeaponBase,CurrentWeaponBasePoseType);
+	DOREPLIFETIME_CONDITION(AINSWeaponBase,WeaponConfigData, COND_InitialOnly);
 	DOREPLIFETIME_CONDITION(AINSWeaponBase, AmmoLeft, COND_OwnerOnly);
 }
 
@@ -972,10 +971,7 @@ void AINSWeaponBase::OnRep_Equipping()
 
 void AINSWeaponBase::OnRep_CurrentClipAmmo()
 {
-	if (CurrentClipAmmo)
-	{
-		bDryReload = true;
-	}
+	bDryReload = CurrentClipAmmo == 0;
 }
 
 void AINSWeaponBase::StartReloadWeapon()
@@ -1052,22 +1048,21 @@ void AINSWeaponBase::StopWeaponAim()
 
 bool AINSWeaponBase::CheckCanAim()
 {
-	const AINSPlayerController* PlayerController = nullptr;
-	const AINSPlayerCharacter* PlayerCharacter = nullptr;
-	if (!GetOwner())
+	AINSPlayerController* const OwnerPC = Cast<AINSPlayerController>(GetOwner());
+	const AINSPlayerCharacter* const OwnerChar = OwnerPC == nullptr ? nullptr : OwnerPC->GetINSPlayerCharacter();
+#if UE_SERVER
+	if (!OwnerPC)
 	{
+		UE_LOG(LogINSWeapon, Warning, TEXT("Weapon :%s has no owner player , can't reload"), *GetName());
 		return false;
 	}
-	if (GetOwner())
+	if (!OwnerPC)
 	{
-		PlayerController = CastChecked<AINSPlayerController>(GetOwner());
-	}
-	if (!PlayerController)
-	{
-		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s has no owner player , can't reload"), *GetName());
+		UE_LOG(LogINSWeapon, Warning, TEXT("Weapon :%s has no owner character , can't reload"), *GetName());
 		return false;
 	}
-	return true;
+#endif
+	return OwnerPC && OwnerChar;
 }
 
 void AINSWeaponBase::SetOwner(AActor* NewOwner)

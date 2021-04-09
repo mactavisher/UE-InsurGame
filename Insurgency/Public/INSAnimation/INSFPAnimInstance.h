@@ -55,9 +55,6 @@ protected:
 	UPROPERTY()
 	AINSPlayerController* OwnerPlayerController;
 
-	/** timer handle for play aim idle animations entire enter aiming status */
-	FTimerHandle AimIdleAnimTimer;
-
 	/**
 	 * update Animation Variables
 	 * @Param DeltaSeconds  DeltaSeconds
@@ -77,10 +74,11 @@ protected:
 
 	virtual void UpdateWeaponIkSwayRotation(float deltaSeconds);
 
-	virtual void FPCheckAndPlayIdleAnim();
+	virtual void FPPlayIdleOrMovingAnim();
 
-	virtual void FPCheckAndPlayMovingAnim();
-
+	/**
+	 * @desc when entering ads, calculate and adjust the hand IK to line up sight with camera
+	 */
 	virtual void UpdateSight();
 
 	virtual void PlayWeaponStartEquipAnim()override;
@@ -92,8 +90,6 @@ protected:
 	 */
 	virtual void CalculateSight(FTransform& OutRelativeTransform);
 
-	virtual void SetupAimIdleAnim(const bool NewAimingCondition);
-
 	/**
 	 * play the weapon base pose each frame to correct the weapon pose
 	 */
@@ -104,9 +100,6 @@ protected:
 	 * @Param bIsDry is this a dry reload
 	 */
 	virtual void PlayReloadAnim(bool bIsDry)override;
-
-	UFUNCTION()
-	virtual void PlayAimIdleAnim();
 
 	/**
 	 * @Desc set is aiming and relative aiming variables

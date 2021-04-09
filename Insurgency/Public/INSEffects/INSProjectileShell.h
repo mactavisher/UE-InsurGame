@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "PhysicalMaterials\PhysicalMaterial.h"
 #include "INSProjectileShell.generated.h"
 
 
@@ -57,6 +58,4 @@ protected:
 	 * @param BoneName collide bone name if any
 	 * @param PhysMat Collide surface material type
 	 */
-	UFUNCTION()
-		virtual void OnShellCollide(FName EventName, float EmitterTime, int32 ParticleTime, FVector Location, FVector Velocity, FVector Direction, FVector Normal, FName BoneName, UPhysicalMaterial* PhysMat);
 };

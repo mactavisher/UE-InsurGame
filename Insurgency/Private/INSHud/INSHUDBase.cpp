@@ -74,6 +74,7 @@ void AINSHUDBase::DrawHUD()
 	DrawScore();
 	DrawHitFeedBackIndicator();
 	DrawTestInfo();
+	DrawImmuneInfo();
 }
 
 void AINSHUDBase::DrawMyTeamInfo()
@@ -125,6 +126,11 @@ void AINSHUDBase::RemoveAllDelegate()
 
 void AINSHUDBase::DrawHudCrossHair()
 {
+	if(!OwningINSPlayerController||!OwningINSPlayerController->GetINSPlayerCharacter()||
+		OwningINSPlayerController->GetINSPlayerCharacter()->GetIsAiming())
+	{
+		return;
+	}
 	const float ScaleX = Canvas->SizeX / StandardSizeX;
 	const float ScaleY = Canvas->SizeY / StandardSizeY;
 	const float WeaponSpreadModifier = CurrentWeapon.Get()->GetWeaponCurrentSpread();
@@ -396,6 +402,19 @@ void AINSHUDBase::DrawWeaponFireMode()
 void AINSHUDBase::DrawTestInfo()
 {
 	DrawText(TEXT("Development Prototype Test"), FLinearColor::White, 10.f, 10.f, GEngine->GetSmallFont(), 1.f, false);
+}
+
+void AINSHUDBase::DrawImmuneInfo()
+{
+	const AINSPlayerCharacter* PlayerCharacter = GetINSOwingPlayerController()->GetINSPlayerCharacter();
+	if (PlayerCharacter && PlayerCharacter->GetIsDamageImmune())
+	{
+		FString DamageImmuneMessage;
+		DamageImmuneMessage.Append("Damage Immune time Left:");
+		DamageImmuneMessage.Append(FString::FromInt(PlayerCharacter->GetDamageImmuneTimeLeft()));
+		FLinearColor HealthColor = PlayerCharacter->GetIsLowHealth() ? FLinearColor::Red : FLinearColor::White;
+		DrawText(DamageImmuneMessage, FLinearColor::White, Canvas->SizeX * 0.45f, Canvas->SizeY * 0.9f, GEngine->GetMediumFont(), 1.f, false);
+	}
 }
 
 void AINSHUDBase::DrawPlayerKill(const class APlayerState* Killer, const class APlayerState* Vimtim)

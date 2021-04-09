@@ -52,11 +52,13 @@ AINSProjectile::AINSProjectile(const FObjectInitializer& ObjectInitializer) :Sup
 	MovementRepInterval = 0.1f;
 	LastMovementRepTime = 0.f;
 	bForceMovementReplication = true;
+	bIsProcessingHit = false;
 	CollisionComp->SetCollisionProfileName(FName(TEXT("Projectile")));
 	/** turn this on because projectile's collision should be accurate to detect hit events and it's fast moving  */
 	CollisionComp->SetAllUseCCD(true);
 	CollisionComp->SetSphereRadius(5.f);
 	bClientFakeProjectile = false;
+	TraceScale = FVector::OneVector;
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
 	bUsingDebugTrace = true;
 #endif
@@ -110,7 +112,7 @@ void AINSProjectile::OnRep_HitCounter()
 			&& !HitActorClass->IsChildOf(AINSWeaponBase::StaticClass()))
 		{
 			FTransform EffctActorTransform(ImpactHit.ImpactNormal.ToOrientationRotator(), ImpactHit.ImpactPoint, FVector::OneVector);
-			AINSImpactEffect* const EffctActor = GetWorld()->SpawnActorDeferred<AINSImpactEffect>(PointImapactEffectsClass,
+			AINSImpactEffect* EffctActor = GetWorld()->SpawnActorDeferred<AINSImpactEffect>(PointImapactEffectsClass,
 				EffctActorTransform,
 				nullptr,
 				nullptr,
@@ -138,10 +140,6 @@ void AINSProjectile::OnRep_OwnerWeapon()
 {
 	if (OwnerWeapon)
 	{
-		if (GetNetMode() == ENetMode::NM_ListenServer)
-		{
-			return;
-		}
 		InitClientFakeProjectile();
 	}
 }
@@ -153,8 +151,10 @@ void AINSProjectile::EnableFakeProjVisual()
 
 void AINSProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	if (GetLocalRole() == ROLE_Authority)
+	if (GetLocalRole() == ROLE_Authority&&!bIsProcessingHit)
 	{
+		TGuardValue<bool> HitGuard(bIsProcessingHit, true);
+		GetProjectileMovementComp()->StopMovementImmediately();
 		CollisionComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		CollisionComp->SetCollisionResponseToAllChannels(ECR_Ignore);
 		UE_LOG(LogINSProjectile,
@@ -167,10 +167,6 @@ void AINSProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* 
 		{
 			AINSCharacter* HitCharacter = CastChecked<AINSCharacter>(OtherActor);
 			FPointDamageEvent PointDamageEvent;
-			/*PoitHit.Actor = HitCharacter;
-			PoitHit.Location = Hit.Location;
-			PoitHit.ImpactPoint = Hit.ImpactPoint;
-			PoitHit.ImpactNormal = Hit.ImpactNormal;*/
 			PointDamageEvent.HitInfo = Hit;
 			PointDamageEvent.Damage = DamageBase;
 			PointDamageEvent.ShotDirection = this->GetVelocity().GetSafeNormal();
@@ -191,11 +187,11 @@ void AINSProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* 
 		}
 		//CalAndSpawnPenetrateProjectile(Hit, GetVelocity());
 		SetLifeSpan(1.f);
-		GetProjectileMovementComp()->StopMovementImmediately();
+		bIsProcessingHit = false;
 	}
 }
 
-void AINSProjectile::CalAndSpawnPenetrateProjectile(const FHitResult& OriginHitResult, const FVector& OriginVelocity)
+/*void AINSProjectile::CalAndSpawnPenetrateProjectile(const FHitResult& OriginHitResult, const FVector& OriginVelocity)
 {
 	const float PenetrateMinDistance = 2.f;
 	const float PenetrateMaxThresholdRange = 30.f;
@@ -254,12 +250,16 @@ void AINSProjectile::CalAndSpawnPenetrateProjectile(const FHitResult& OriginHitR
 		DrawDebugSphere(GetWorld(), PrececionHit.Location + GetActorForwardVector() * 25.f, 5.f, 10, FColor::Red, false, 10.f);
 	}
 #endif
-}
+}*/
 
 // Called when the game starts or when spawned
 void AINSProjectile::BeginPlay()
 {
 	Super::BeginPlay();
+	if (!bClientFakeProjectile)
+	{
+		SetActorHiddenInGame(true);
+	}
 	if (GetClientFakeProjectile())
 	{
 
@@ -279,12 +279,20 @@ void AINSProjectile::BeginPlay()
 void AINSProjectile::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-	//SetActorHiddenInGame(true);
 	if (GetLocalRole() == ROLE_Authority)
 	{
 		FScriptDelegate Delegate;
 		Delegate.BindUFunction(this, TEXT("OnProjectileHit"));
 		CollisionComp->OnComponentHit.AddUnique(Delegate);
+	}
+	if (GetIsFakeProjectile())
+	{
+		TracerPaticleSizeTickFun.bCanEverTick;
+		TracerPaticleSizeTickFun.SetTickFunctionEnable(true);
+		TracerPaticleSizeTickFun.bTickEvenWhenPaused = true;
+		TracerPaticleSizeTickFun.RegisterTickFunction(GetLevel());
+		TracerPaticleSizeTickFun.Target = this;
+		//GetProjectileMovementComp()->PrimaryComponentTick.AddPrerequisite(this);
 	}
 }
 
@@ -427,6 +435,11 @@ void AINSProjectile::SetMuzzleSpeed(float NewSpeed)
 	ProjectileMoveComp->InitialSpeed = NewSpeed;
 }
 
+void AINSProjectile::SetOwnerWeapon(class AINSWeaponBase* NewWeaponOwner)
+{
+	this->OwnerWeapon = NewWeaponOwner;
+}
+
 float AINSProjectile::GetDamageTaken()
 {
 	return 0.f;
@@ -443,6 +456,29 @@ void AINSProjectile::Tick(float DeltaTime)
 		if (GetActorLocation().Z >= 150000.f || GetActorLocation().Z <= -50000.f)
 		{
 			Destroy(false, true);
+		}
+	}
+}
+
+void AINSProjectile::TickActor(float DeltaTime, enum ELevelTick TickType, FActorTickFunction& ThisTickFunction)
+{
+	Super::TickActor(DeltaTime, TickType, ThisTickFunction);
+	
+	if (&ThisTickFunction == &TracerPaticleSizeTickFun)
+	{
+		//GEngine->AddOnScreenDebugMessage(-1, 0.5f, FColor::Green, TEXT("TickActor calling Tracer scale"));
+		FVector CurrentTracerScale = TracerParticle->GetComponentTransform().GetScale3D();
+		float ScaleX = CurrentTracerScale.X;
+		float ScaleY = CurrentTracerScale.Y;
+		float ScaleZ = CurrentTracerScale.Z;
+		FVector NewScale(FMath::Clamp<float>(ScaleX += DeltaTime*100, ScaleX, 10.f)
+			, ScaleY
+			, FMath::Clamp<float>(ScaleZ += DeltaTime, ScaleZ, 2.f));
+		TracerParticle->SetWorldScale3D(NewScale);
+		if (ScaleX >= 20.f)
+		{
+			TracerPaticleSizeTickFun.SetTickFunctionEnable(false);
+			TracerPaticleSizeTickFun.UnRegisterTickFunction();
 		}
 	}
 }

@@ -48,6 +48,9 @@ AINSCharacter::AINSCharacter(const FObjectInitializer& ObjectInitializer) :
 	bIsSprint = false;
 	bIsCrouched = false;
 	bIsSuppressed = false;
+	bDamageImmuneState = true;
+	InitDamageImmuneTime = 5;
+	DamageImmuneLeft = InitDamageImmuneTime;
 	CharacterCurrentStance = ECharacterStance::STAND;
 	FatalFallingSpeed = 2016.f;
 	bEnableFallingDamage = true;
@@ -70,16 +73,17 @@ AINSCharacter::AINSCharacter(const FObjectInitializer& ObjectInitializer) :
 void AINSCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	if (GetLocalRole() == ROLE_Authority)
+	if (HasAuthority())
 	{
 		FScriptDelegate DieDelegate;
 		DieDelegate.BindUFunction(this, TEXT("OnDeath"));
 		CharacterHealthComp->OnCharacterShouldDie.Add(DieDelegate);
+		GetWorldTimerManager().SetTimer(DamageImmuneTimer, this, &AINSCharacter::TickDamageImmune, 1.f, true, 0.f);
 	}
-	// we don't need to attach the player sound comp in dedicated server
-	if (GetNetMode() == ENetMode::NM_DedicatedServer)
+	// we don't need to attach the player sound comp in dedicated server,actually we can destroy it
+	if (IsNetMode(NM_DedicatedServer))
 	{
-		CharacterAudioComp->DetachFromComponent(FDetachmentTransformRules::KeepWorldTransform);
+		CharacterAudioComp->DestroyComponent(true);
 	}
 }
 
@@ -135,7 +139,7 @@ void AINSCharacter::HandleOnTakeRadiusDamage(AActor* DamagedActor, float Damage,
 
 float AINSCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
-	if (GetLocalRole() == ROLE_Authority)
+	if (HasAuthority())
 	{
 		const float DamageToApply = Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
 		if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
@@ -155,11 +159,11 @@ float AINSCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, A
 			if (PointDamageEventPtr)
 			{
 				FTakeHitInfo HitInfo;
-				//HitInfo.bIsDirtyData = true;
 				HitInfo.bIsTeamDamage = GameMode->GetIsTeamDamage(EventInstigator, GetController());
 				HitInfo.originalDamage = DamageBeforeModify;
 				HitInfo.Damage = GetIsCharacterDead() ? 0.f : DamageAfterModify;
 				HitInfo.DamageCauser = DamageCauser;
+				HitInfo.Victim = this;
 				HitInfo.bVictimDead = GetIsCharacterDead();
 				HitInfo.DamageType = DamageEvent.DamageTypeClass;
 				HitInfo.Momentum = DamageCauser->GetVelocity();
@@ -168,9 +172,9 @@ float AINSCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, A
 				FRotator ShotRot = ShotDir.Rotation();
 				HitInfo.ShotDirPitch = FRotator::CompressAxisToByte(ShotRot.Pitch);
 				HitInfo.ShotDirYaw = FRotator::CompressAxisToByte(ShotRot.Yaw);
-				HitInfo.bIsDirtyData = false;
+				HitInfo.EnsureReplication();
 				LastHitInfo = HitInfo;
-				if (GetNetMode() == ENetMode::NM_Standalone || GetNetMode() == ENetMode::NM_ListenServer)
+				if (IsNetMode(NM_Standalone) || IsNetMode(NM_ListenServer))
 				{
 					OnRep_LastHitInfo();
 				}
@@ -201,6 +205,10 @@ float AINSCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, A
 
 bool AINSCharacter::ShouldTakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)const
 {
+	if (bDamageImmuneState)
+	{
+		return false;
+	}
 	return Super::ShouldTakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
 }
 
@@ -214,11 +222,12 @@ void AINSCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 	DOREPLIFETIME(AINSCharacter, bIsProne);
 	DOREPLIFETIME(AINSCharacter, CurrentWeapon);
 	DOREPLIFETIME(AINSCharacter, bIsSprint);
+	DOREPLIFETIME(AINSCharacter, DamageImmuneLeft);
 }
 
 void AINSCharacter::Landed(const FHitResult& Hit)
 {
-	if (GetLocalRole() == ROLE_Authority)
+	if (HasAuthority())
 	{
 		Super::Landed(Hit);
 		const float LandVelocity = GetVelocity().Size();
@@ -296,9 +305,9 @@ void AINSCharacter::OnRep_Dead()
 
 void AINSCharacter::OnRep_LastHitInfo()
 {
-	if (GetNetMode() != ENetMode::NM_DedicatedServer)
+	if (!IsNetMode(NM_DedicatedServer))
 	{
-		UE_LOG(LogINSCharacter, Warning, TEXT("received Characters's:%s Hit Info,start handle take hit logic!"),*GetName());
+		UE_LOG(LogINSCharacter, Warning, TEXT("received Characters's:%s Hit Info,start handle take hit logic!"), *GetName());
 		//spawn blood hit Impact
 		const FVector BloodSpawnLocation = FVector(LastHitInfo.RelHitLocation);
 		const float ShotDirPitchDecompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirPitch);
@@ -309,6 +318,11 @@ void AINSCharacter::OnRep_LastHitInfo()
 		const int32 randomIndex = FMath::RandHelper(BloodParticlesSize - 1);
 		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BloodParticles[randomIndex], BloodSpawnTrans);
 		UGameplayStatics::SpawnSoundAtLocation(this, BodyHitSound, LastHitInfo.RelHitLocation);
+		if (GetIsCharacterDead())
+		{
+			GetMesh()->AddImpulseToAllBodiesBelow(BloodSpawenRotation.Vector() * 800.f, LastHitInfo.HitBoneName);
+			GetMesh()->AddAngularImpulseInRadians(BloodSpawenRotation.Vector() * 800.f, LastHitInfo.HitBoneName);
+		}
 		const uint8 RandInt = FMath::RandHelper(10);
 		if (RandInt % 3 == 0)
 		{
@@ -337,7 +351,7 @@ void AINSCharacter::OnRep_LastHitInfo()
 		}
 	}
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
-	if (GetController())
+	if (LastHitInfo.Victim == this)
 	{
 		FString DebugMessage;
 		DebugMessage.Append("you are taking damage, damage token: ").Append(FString::FromInt(LastHitInfo.Damage));
@@ -413,9 +427,22 @@ void AINSCharacter::OnRep_CurrentWeapon()
 
 }
 
-FORCEINLINE class UINSCharacterMovementComponent* AINSCharacter::GetINSCharacterMovement()
+void AINSCharacter::OnRep_DamageImmuneTime()
 {
-	return  Cast<UINSCharacterMovementComponent>(GetCharacterMovement());
+	if (DamageImmuneLeft <= 0)
+	{
+		bDamageImmuneState = false;
+	}
+}
+
+void AINSCharacter::TickDamageImmune()
+{
+	DamageImmuneLeft = FMath::Clamp<uint8>(DamageImmuneLeft - (uint8)1, 0, DamageImmuneLeft);
+	if (DamageImmuneLeft <= 0)
+	{
+		bDamageImmuneState = false;
+		GetWorldTimerManager().ClearTimer(DamageImmuneTimer);
+	}
 }
 
 float AINSCharacter::GetCharacterCurrentHealth() const
@@ -433,7 +460,7 @@ void AINSCharacter::HandleWeaponRealoadRequest()
 
 void AINSCharacter::HandleAimWeaponRequest()
 {
-	if (GetLocalRole() == ROLE_Authority)
+	if (HasAuthority())
 	{
 		if (CurrentWeapon && CurrentWeapon->GetWeaponCurrentState() != EWeaponState::RELOADIND)
 		{
@@ -525,7 +552,7 @@ void AINSCharacter::HandleCrouchRequest(bool bCrouchPressed)
 
 void AINSCharacter::HandleStartSprintRequest()
 {
-	if (GetLocalRole() == ROLE_Authority)
+	if (HasAuthority())
 	{
 		bIsSprint = true;
 		OnRep_Sprint();
@@ -534,7 +561,7 @@ void AINSCharacter::HandleStartSprintRequest()
 
 void AINSCharacter::HandleStopSprintRequest()
 {
-	if (GetLocalRole() == ROLE_Authority)
+	if (HasAuthority())
 	{
 		bIsSprint = false;
 		OnRep_Sprint();
@@ -577,6 +604,7 @@ void AINSCharacter::SpawnWeaponPickup()
 			WeaponPickup->SetCurrentClipAmmo(CurrentWeapon->CurrentClipAmmo);
 			UClass* const MeshClass = CurrentWeapon->WeaponMesh1PComp->SkeletalMesh->GetClass();
 			WeaponPickup->SetViualMesh(NewObject<USkeletalMesh>(MeshClass));
+			WeaponPickup->GetVisualMeshComp()->RegisterComponent();
 			UGameplayStatics::FinishSpawningActor(WeaponPickup, PickupSpawnTransform);
 		}
 	}
@@ -585,7 +613,7 @@ void AINSCharacter::SpawnWeaponPickup()
 
 void AINSCharacter::SetCharacterAiming(bool NewAimState)
 {
-	if (GetLocalRole() == ROLE_Authority)
+	if (HasAuthority())
 	{
 		this->bIsAiming = NewAimState;
 		OnRep_Aim();
@@ -622,9 +650,9 @@ void AINSCharacter::OnDeath()
 
 }
 
-void AINSCharacter::KilledBy(class AController* PlayerKilledMe, class AACtor* ActorKilledMe)
+bool AINSCharacter::GetIsCharacterMoving() const
 {
-
+	return GetINSCharacterMovement() != nullptr && GetINSCharacterMovement()->GetLastUpdateVelocity().Size2D() > 0.f;
 }
 
 // Called every frame
@@ -640,6 +668,11 @@ void AINSCharacter::Tick(float DeltaTime)
 		CurrentEyeHeight = FMath::Clamp<float>(CurrentEyeHeight + 10.f, CurrentEyeHeight, BaseEyeHeight);
 	}
 	//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Green,UKismetStringLibrary::Conv_BoolToString(bIsAiming));
+}
+
+void AINSCharacter::TickActor(float DeltaTime, enum ELevelTick TickType, FActorTickFunction& ThisTickFunction)
+{
+	Super::TickActor(DeltaTime, TickType, ThisTickFunction);
 }
 
 // Called to bind functionality to input

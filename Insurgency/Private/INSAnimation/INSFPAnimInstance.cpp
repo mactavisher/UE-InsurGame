@@ -39,20 +39,11 @@ void UINSFPAnimInstance::UpdateAdsAlpha(float DeltaSeconds)
 	const float InterpSpeed = 1.f / WeaponAimTime;
 	if (bIsAiming)
 	{
-		ADSAlpha = ADSAlpha + InterpSpeed * DeltaSeconds;
-		if (ADSAlpha >= 1.f)
-		{
-			ADSAlpha = 1.0f;
-		}
-		ADSAlpha = FMath::Clamp<float>(ADSAlpha + InterpSpeed * DeltaSeconds
-			, ADSAlpha
-			, 1.f);
+		ADSAlpha = FMath::Clamp<float>(ADSAlpha + InterpSpeed * DeltaSeconds, ADSAlpha, 1.f);
 	}
 	else
 	{
-		ADSAlpha = FMath::Clamp<float>(ADSAlpha - InterpSpeed * DeltaSeconds
-			, 0.f
-			, ADSAlpha);
+		ADSAlpha = FMath::Clamp<float>(ADSAlpha - InterpSpeed * DeltaSeconds, 0.f, ADSAlpha);
 	}
 }
 
@@ -67,8 +58,7 @@ void UINSFPAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	UpdateAdsAlpha(DeltaSeconds);
 	UpdateFiringHandsShift(DeltaSeconds);
 	PlayWeaponBasePose();
-	FPCheckAndPlayIdleAnim();
-	FPCheckAndPlayMovingAnim();
+	FPPlayIdleOrMovingAnim();
 	UpdateSight();
 }
 
@@ -92,78 +82,106 @@ void UINSFPAnimInstance::UpdateWeaponIkSwayRotation(float deltaSeconds)
 		{
 			if (WeaponIKSwayRotation.Yaw > 0.f)
 			{
-				WeaponIKSwayRotation.Yaw = FMath::Clamp<float>(WeaponIKSwayRotation.Yaw -= GetWorld()->GetDeltaSeconds() * WeaponSwayRecoverySpeed, 0.f, MaxWeaponSwayYaw);
+				WeaponIKSwayRotation.Yaw = FMath::Clamp<float>(WeaponIKSwayRotation.Yaw - GetWorld()->GetDeltaSeconds() * WeaponSwayRecoverySpeed, 0.f, MaxWeaponSwayYaw);
 			}
 			if (WeaponIKSwayRotation.Yaw < 0.f)
 			{
-				WeaponIKSwayRotation.Yaw = FMath::Clamp<float>(WeaponIKSwayRotation.Yaw += GetWorld()->GetDeltaSeconds() * WeaponSwayRecoverySpeed, -MaxWeaponSwayYaw, 0.f);
+				WeaponIKSwayRotation.Yaw = FMath::Clamp<float>(WeaponIKSwayRotation.Yaw + GetWorld()->GetDeltaSeconds() * WeaponSwayRecoverySpeed, -MaxWeaponSwayYaw, 0.f);
 			}
 		}
 		else
 		{
-			WeaponIKSwayRotation.Yaw = FMath::Clamp<float>(WeaponIKSwayRotation.Yaw += GetWorld()->GetDeltaSeconds() * RotYaw * WeaponSwayScale, -MaxWeaponSwayYaw, MaxWeaponSwayYaw);
+			WeaponIKSwayRotation.Yaw = FMath::Clamp<float>(WeaponIKSwayRotation.Yaw + GetWorld()->GetDeltaSeconds() * RotYaw * WeaponSwayScale, -MaxWeaponSwayYaw, MaxWeaponSwayYaw);
 		}
 		if (RotPitch == 0.f)
 		{
 			if (WeaponIKSwayRotation.Pitch > 0.f)
 			{
-				WeaponIKSwayRotation.Pitch = FMath::Clamp<float>(WeaponIKSwayRotation.Pitch -= GetWorld()->GetDeltaSeconds() * WeaponSwayRecoverySpeed, 0.f, MaxWeaponSwayPitch);
+				WeaponIKSwayRotation.Pitch = FMath::Clamp<float>(WeaponIKSwayRotation.Pitch - GetWorld()->GetDeltaSeconds() * WeaponSwayRecoverySpeed, 0.f, MaxWeaponSwayPitch);
 			}
 			if (WeaponIKSwayRotation.Pitch < 0.f)
 			{
-				WeaponIKSwayRotation.Pitch = FMath::Clamp<float>(WeaponIKSwayRotation.Pitch += GetWorld()->GetDeltaSeconds() * WeaponSwayRecoverySpeed, -MaxWeaponSwayPitch, 0.f);
+				WeaponIKSwayRotation.Pitch = FMath::Clamp<float>(WeaponIKSwayRotation.Pitch + GetWorld()->GetDeltaSeconds() * WeaponSwayRecoverySpeed, -MaxWeaponSwayPitch, 0.f);
 			}
 		}
 		else
 		{
-			WeaponIKSwayRotation.Pitch = FMath::Clamp<float>(WeaponIKSwayRotation.Pitch -= GetWorld()->GetDeltaSeconds() * RotPitch * WeaponSwayScale, -MaxWeaponSwayPitch, MaxWeaponSwayPitch);
+			WeaponIKSwayRotation.Pitch = FMath::Clamp<float>(WeaponIKSwayRotation.Pitch - GetWorld()->GetDeltaSeconds() * RotPitch * WeaponSwayScale, -MaxWeaponSwayPitch, MaxWeaponSwayPitch);
 		}
 	}
 }
 
-void UINSFPAnimInstance::FPCheckAndPlayIdleAnim()
+void UINSFPAnimInstance::FPPlayIdleOrMovingAnim()
 {
 	if (!CheckValid())
 	{
 		return;
 	}
-	if (!bIsMoving)
+	if (bIsMoving)
 	{
-		// kill any moving montages first
-		Montage_Stop(0.25f, CurrentWeaponAnimData->FPAimMoveAnim);
-		Montage_Stop(0.25f, CurrentWeaponAnimData->FPMoveAnim);
-		if (bIsAiming)
+		if (Montage_IsPlaying(CurrentWeaponAnimData->FPAimIdleAnim))
 		{
-			Montage_Stop(0.25f, CurrentWeaponAnimData->FPMoveAnim);
-			Montage_Stop(0.25f, CurrentWeaponAnimData->FPIdleAnim);
+			Montage_Stop(0.1f,CurrentWeaponAnimData->FPAimIdleAnim);
 		}
-	}
-}
-
-void UINSFPAnimInstance::FPCheckAndPlayMovingAnim()
-{
-	if (!CheckValid())
-	{
-		return;
-	}
-	if (CurrentWeapon)
-	{
+		if (Montage_IsPlaying(CurrentWeaponAnimData->FPIdleAnim))
+		{
+			Montage_Stop(0.1f, CurrentWeaponAnimData->FPIdleAnim);
+		}
 		if (bIsAiming)
 		{
-			if (bIsMoving && !Montage_IsPlaying(CurrentWeaponAnimData->FPAimMoveAnim))
+			if (Montage_IsPlaying(CurrentWeaponAnimData->FPMoveAnim))
+			{
+				Montage_Stop(0.1f, CurrentWeaponAnimData->FPMoveAnim);
+			}
+			if (ADSAlpha >= 1.f && !Montage_IsPlaying(CurrentWeaponAnimData->FPAimMoveAnim))
 			{
 				Montage_Play(CurrentWeaponAnimData->FPAimMoveAnim);
 			}
 		}
 		else
 		{
-			if (bIsMoving && !Montage_IsPlaying(CurrentWeaponAnimData->FPMoveAnim))
+			if (Montage_IsPlaying(CurrentWeaponAnimData->FPAimMoveAnim))
+			{
+				Montage_Stop(0.1f, CurrentWeaponAnimData->FPAimMoveAnim);
+			}
+			if (!Montage_IsPlaying(CurrentWeaponAnimData->FPMoveAnim))
 			{
 				Montage_Play(CurrentWeaponAnimData->FPMoveAnim);
 			}
 		}
 	}
+	else
+	{
+		if (Montage_IsPlaying(CurrentWeaponAnimData->FPMoveAnim))
+		{
+			Montage_Stop(0.25f, CurrentWeaponAnimData->FPMoveAnim);
+		}
+		if (Montage_IsPlaying(CurrentWeaponAnimData->FPAimMoveAnim))
+		{
+			Montage_Stop(0.25f, CurrentWeaponAnimData->FPAimMoveAnim);
+		}
+		if (bIsAiming)
+		{
+			if (Montage_IsPlaying(CurrentWeaponAnimData->FPIdleAnim))
+			{
+				Montage_Stop(0.1f, CurrentWeaponAnimData->FPIdleAnim);
+			}
+		}
+		else
+		{
+			if (Montage_IsPlaying(CurrentWeaponAnimData->FPMoveAnim))
+			{
+				Montage_Stop(0.1f,CurrentWeaponAnimData->FPMoveAnim);
+			}
+			if (!Montage_IsPlaying(CurrentWeaponAnimData->FPIdleAnim))
+			{
+				Montage_Play(CurrentWeaponAnimData->FPIdleAnim);
+			}
+		}
+		
+	}
 }
+
 
 
 void UINSFPAnimInstance::UpdateSight()
@@ -173,7 +191,7 @@ void UINSFPAnimInstance::UpdateSight()
 		CalculateSight(SightTransform);
 		bSighLocReCalculated = true;
 	}
-	const float interpSpeed = 1 / ADSTime;
+	const float interpSpeed = 1.f / ADSTime;
 	if (!SightTransform.Equals(FTransform::Identity))
 	{
 		const FVector TargetSightLoc = SightTransform.GetLocation();
@@ -234,22 +252,6 @@ void UINSFPAnimInstance::CalculateSight(FTransform& OutRelativeTransform)
 	}
 }
 
-void UINSFPAnimInstance::SetupAimIdleAnim(const bool NewAimingCondition)
-{
-	if (bIsAiming)
-	{
-		if (!GetWorld()->GetTimerManager().IsTimerActive(AimIdleAnimTimer))
-		{
-			const float WeaponADSTime = CurrentWeapon->GetWeaponAimTime();
-			GetWorld()->GetTimerManager().SetTimer(AimIdleAnimTimer, this, &UINSFPAnimInstance::PlayAimIdleAnim, 1.f, true, WeaponADSTime);
-		}
-	}
-	else
-	{
-		GetWorld()->GetTimerManager().ClearTimer(AimIdleAnimTimer);
-	}
-}
-
 void UINSFPAnimInstance::PlayWeaponBasePose()
 {
 	if (!CheckValid())
@@ -298,14 +300,6 @@ void UINSFPAnimInstance::PlayReloadAnim(bool bIsDry)
 	Montage_Play(SelectedReloadAnim);
 }
 
-void UINSFPAnimInstance::PlayAimIdleAnim()
-{
-	if (!Montage_IsPlaying(CurrentWeaponAnimData->FPAimIdleAnim))
-	{
-		Montage_Play(CurrentWeaponAnimData->FPAimIdleAnim);
-	}
-}
-
 void UINSFPAnimInstance::SetIsAiming(bool IsAiming)
 {
 	Super::SetIsAiming(IsAiming);
@@ -314,9 +308,6 @@ void UINSFPAnimInstance::SetIsAiming(bool IsAiming)
 		WeaponSwayScale = 2.f;
 		MaxWeaponSwayPitch *= 0.2f;
 		MaxWeaponSwayYaw *= 0.2f;
-		//disable idle animation for now
-		Montage_Stop(0.1f, CurrentWeaponAnimData->FPIdleAnim);
-		Montage_Stop(0.1f, CurrentWeaponAnimData->FPMoveAnim);
 	}
 	else
 	{
@@ -325,7 +316,6 @@ void UINSFPAnimInstance::SetIsAiming(bool IsAiming)
 		MaxWeaponSwayPitch = 5.f;
 		MaxWeaponSwayYaw = 5.f;
 	}
-	SetupAimIdleAnim(bIsAiming);
 }
 
 void UINSFPAnimInstance::SetCurrentWeaponAndAnimationData(class AINSWeaponBase* NewWeapon)

@@ -45,6 +45,7 @@ AINSGameModeBase::AINSGameModeBase(const FObjectInitializer& ObjectInitializer) 
 	bMatchPreparingFinished = false;
 	MatchPrepareTime = 5.f;
 	MatchPrepareRemainingTime = MatchPrepareTime;
+	bEnablePlayerSpawnDamageImmune = true;
 }
 
 void AINSGameModeBase::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)

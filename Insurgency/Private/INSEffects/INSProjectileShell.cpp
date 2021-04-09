@@ -28,17 +28,17 @@ void AINSProjectileShell::BeginPlay()
 void AINSProjectileShell::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-	if (GetNetMode() != ENetMode::NM_DedicatedServer)
+	/*if (GetNetMode() != ENetMode::NM_DedicatedServer)
 	{
 		ParticleCollideDelegate.BindUFunction(this, TEXT("OnShellCollide"));
 		ParticleComp->OnParticleCollide.AddUnique(ParticleCollideDelegate);
 	}
-	SetLifeSpan(10.f);
+	SetLifeSpan(10.f);*/
 }
 
-void AINSProjectileShell::OnShellCollide(FName EventName, float EmitterTime, int32 ParticleTime, FVector Location, FVector Velocity, FVector Direction, FVector Normal, FName BoneName, UPhysicalMaterial* PhysMat)
+/*void AINSProjectileShell::OnCollide(FName EventName, float EmitterTime, int32 ParticleTime, FVector Location, FVector Velocity, FVector Direction, FVector Normal, FName BoneName, UPhysicalMaterial* PhysMat)
 {
-	if (bCollided)
+	/*if (bCollided)
 	{
 		UE_LOG(INSProjectileShell, Warning, TEXT("this projectile shell has finished it's collide events,abort!"));
 		return;
@@ -60,12 +60,12 @@ void AINSProjectileShell::OnShellCollide(FName EventName, float EmitterTime, int
 			, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 		if (ImpactActor)
 		{
-			ImpactActor->SetPysicalMat(PhysMat);
 			FHitResult ImpactHit(ForceInit);
 			ImpactHit.BoneName = BoneName;
 			ImpactHit.Location = Location;
 			ImpactHit.ImpactPoint = Location;
 			ImpactHit.ImpactNormal = Normal;
+			ImpactHit.PhysMaterial = PhysMat;
 			ImpactActor->SetImpactHit(ImpactHit);
 			UGameplayStatics::FinishSpawningActor(ImpactActor, ImpactSpawnTrans);
 			bCollided = true;
@@ -86,5 +86,5 @@ void AINSProjectileShell::OnShellCollide(FName EventName, float EmitterTime, int
 				, *ImpactSpawnTrans.ToString());
 		}
 	}
-}
+}*/
 

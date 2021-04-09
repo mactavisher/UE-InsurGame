@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Insurgency.generated.h"
 
 /** ~~--------------------------------------------------------------
 	define INS World Surface types --------------------------------*/
@@ -165,3 +166,92 @@ namespace TeamName
 	static const FName Rebel = FName(TEXT("Rebel"));	                    // Rebel team name
 	static const FName Allie = FName(TEXT("Allie"));		                // Allie Team name
 }
+
+/**
+ * replicated hit info
+ */
+USTRUCT(BlueprintType)
+struct FTakeHitInfo
+{
+	GENERATED_USTRUCT_BODY()
+
+	/** shot direction pitch, manually compressed and decompressed */
+	UPROPERTY()
+		uint8 ShotDirPitch;
+
+	/** shot direction yaw, manually compressed and decompressed */
+	UPROPERTY()
+		uint8 ShotDirYaw;
+
+	/** actor that actually cause this damage */
+	UPROPERTY()
+		class AActor* DamageCauser;
+
+	/** actor that actually takes this damage */
+	UPROPERTY()
+		class AActor* Victim;
+
+	/** the amount of damage actually applied,after game mode modify the damage */
+	UPROPERTY()
+		int32 Damage;
+
+	/** initial damage should have applied before game mode to modify it's damage */
+	UPROPERTY()
+		int32 originalDamage;
+
+	/** the location of the hit (relative to Pawn center) */
+	UPROPERTY()
+		FVector_NetQuantize RelHitLocation;
+
+	/** how much momentum was imparted */
+	UPROPERTY()
+		FVector_NetQuantize Momentum;
+
+	/** the damage type we were hit with */
+	UPROPERTY()
+		TSubclassOf<UDamageType> DamageType;
+
+	/** will this damage make the victim dead? */
+	UPROPERTY()
+		uint8 bVictimDead : 1;
+
+	/** is victim already dead since last damage */
+	UPROPERTY()
+		uint8 bVictimAlreadyDead : 1;
+
+	/** is this damage caused by team */
+	UPROPERTY()
+		uint8 bIsTeamDamage : 1;
+
+	/** is this damage caused by team */
+	UPROPERTY()
+		FName HitBoneName;
+
+	/** the amount of damage actually applied,after game mode modify the damage */
+	UPROPERTY()
+		uint8 bIsDirtyData : 1;
+
+	FTakeHitInfo()
+		: ShotDirPitch(0)
+		, ShotDirYaw(0)
+		, DamageCauser(NULL)
+		, Victim(NULL)
+		, Damage(0)
+		, originalDamage(0)
+		, RelHitLocation(ForceInit)
+		, Momentum(ForceInit)
+		, DamageType(NULL)
+		, bVictimDead(false)
+		, bVictimAlreadyDead(false)
+		, bIsTeamDamage(false)
+		, HitBoneName(NAME_None)
+		, bIsDirtyData(true)
+	{
+	}
+
+public:
+	void EnsureReplication()
+	{
+		bIsDirtyData = false;
+	}
+};

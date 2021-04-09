@@ -49,9 +49,9 @@ float UINSHealthComponent::GetCurrentHealth() const
 void UINSHealthComponent::ReduceHealth(float ReduceAmount, class AActor* DamageCauser, class AController* DamageInstigator)
 {
 	CurrentHealth -= FMath::CeilToInt(ReduceAmount);
+	CurrentHealth = FMath::CeilToInt(FMath::Clamp<float>(CurrentHealth - ReduceAmount, 0.f, CurrentHealth));
 	if (CurrentHealth <= 0)
 	{
-		CurrentHealth = 0;
 		OnCharacterShouldDie.Broadcast();
 		GetWorld()->GetTimerManager().ClearTimer(HealthRestoreTimerHandle);
 		DisableComponentTick();

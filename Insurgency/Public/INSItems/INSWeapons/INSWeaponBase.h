@@ -15,7 +15,7 @@ class UParticleSystemComponent;
 class UINSWeaponAssets;
 class AINSItems;
 class AINSCharacter;
-class UCameraShake;
+//class UCameraShake;
 class AINSProjectile;
 class AINSProjectileShell;
 class UINSStaticAnimData;
@@ -28,8 +28,8 @@ struct FWeaponConfigData
 {
 	GENERATED_USTRUCT_BODY()
 
-		/** the maximum ammo can be hold in a single clip */
-		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	/** the maximum ammo can be hold in a single clip */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		int32 AmmoPerClip;
 
 	/**the max ammo can carry with this weapon */
@@ -68,7 +68,7 @@ public:
 		, ZoomingInTime(0.15f)
 		, ZoomingOutTime(0.1f)
 		, BaseDamage(20.f)
-		, MuzzleSpeed(8000.f)
+		, MuzzleSpeed(40000.f)
 		, ScanTraceRange(1000.f)
 	{
 	}
@@ -244,7 +244,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 		UParticleSystemComponent* WeaponParticleComp;
 
 	/** stores weapon config data */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponConfig")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated,Category = "WeaponConfig")
 		FWeaponConfigData WeaponConfigData;
 
 	/** ammo count in a current clip */

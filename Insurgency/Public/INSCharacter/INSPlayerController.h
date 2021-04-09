@@ -40,8 +40,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Player Action")
 		uint8 bPlayerFiring : 1;
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="ReloadWeapon")
-	   uint8 bAutoReload:1;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ReloadWeapon")
+		uint8 bAutoReload : 1;
 
 	/** cached Player State of INS Type */
 	UPROPERTY()
@@ -51,12 +51,12 @@ protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_PlayerTeam, Category = "Default")
 		AINSTeamInfo* PlayerTeam;
 
-	UPROPERTY(VisibleAnywhere,BlueprintReadWrite,Category="AmbientAudioComp", meta = (AllowPrivateAccess = "true"))
-	    UAudioComponent* AmbientAudioComp;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AmbientAudioComp", meta = (AllowPrivateAccess = "true"))
+		UAudioComponent* AmbientAudioComp;
 
 	/** current weapon used by this player */
-	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Weapon")
-	   class AINSWeaponBase* CurrentWeapon;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
+		class AINSWeaponBase* CurrentWeapon;
 
 protected:
 	/** possess a character */
@@ -94,7 +94,7 @@ protected:
 	/** server,crouch */
 	UFUNCTION(Server, Unreliable, WithValidation)
 		virtual void ServerCrouch();
-	
+
 	/** server,crouch */
 	UFUNCTION(Server, Unreliable, WithValidation)
 		virtual void ServerUnCrouch();
@@ -194,8 +194,8 @@ public:
 
 	virtual void SetWeaponState(EWeaponState NewState);
 
-	UFUNCTION(Server,Unreliable,WithValidation)
-	virtual void ServerSetWeaponState(EWeaponState NewState);
+	UFUNCTION(Server, Unreliable, WithValidation)
+		virtual void ServerSetWeaponState(EWeaponState NewState);
 
 
 
@@ -206,19 +206,7 @@ public:
 	UPROPERTY()
 		FTimerHandle CharacterRespawnTimer;
 
-	UFUNCTION()
-	virtual void OnWeaponAmmoLeftEmpty();
-
-	UFUNCTION()
-	virtual void OnWeaponClipAmmoLow();
-
-	UFUNCTION()
-	virtual void OnWeaponClipEmpty(class AController* WeaponOwnerPlayer);
-
 public:
-	/** owner client show a threaten indicator */
-	UFUNCTION(Client, Unreliable, WithValidation)
-		virtual void ClientShowThreaten();
 
 	virtual void ReceiveGameKills(class APlayerState* Killer, APlayerState* Victim, int32 Score, bool bIsTeamDamage);
 
@@ -237,8 +225,8 @@ public:
 	virtual UClass* GetGameModeRandomWeapon();
 
 	/** return s default weapon */
-	UFUNCTION(Server,Unreliable,WithValidation)
-	virtual  void ServerGetGameModeRandomWeapon();
+	UFUNCTION(Server, Unreliable, WithValidation)
+		virtual  void ServerGetGameModeRandomWeapon();
 
 	/** check to see if a given actor is consider as my enemy ,controllers typically*/
 	virtual bool IsEnemyFor(class AActor* Other);
@@ -270,7 +258,7 @@ public:
 
 	/**
 	 * rep_notify when player state is replicated to owner client noticed that player controllers DOSE NOT exist on simulated proxies,
-	 * so this func will only be called on owner client or server 
+	 * so this function will only be called on owner client or server
 	 */
 	virtual void OnRep_PlayerState()override;
 
@@ -281,14 +269,14 @@ public:
 	virtual void SetPlayerTeam(class AINSTeamInfo* NewTeam);
 
 	/**
-	 * override func called when player state get initiated
+	 * override function called when player state get initiated
 	 * player team should not  be set via this,because player state is initiated before player's team set
 	 */
 	virtual void InitPlayerState()override;
 
 	/**
 	 * rep_notify when pawn is replicated to owner client noticed that player controllers DOSE NOT exist on simulated proxies,
-	 * so this func will only be called on owner client or server
+	 * so this function will only be called on owner client or server
 	 */
 	virtual void OnRep_Pawn()override;
 
@@ -307,4 +295,19 @@ public:
 	 * @desc bind to subscribe current weapon events
 	 */
 	virtual void BindWeaponDelegate();
+
+	/**
+	 * @desc called when player current weapon has no ammo left
+	 */
+	virtual void OnWeaponAmmoLeftEmpty();
+
+	/**
+	 * @desc called when player weapon current clip is low
+	 */
+	virtual void OnWeaponClipAmmoLow();
+
+	/**
+	 * @desc called when player weapon current clip is empty
+	 */
+	virtual void OnWeaponClipEmpty(class AController* WeaponOwnerPlayer);
 };

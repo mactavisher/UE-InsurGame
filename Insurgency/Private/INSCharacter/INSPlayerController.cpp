@@ -291,13 +291,12 @@ void AINSPlayerController::ReloadWeapon()
 {
 	if (GetINSPlayerCharacter())
 	{
-		if (GetLocalRole() == ROLE_Authority)
+		if (HasAuthority())
 		{
 			GetINSPlayerCharacter()->HandleWeaponRealoadRequest();
 		}
 		else if(GetLocalRole()==ROLE_AutonomousProxy)
 		{
-			ServerStopAimWeapon();
 			ServerReloadWeapon();
 		}
 	}
@@ -305,7 +304,7 @@ void AINSPlayerController::ReloadWeapon()
 
 void AINSPlayerController::Fire()
 {
-	if (GetLocalRole() == ROLE_Authority)
+	if (HasAuthority())
 	{
 		const AINSGameModeBase* const CurrentGameMode = GetWorld()->GetAuthGameMode<AINSGameModeBase>();
 
@@ -317,7 +316,6 @@ void AINSPlayerController::Fire()
 	else
 	{
 		ServerFire();
-		bPlayerFiring = true;
 	}
 }
 
@@ -328,11 +326,6 @@ void AINSPlayerController::BeginPlay()
 
 void AINSPlayerController::OnRep_PlayerTeam()
 {
-	// 	if (GetLocalRole() == ROLE_Authority)
-	// 	{
-	// 		GetINSPlayerState()->SetPlayerTeam(PlayerTeam);
-	// 		GetINSPlayerCharacter()->SetPawnTeam(PlayerTeam);
-	// 	}
 	if (GetNetMode() == ENetMode::NM_Client)
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, TEXT("Controller team info Replicated!"));
@@ -671,16 +664,6 @@ void AINSPlayerController::OnWeaponClipEmpty(class AController* WeaponOwnerPlaye
 			ReloadWeapon();
 		}
 	}
-}
-
-void AINSPlayerController::ClientShowThreaten_Implementation()
-{
-
-}
-
-bool AINSPlayerController::ClientShowThreaten_Validate()
-{
-	return true;
 }
 
 AINSPlayerCharacter* AINSPlayerController::GetINSPlayerCharacter()

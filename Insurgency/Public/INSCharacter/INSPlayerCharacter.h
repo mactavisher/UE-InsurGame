@@ -61,9 +61,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "CharacterMesh")
 		UINSCharSkeletalMeshComponent* CharacterMesh3P;
 
-	/** Player character's 3P mesh comp,only visible to non-owner player */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FeedBackEffects")
-		TSubclassOf<class UCameraShake> TakeHitCameraShake;
+	///** Player character's 3P mesh comp,only visible to non-owner player */
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FeedBackEffects")
+	//	TSubclassOf<UCameraShake> TakeHitCameraShake;
 
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Replicated,ReplicatedUsing=OnRep_TeamType, Category = "Team")
 	    ETeamType MyTeamType;
@@ -82,10 +82,6 @@ protected:
 	virtual void Tick(float DeltaTime)override;
 
 	virtual void PossessedBy(AController* NewController)override;
-
-	virtual void OnThreatenSpoted(AActor* ThreatenActor, AController* ThreatenInstigator);
-
-	virtual void SimulateViewTrace();
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
 

@@ -21,11 +21,7 @@ AINSImpactEffect::AINSImpactEffect(const FObjectInitializer& ObjectInitializer) 
 void AINSImpactEffect::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-	if (PhysicMat == nullptr)
-	{
-		PhysicMat = ImpactHit.PhysMaterial.Get();
-	}
-	EPhysicalSurface SurfaceType = UPhysicalMaterial::DetermineSurfaceType(PhysicMat);
+	EPhysicalSurface SurfaceType = UPhysicalMaterial::DetermineSurfaceType(ImpactHit.PhysMaterial.Get());
 	UParticleSystem* ImpactParticle = GetImpactParticlesBySurfaceType(SurfaceType);
 	USoundCue* ImpactSound = GetImpactSoundBySurfaceType(SurfaceType);
 	UMaterial* ImpactDecal = GetDecalMaterialBySurfaceType(SurfaceType);
@@ -136,9 +132,4 @@ UMaterial* AINSImpactEffect::GetDecalMaterialBySurfaceType(EPhysicalSurface surf
 	case SurfaceType_Flesh:ImpactDecal = ImpactDecals.FleshDecal; break;
 	}
 	return ImpactDecal;
-}
-
-void AINSImpactEffect::SetPysicalMat(UPhysicalMaterial* NewPhysicMat)
-{
-	this->PhysicMat = NewPhysicMat;
 }

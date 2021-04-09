@@ -24,120 +24,29 @@ class UPawnNoiseEmitterComponent;
 INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogINSCharacter, Log, All);
 
 
-/**
- * replicated hit info
- */
-USTRUCT(BlueprintType)
-struct FTakeHitInfo
-{
-	GENERATED_USTRUCT_BODY()
-
-	/** shot direction pitch, manually compressed and decompressed */
-	UPROPERTY()
-		uint8 ShotDirPitch;
-
-	/** shot direction yaw, manually compressed and decompressed */
-	UPROPERTY()
-		uint8 ShotDirYaw;
-
-	/** actor that actually cause this damage */
-	UPROPERTY()
-		class AActor* DamageCauser;
-
-	/** the amount of damage actually applied,after game mode modify the damage */
-	UPROPERTY()
-		int32 Damage;
-
-	/** initial damage should have applied before game mode to modify it's damage */
-	UPROPERTY()
-		int32 originalDamage;
-
-	/** the location of the hit (relative to Pawn center) */
-	UPROPERTY()
-		FVector_NetQuantize RelHitLocation;
-
-	/** how much momentum was imparted */
-	UPROPERTY()
-		FVector_NetQuantize Momentum;
-
-	/** the damage type we were hit with */
-	UPROPERTY()
-		TSubclassOf<UDamageType> DamageType;
-
-	/** will this damage make the victim dead? */
-	UPROPERTY()
-		uint8 bVictimDead : 1;
-
-	/** is victim already dead since last damage */
-	UPROPERTY()
-		uint8 bVictimAlreadyDead : 1;
-
-	/** is this damage caused by team */
-	UPROPERTY()
-		uint8 bIsTeamDamage : 1;
-
-	/** is this damage caused by team */
-	UPROPERTY()
-		FName HitBoneName;
-
-	/** the amount of damage actually applied,after game mode modify the damage */
-	UPROPERTY()
-		uint8 bIsDirtyData : 1;
-
-
-	FTakeHitInfo()
-		: ShotDirPitch(0)
-		, ShotDirYaw(0)
-		, DamageCauser(NULL)
-		, Damage(0)
-		, originalDamage(0)
-		, RelHitLocation(ForceInit)
-		, Momentum(ForceInit)
-		, DamageType(NULL)
-		, bVictimDead(false)
-		, bVictimAlreadyDead(false)
-		, bIsTeamDamage(false)
-		, HitBoneName(NAME_None)
-		, bIsDirtyData(true)
-	{
-	}
-};
-
 /** mapped bone and damage modifier  */
 USTRUCT(BlueprintType)
 struct FBoneDamageModifier {
-
 	GENERATED_USTRUCT_BODY()
 
 protected:
-
 	/** collection of bone mapped damage modifier,could be assigned via blueprint */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BoneDamageMap")
 		TMap<FName, float> BoneMappedDamageModifier;
-
 public:
-
 	/**
-	 * convenient bone mapped damage modifier querier
+	 * @Desc   convenient bone mapped damage modifier querier
 	 *
 	 * @params BoneName the bone name to query the modifier
-	 *
-	 * if not found , will return 1.f,which means apply original damage,else will return the modifier with some random seed add to it
-	 *
+	 *         if not found , will return 1.f,which means apply original damage,
+	 *         else will return the modifier with some random seed add to it
+	 * @Return the damage modifier
 	 */
 	float GetBoneDamageModifier(FName BoneName)
 	{
-		float* BoneDamageModifier = nullptr;
+		float* BoneDamageModifier = BoneMappedDamageModifier.Find(BoneName);
 		float  BoneDamageRandomSeed = FMath::RandRange(1.0f, 1.5f);
-		BoneDamageModifier = BoneMappedDamageModifier.Find(BoneName);
-		if (BoneDamageModifier == nullptr)
-		{
-			return 1.f*BoneDamageRandomSeed;
-		}
-		else
-		{
-			return *(BoneDamageModifier)*BoneDamageRandomSeed;
-		}
+		return BoneDamageModifier == nullptr ? 1.f * BoneDamageRandomSeed : *(BoneDamageModifier)*BoneDamageRandomSeed;
 	}
 };
 
@@ -173,7 +82,7 @@ protected:
 		uint8 bIsSuppressed : 1;
 
 	/** cache take hit array */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "States")
+	UPROPERTY()
 		TArray<FTakeHitInfo> CachedTakeHitArray;
 
 	/**  */
@@ -181,7 +90,7 @@ protected:
 		uint8 bWantsToSwitchFireMode : 1;
 
 	/** replicated take hit info  */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_LastHitInfo, Category = "Damage")
+	UPROPERTY(Replicated, ReplicatedUsing = OnRep_LastHitInfo)
 		FTakeHitInfo LastHitInfo;
 
 	/** current stance of this character */
@@ -228,21 +137,33 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "CharacterAudioComp", meta = (AllowPrivateAccess = "true"))
 		UINSCharacterAudioComponent* CharacterAudioComp;
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="FallingDamage")
-	    float FatalFallingSpeed;
-
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="FallingDamage")
-	    UCurveFloat* FallingDamageCurve;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FallingDamage")
+		float FatalFallingSpeed;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FallingDamage")
-		uint8 bEnableFallingDamage:1;
+		UCurveFloat* FallingDamageCurve;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FallingDamage")
+		uint8 bEnableFallingDamage : 1;
 
 	/** bone mapped damage modifier */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BoneDamageModifier")
 		FBoneDamageModifier  BoneNameMappedDamageModifier;
 
-	UPROPERTY(VisibleDefaultsOnly,BlueprintReadOnly,Category="Camera")
-	    float CurrentEyeHeight;
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Camera")
+		float CurrentEyeHeight;
+
+	/** Init value for Character damage immune */
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Damage")
+		uint8 InitDamageImmuneTime;
+
+	/** time left for character immune since spawn */
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Replicated, ReplicatedUsing = "OnRep_DamageImmuneTime", Category = "Damage")
+		uint8 DamageImmuneLeft;
+
+	/** indicates if character is currently in spawn protection mode */
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Damage")
+		uint8 bDamageImmuneState : 1;
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintAssignable)
@@ -265,28 +186,26 @@ public:
 
 
 protected:
-	// Called when the game starts or when spawned
+	//~ begin AActor interface
 	virtual void BeginPlay() override;
-
-	virtual void PreReplication(IRepChangedPropertyTracker & ChangedPropertyTracker)override;
-
-	virtual void GatherCurrentMovement()override;
-
-	virtual void OnRep_ReplicatedMovement()override;
-
-	virtual void GatherTakeHitInfo(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser);
-
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
-	/** initialize properties in c++ side,after all components has been initialized */
 	virtual void PostInitializeComponents()override;
+	virtual void PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker)override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
+	virtual void GatherCurrentMovement()override;
+	virtual void OnRep_ReplicatedMovement()override;
+	virtual void Tick(float DeltaTime) override;
+	virtual void TickActor(float DeltaTime, enum ELevelTick TickType, FActorTickFunction& ThisTickFunction)override;
+	virtual bool ShouldTakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)const override;
+public:
+	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)override;
+	//~ end AActor interface
 
-	/** take momentum damage such as falling and knock by high speed things like cars */
+protected:
+	//~ begin ACharacter interface
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void ApplyDamageMomentum(float DamageTaken, FDamageEvent const& DamageEvent, APawn* PawnInstigator, AActor* DamageCauser)override;
+	virtual void Landed(const FHitResult& Hit)override;
+	//~ end ACharacter interface
 
 	/** handle take point damage event */
 	UFUNCTION()
@@ -300,19 +219,15 @@ protected:
 	UFUNCTION()
 		virtual void HandleOnTakeRadiusDamage(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, FVector Origin, FHitResult HitInfo, class AController* InstigatedBy, AActor* DamageCauser);
 
-	/** replication support */
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
-
-	/**
-	 * @desc  calls when character landed,calculate falling damage
-	 * @param Hit    HitResult When Landed
-	 */
-	virtual void Landed(const FHitResult& Hit)override;
+	virtual void GatherTakeHitInfo(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser);
 
 	/** Cast Blood decal on static building when take damage */
 	virtual void CastBloodDecal(FVector HitLocation, FVector HitDir);
 
-	/** things need to do when this character is dead  */
+	/** ~~--------------------------------------------------------------
+	   Rep callbacks-------------------------------------------*/
+
+	   /** things need to do when this character is dead  */
 	UFUNCTION()
 		virtual void OnRep_Dead();
 
@@ -345,6 +260,24 @@ protected:
 		virtual void OnRep_CurrentWeapon();
 
 
+	/** Damage Immune time Replicated call back on clients */
+	UFUNCTION()
+		virtual void OnRep_DamageImmuneTime();
+
+	/** ~~--------------------------------------------------------------
+		Timer Callbacks------------------------------------------------*/
+
+		/** fired by a timer to count down the damage Immune state */
+	UFUNCTION()
+		virtual void TickDamageImmune();
+
+	/** ~~--------------------------------------------------------------
+		Timers---------------------------------------------------------*/
+
+		/** timer ticks the damage Immune state  */
+	UPROPERTY()
+		FTimerHandle DamageImmuneTimer;
+
 public:
 	/** return this character is dead or not */
 	inline virtual bool GetIsCharacterDead()const { return bIsDead; };
@@ -352,7 +285,6 @@ public:
 	/** return current weapon instance used by this character */
 	UFUNCTION(BlueprintCallable)
 		virtual class AINSWeaponBase* GetCurrentWeapon()const { return CurrentWeapon; }
-
 	/**
 	 * @desc get the bone mapped damage modifier struct data
 	 *
@@ -365,17 +297,10 @@ public:
 	FORCEINLINE virtual UINSHealthComponent* GetCharacterHealthComp()const { return CharacterHealthComp; }
 
 	/** return ins version of character movement comp */
-	FORCEINLINE virtual UINSCharacterMovementComponent* GetINSCharacterMovement();
+	FORCEINLINE virtual UINSCharacterMovementComponent* GetINSCharacterMovement()const { return INSCharacterMovementComp; };
 
 	/** returns the character's audio comp */
 	FORCEINLINE virtual class UINSCharacterAudioComponent* GetCharacterAudioComp()const { return CharacterAudioComp; }
-
-	/** take damage ,if you call Super::TakeDamage(),the super function has broadcast take certain type of damage base on damageEnvent::classId
-	 *  such as point damageEvents,Radius damageEvents,otherwise you will need to broadcast those take damage event manually
-	 */
-	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)override;
-
-	virtual bool ShouldTakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)const override;
 
 	/** returns if this character is currently sprinting */
 	inline virtual bool GetIsSprint()const { return bIsSprint; }
@@ -442,7 +367,6 @@ public:
 
 	/** return is this character is suppressed by environment */
 	virtual bool GetIsSuppressed()const;
-
 	/**
 	 * @desc set is character is suppressed
 	 * @param     InState   InState to set
@@ -453,12 +377,22 @@ public:
 
 	virtual bool GetIsLowHealth()const;
 
+	/**
+	 * @Desc get whether is character is in damage immune state
+	 * @Return Is in Immune state bool
+	 */
+	virtual bool GetIsDamageImmune()const { return bDamageImmuneState; }
+
+	/**
+	 * @Desc get character's damage immune time left
+	 * @Return damage immune time left
+	 */
+	virtual uint8 GetDamageImmuneTimeLeft()const { return DamageImmuneLeft; }
+
 	UFUNCTION()
 		virtual void OnDeath();
 
 	inline virtual bool GetIsAiming()const { return bIsAiming; }
 
-	inline bool GetIsCharacterMoving()const { return GetVelocity().Size() > 0.f; }
-
-	virtual void KilledBy(class AController* PlayerKilledMe, class AACtor* ActorKilledMe);
+	inline bool GetIsCharacterMoving()const;
 };

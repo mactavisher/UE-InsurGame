@@ -123,6 +123,9 @@ public:
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="PreParingTime")
 	    float MatchPrepareRemainingTime;
 
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="DamageControl")
+	    uint8 bEnablePlayerSpawnDamageImmune:1;
+
 	UPROPERTY()
 		FTimerHandle MatchPrepareTimer;
 

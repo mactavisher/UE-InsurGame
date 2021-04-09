@@ -15,7 +15,7 @@ class UStaticMeshComponent;
 class UProjectileMovementComponent;
 class UParticleSystemComponent;
 class AINSImpactEffect;
-class UCameraShake;
+class UMatineeCameraShake;
 class UDamageType;
 class UCurveFloat;
 class AINSWeaponBase;
@@ -126,9 +126,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects|Impacts")
 		TSubclassOf<AINSImpactEffect>ExplodeImapactEffectsClass;
 
-	/** camera shake feed back to player hit by this projectile */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects|CameraShake")
-		TSubclassOf<UCameraShake> CameraShakeClass;
+	///** camera shake feed back to player hit by this projectile */
+	//UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects|CameraShake")
+	//	TSubclassOf<UCameraShake> CameraShakeClass;
 
 	/** point damage type class */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Damage|DamageType")
@@ -149,6 +149,10 @@ protected:
 	/** indicates that this projectile actually hits something , and replicated to notify any other clients*/
 	UPROPERTY(VisibleAnywhere, Replicated, ReplicatedUsing = OnRep_HitCounter, BlueprintReadOnly, Category = "Repliciation|Hit")
 		uint8  HitCounter;
+
+	/** indicates that this projectile actually hits something , and replicated to notify any other clients*/
+	UPROPERTY(VisibleAnywhere,Category = "Repliciation|Hit")
+		bool bIsProcessingHit;
 
 	/** how much time to wait since last movement info replication happens before next update,controls some sort of frequency and used for optimization*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "MovementRepInterval")
@@ -209,6 +213,15 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MovementReplication")
 		uint8 bIsGatheringMovement : 1;
 
+	UPROPERTY()
+	FActorTickFunction InitRepTickFunc;
+
+	UPROPERTY()
+	FActorTickFunction TracerPaticleSizeTickFun;
+
+	UPROPERTY()
+	FVector TraceScale;
+
 
 	/** force a update to clients */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MovementReplication")
@@ -243,8 +256,8 @@ protected:
 	UFUNCTION()
 		virtual void OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
-	UFUNCTION()
-		virtual void CalAndSpawnPenetrateProjectile(const FHitResult& OriginHitResult, const FVector& OriginVelocity);
+	/*UFUNCTION()
+		virtual void CalAndSpawnPenetrateProjectile(const FHitResult& OriginHitResult, const FVector& OriginVelocity);*/
 protected:
 
 	// ~Begin AActor interface
@@ -253,6 +266,8 @@ protected:
 
 	/** called every frame*/
 	virtual void Tick(float DeltaSeconds)override;
+
+	virtual void TickActor(float DeltaTime, enum ELevelTick TickType, FActorTickFunction& ThisTickFunction)override;
 
 	/** called after all components being initiated */
 	virtual void PostInitializeComponents()override;
@@ -317,7 +332,7 @@ public:
 	virtual void SetCurrentPenetrateCount(uint8 AddInCount = 1) { CurrentPenetrateCount += AddInCount; }
 
 	/** set owner weapon */
-	virtual void SetOwnerWeapon(class AINSWeaponBase* NewWeaponOwner) { this->OwnerWeapon = NewWeaponOwner; }
+	virtual void SetOwnerWeapon(class AINSWeaponBase* NewWeaponOwner);
 
 	/** set instigator player that fires this projectile */
 	virtual void SetInstigatedPlayer(class AController* InsigatedPlayer) { InstigatorPlayer = InsigatedPlayer; }

@@ -89,10 +89,6 @@ void AINSPlayerCharacter::PostInitializeComponents()
 void AINSPlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (IsLocallyControlled())
-	{
-		SimulateViewTrace();
-	}
 }
 
 void AINSPlayerCharacter::PossessedBy(AController* NewController)
@@ -131,48 +127,6 @@ void AINSPlayerCharacter::PossessedBy(AController* NewController)
 	}
 	SetCurrentWeapon(NewWeapon);
 }
-
-void AINSPlayerCharacter::OnThreatenSpoted(AActor* ThreatenActor, AController* ThreatenInstigator)
-{
-	if (ThreatenInstigator && ThreatenInstigator->GetClass()->IsChildOf(AINSPlayerController::StaticClass()))
-	{
-		//TODO, team role check
-		const AINSPlayerCharacter* const PlayerCharacter = Cast<AINSPlayerCharacter>(ThreatenActor);
-		if (PlayerCharacter && !PlayerCharacter->GetIsCharacterDead())
-		{
-			Cast<AINSPlayerController>(GetController())->ClientShowThreaten();
-		}
-	}
-}
-
-void AINSPlayerCharacter::SimulateViewTrace()
-{
-	const float ViewTraceRange = 10000.f;
-	FCollisionQueryParams ViewTraceQueryParams;
-	ViewTraceQueryParams.AddIgnoredActor(this);
-	FHitResult ViewTraceHit(ForceInit);
-	const AINSPlayerController* PlayerController = CastChecked<AINSPlayerController>(GetOwner());
-	FVector ViewLoc;
-	FRotator ViewRot;
-	const FVector TraceEnd = ViewLoc + PlayerController->GetControlRotation().Vector() * ViewTraceRange;
-	PlayerController->GetPlayerViewPoint(ViewLoc, ViewRot);
-	GetWorld()->LineTraceSingleByChannel(ViewTraceHit, ViewLoc, TraceEnd, ECollisionChannel::ECC_Camera, ViewTraceQueryParams);
-	if (ViewTraceHit.bBlockingHit && ViewTraceHit.GetActor())
-	{
-		if (ViewTraceHit.GetActor()->GetClass()->IsChildOf(AINSPlayerCharacter::StaticClass()))
-		{
-			//UE_LOG(LogINSCharacter, Warning, TEXT("Threaten player:%s spotted"), *ViewTraceHit.GetActor()->GetName());
-			OnThreatenSpoted(ViewTraceHit.GetActor(), CastChecked<AINSPlayerCharacter>(ViewTraceHit.GetActor())->GetController());
-		}
-	}
-#if WITH_EDITORONLY_DATA&&!UE_BUILD_SHIPPING
-	if (bShowDebugTrace)
-	{
-		DrawDebugLine(GetWorld(), ViewLoc, TraceEnd, FColor::Red, false, 1.f);
-	}
-#endif
-}
-
 
 AINSPlayerController* AINSPlayerCharacter::GetINSPlayerController()
 {
@@ -337,7 +291,7 @@ void AINSPlayerCharacter::OnRep_LastHitInfo()
 	Super::OnRep_LastHitInfo();
 	if (IsLocallyControlled() && LastHitInfo.Damage > 0)
 	{
-		GetINSPlayerController()->ClientPlayCameraShake(TakeHitCameraShake);
+//		GetINSPlayerController()->ClientPlayCameraShake(TakeHitCameraShake);
 	}
 }
 

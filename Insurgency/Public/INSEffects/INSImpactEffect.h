@@ -218,10 +218,6 @@ protected:
 protected:
 	FHitResult ImpactHit;
 
-	class UPhysicalMaterial* PhysicMat;
-
 public:
-	virtual void SetImpactHit(const FHitResult& InImpactHit) { this->ImpactHit = InImpactHit; };
-
-	virtual void SetPysicalMat(UPhysicalMaterial* NewPhysicMat);
+	virtual void SetImpactHit( FHitResult& InImpactHit) { this->ImpactHit = InImpactHit; };
 };

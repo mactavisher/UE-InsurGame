@@ -462,6 +462,8 @@ public:
 
 	virtual void DrawTestInfo();
 
+	virtual void DrawImmuneInfo();
+
 	virtual void DrawPlayerKill(const class APlayerState* Killer, const class APlayerState* Vimtim);
 
 };
