@@ -339,7 +339,7 @@ public:
 	virtual void HandleMoveRightRequest(float Value);
 
 	/** handles crouch request from player*/
-	virtual void HandleCrouchRequest(bool bCrouchPressed);
+	virtual void HandleCrouchRequest();
 
 	/** handles sprint request from player*/
 	virtual void HandleStartSprintRequest();
@@ -352,6 +352,10 @@ public:
 
 	/** spawns a weapon pick up  */
 	virtual void SpawnWeaponPickup();
+
+	virtual void Crouch(bool bClientSimulation /* = false */)override;
+
+	virtual void UnCrouch(bool bClientSimulation /* = false */)override;
 
 	/**
 	 * @desc set is character is in a Aim State

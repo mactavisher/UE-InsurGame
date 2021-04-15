@@ -103,6 +103,10 @@ protected:
 
 	virtual void OnRep_LastHitInfo()override;
 
+	virtual void Crouch(bool bClientSimulation)override;
+
+	virtual void UnCrouch(bool bClientSimulation)override;
+
 	UFUNCTION()
 	virtual void OnRep_TeamType();
 
@@ -181,7 +185,7 @@ public:
 	/** handles a stop sprint request from player controller */
 	virtual void HandleStartSprintRequest()override;
 
-	virtual void HandleCrouchRequest(bool bCrouchPressed)override;
+	virtual void HandleCrouchRequest()override;
 
 	/**
 	 * return if Mesh1p is hidden in game currently

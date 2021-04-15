@@ -19,6 +19,7 @@ class AINSCharacter;
 class AINSProjectile;
 class AINSProjectileShell;
 class UINSStaticAnimData;
+class UINSWeaponFireHandler;
 
 INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogINSWeapon, Log, All);
 
@@ -28,8 +29,8 @@ struct FWeaponConfigData
 {
 	GENERATED_USTRUCT_BODY()
 
-	/** the maximum ammo can be hold in a single clip */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+		/** the maximum ammo can be hold in a single clip */
+		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		int32 AmmoPerClip;
 
 	/**the max ammo can carry with this weapon */
@@ -215,8 +216,11 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 {
 	GENERATED_UCLASS_BODY()
 
-		/** stores available fire modes to switch between */
-		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FireMode")
+		friend class UINSWeaponFireManager;
+	friend class UINSWeaponFireHandler;
+
+	/** stores available fire modes to switch between */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FireMode")
 		TArray<EWeaponFireMode> AvailableFireModes;
 
 	/** weapon animation data */
@@ -244,7 +248,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 		UParticleSystemComponent* WeaponParticleComp;
 
 	/** stores weapon config data */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated,Category = "WeaponConfig")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = "WeaponConfig")
 		FWeaponConfigData WeaponConfigData;
 
 	/** ammo count in a current clip */
@@ -297,6 +301,10 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	/** mesh 3p */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WeaponMesh3PComp", meta = (AllowPrivateAccess = "true"))
 		UINSWeaponMeshComponent* WeaponMesh3PComp;
+
+	/** mesh 3p */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WeaponFireHandler", meta = (AllowPrivateAccess = "true"))
+		UINSWeaponFireHandler* WeaponFireHandler;
 
 	/** fire sound 1p*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
@@ -357,47 +365,12 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	uint8 bShowDebugTrace : 1;
 #endif
 
-	/** ~~--------------------------------------------------------------
-	   timer handles-------------------------------------------*/
-
-	   /** muzzle light timer */
-	UPROPERTY()
-		FTimerHandle MuzzleLightTimerHandle;
-
-	/** Weapon bored timer handle */
-	UPROPERTY()
-		FTimerHandle WeaponBoredTimerHandle;
-
-	/** Weapon bored timer handle */
-	UPROPERTY()
-		FTimerHandle WeaponBurstTimerHandle;
-
-	/** Weapon bored timer handle */
-	UPROPERTY()
-		FTimerHandle WeaponSemiAutoTimerHandle;
-
-	/** destroy if this weapon is dropped and not picked up for a period of time */
-	UPROPERTY()
-		FTimerHandle DestroyWeaponTimer;
-
-	/** destroy if this weapon is dropped and not picked up for a period of time */
-	UPROPERTY()
-		FTimerHandle ResetFireStateTimer;
 
 protected:
 	//~ begin Actor interface
 	virtual void Tick(float DeltaTime)override;
-
-	/**
-	 *  @desc called after all components get initialized
-	 */
 	virtual void PostInitializeComponents()override;
-
-	/**
-	 * @desc called before any components get initialized
-	 */
 	virtual void PreInitializeComponents()override;
-
 	virtual void BeginPlay()override;
 	//~ end actor interface
 
@@ -424,14 +397,6 @@ protected:
 	 */
 	virtual bool CheckCanReload();
 
-	/**
-	 * @Desc handles semi-auto fire if available for this weapon
-	 */
-	virtual void InternalHandleSemiAutoFire();
-
-	/** handles full auto fire if available for this weapon */
-	virtual void InternalHandleBurstFire();
-
 	/** adjust projectile make them spread */
 	virtual void AddWeaponSpread(FVector& OutSpreadDir, FVector& BaseDirection);
 
@@ -449,10 +414,6 @@ protected:
 
 	/** updates the weapon current spread value */
 	virtual void UpdateWeaponSpread(float DeltaTimeSeconds);
-
-	/** set this weapon state to idle */
-	UFUNCTION()
-		virtual void ResetFireState();
 
 	/** simulate logic happens when fires weapon once */
 	UFUNCTION()
@@ -571,7 +532,7 @@ public:
 	virtual void FinishSwitchFireMode();
 
 	/** fires weapon once */
-	virtual void FireWeapon();
+	virtual void StartWeaponFire();
 
 	virtual void InspectWeapon();
 
@@ -605,7 +566,7 @@ public:
 	 * @param SpawnDir   projectile spawn direction
 	 * @param TimeBetweenShots time between each shot
 	 */
-	virtual void SpawnProjectile(FVector SpawnLoc, FVector SpawnDir, float TimeBetweenShots);
+	virtual void SpawnProjectile(FVector SpawnLoc, FVector SpawnDir);
 
 	/**
 	 * @desc  called by autonomous proxy clients to fire a projectile
@@ -614,7 +575,7 @@ public:
 	 * @param TimeBetweenShots time between each shot
 	 */
 	UFUNCTION(Server, Unreliable, WithValidation)
-		virtual void ServerSpawnProjectile(FVector SpawnLoc, FVector SpawnDir, float TimeBetweenShots);
+		virtual void ServerSpawnProjectile(FVector SpawnLoc, FVector SpawnDir);
 
 	/**
 	 * @desc  set the character that own this weapon
@@ -627,6 +588,9 @@ public:
 	 * @Param NewWeaponState new weapon state to set
 	 */
 	virtual void SetWeaponState(EWeaponState NewWeaponState);
+
+	UFUNCTION(Server,Unreliable,WithValidation)
+	virtual void ServerSetWeaponState(EWeaponState NewWeaponState);
 
 	/**
 	 * @Desc returns the current weapon state
@@ -680,6 +644,11 @@ public:
 	 * performs a line trace to check as a HitScan
 	 */
 	virtual bool CheckScanTraceRange();
+
+	virtual void FireShot();
+
+	UFUNCTION(Server,Unreliable,WithValidation)
+	virtual void ServerFireShot();
 
 	/**
 	 * check to see if the weapon has a extra sight aligner

@@ -19,10 +19,12 @@ void UINSCharacterMovementComponent::StartCrouch()
 {
 	MaxWalkSpeed = BaseWalkSpeed * CrouchSpeedModifier;
 	SpeedBeforeAim = MaxWalkSpeed;
+	bWantsToCrouch = true;
 }
 
 void UINSCharacterMovementComponent::EndCrouch()
 {
+	bWantsToCrouch = false;
 	MaxWalkSpeed = BaseWalkSpeed;
 	SpeedBeforeAim = MaxWalkSpeed;
 }

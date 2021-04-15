@@ -91,14 +91,6 @@ protected:
 	UFUNCTION(Server, Unreliable, WithValidation)
 		virtual void ServerMoveForward(float Value);
 
-	/** server,crouch */
-	UFUNCTION(Server, Unreliable, WithValidation)
-		virtual void ServerCrouch();
-
-	/** server,crouch */
-	UFUNCTION(Server, Unreliable, WithValidation)
-		virtual void ServerUnCrouch();
-
 public:
 
 	/** aim */

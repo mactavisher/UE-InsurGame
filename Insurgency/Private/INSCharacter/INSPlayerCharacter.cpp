@@ -274,7 +274,7 @@ void AINSPlayerCharacter::OnRep_Sprint()
 void AINSPlayerCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
-	if (GetLocalRole() == ROLE_AutonomousProxy)
+	if (HasAuthority())
 	{
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
 		FString DebugMessage;
@@ -295,9 +295,19 @@ void AINSPlayerCharacter::OnRep_LastHitInfo()
 	}
 }
 
-void AINSPlayerCharacter::HandleCrouchRequest(bool bCrouchPressed)
+void AINSPlayerCharacter::Crouch(bool bClientSimulation)
 {
-	Super::HandleCrouchRequest(bCrouchPressed);
+	Super::Crouch(bClientSimulation);
+}
+
+void AINSPlayerCharacter::UnCrouch(bool bClientSimulation)
+{
+	Super::UnCrouch(bClientSimulation);
+}
+
+void AINSPlayerCharacter::HandleCrouchRequest()
+{
+	Super::HandleCrouchRequest();
 }
 
 void AINSPlayerCharacter::OnRep_TeamType()

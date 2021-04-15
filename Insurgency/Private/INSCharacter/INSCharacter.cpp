@@ -481,7 +481,7 @@ void AINSCharacter::HandleFireRequest()
 {
 	if (CurrentWeapon)
 	{
-		CurrentWeapon->FireWeapon();
+		CurrentWeapon->StartWeaponFire();
 	}
 }
 
@@ -503,6 +503,7 @@ void AINSCharacter::HandleEquipWeaponRequest()
 
 void AINSCharacter::HandleSwitchFireModeRequest()
 {
+	UE_LOG(LogINSCharacter, Log, TEXT("handle weapon switch fire mode request"));
 	if (CurrentWeapon)
 	{
 		CurrentWeapon->StartSwitchFireMode();
@@ -537,17 +538,33 @@ void AINSCharacter::HandleMoveRightRequest(float Value)
 	}
 }
 
-void AINSCharacter::HandleCrouchRequest(bool bCrouchPressed)
+void AINSCharacter::HandleCrouchRequest()
 {
-	//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Red, TEXT("Crouch button pressed"));
-	if (bCrouchPressed)
+	bIsCrouched ? UnCrouch(false) : Crouch(true);
+}
+
+void AINSCharacter::Crouch(bool bClientSimulation /* = false */)
+{
+	Super::Crouch(bClientSimulation);
+}
+
+void AINSCharacter::UnCrouch(bool bClientSimulation /* = false */)
+{
+	Super::UnCrouch(bClientSimulation);
+}
+
+void AINSCharacter::OnRep_IsCrouched()
+{
+	Super::OnRep_IsCrouched();
+	if (bIsCrouched)
 	{
-		Crouch(false);
+		CharacterCurrentStance = ECharacterStance::CROUCH;
+		if (GetINSCharacterMovement())
+		{
+			GetINSCharacterMovement()->StartCrouch();
+		}
 	}
-	else
-	{
-		UnCrouch(false);
-	}
+	GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Red, TEXT("Crouch replicated"));
 }
 
 void AINSCharacter::HandleStartSprintRequest()
@@ -566,20 +583,6 @@ void AINSCharacter::HandleStopSprintRequest()
 		bIsSprint = false;
 		OnRep_Sprint();
 	}
-}
-
-void AINSCharacter::OnRep_IsCrouched()
-{
-	Super::OnRep_IsCrouched();
-	if (bIsCrouched)
-	{
-		CharacterCurrentStance = ECharacterStance::CROUCH;
-		if (GetINSCharacterMovement())
-		{
-			GetINSCharacterMovement()->StartCrouch();
-		}
-	}
-	GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Red, TEXT("Crouch replicated"));
 }
 
 void AINSCharacter::SpawnWeaponPickup()

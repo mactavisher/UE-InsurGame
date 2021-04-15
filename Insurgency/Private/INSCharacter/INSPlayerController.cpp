@@ -183,53 +183,20 @@ bool AINSPlayerController::ServerMoveForward_Validate(float Value)
 
 void AINSPlayerController::Crouch()
 {
-	if (GetLocalRole() == ROLE_Authority)
+	if (GetINSPlayerCharacter())
 	{
-		if (GetINSPlayerCharacter())
-		{
-			GetINSPlayerCharacter()->HandleCrouchRequest(true);
-		}
+		GetINSPlayerCharacter()->HandleCrouchRequest();
 	}
-	else if(GetLocalRole()==ROLE_AutonomousProxy)
-	{
-		ServerCrouch();
-	}
-}
-
-void AINSPlayerController::ServerCrouch_Implementation()
-{
-	Crouch();
-}
-
-bool AINSPlayerController::ServerCrouch_Validate()
-{
-	return true;
 }
 
 void AINSPlayerController::UnCrouch()
 {
-	if (GetLocalRole() == ROLE_Authority)
+	if (GetINSPlayerCharacter())
 	{
-		if (GetINSPlayerCharacter())
-		{
-			GetINSPlayerCharacter()->HandleCrouchRequest(false);
-		}
-	}
-	else if(GetLocalRole()==ROLE_AutonomousProxy)
-	{
-		ServerCrouch();
+		GetINSPlayerCharacter()->HandleCrouchRequest();
 	}
 }
 
-void AINSPlayerController::ServerUnCrouch_Implementation()
-{
-	UnCrouch();
-}
-
-bool AINSPlayerController::ServerUnCrouch_Validate()
-{
-	return true;
-}
 
 void AINSPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
@@ -295,7 +262,7 @@ void AINSPlayerController::ReloadWeapon()
 		{
 			GetINSPlayerCharacter()->HandleWeaponRealoadRequest();
 		}
-		else if(GetLocalRole()==ROLE_AutonomousProxy)
+		else if (GetLocalRole() == ROLE_AutonomousProxy)
 		{
 			ServerReloadWeapon();
 		}
@@ -356,7 +323,7 @@ bool AINSPlayerController::ServerFire_Validate()
 
 void AINSPlayerController::StopFire()
 {
-	if (GetLocalRole() == ROLE_Authority)
+	if (HasAuthority())
 	{
 		if (GetINSPlayerCharacter())
 		{
@@ -372,7 +339,7 @@ void AINSPlayerController::StopFire()
 
 void AINSPlayerController::Sprint()
 {
-	if (GetLocalRole() == ROLE_Authority)
+	if (HasAuthority())
 	{
 		const AINSGameStateBase* GameState = GetWorld()->GetGameState<AINSGameStateBase>();
 		if (GetINSPlayerCharacter() && GameState->GetAllowMove())
@@ -459,7 +426,8 @@ bool AINSPlayerController::ServerFinishReloadWeapon_Validate()
 
 void AINSPlayerController::SwitchFireMode()
 {
-	if (GetLocalRole() == ROLE_Authority)
+	UE_LOG(LogINSCharacter, Log, TEXT("handle weapon switch fire mode request"));
+	if (HasAuthority())
 	{
 		if (GetINSPlayerCharacter())
 		{
@@ -518,7 +486,7 @@ void AINSPlayerController::InspecWeapon()
 
 void AINSPlayerController::ServerInspectWeapon_Implementation()
 {
-	if (GetLocalRole() == ROLE_Authority) {
+	if (HasAuthority()) {
 
 	}
 	else
@@ -681,7 +649,7 @@ AINSPlayerCharacter* AINSPlayerController::GetINSPlayerCharacter()
 
 UClass* AINSPlayerController::GetGameModeRandomWeapon()
 {
-	if (GetLocalRole() == ROLE_Authority) {
+	if (HasAuthority()) {
 		const AINSGameModeBase* const CurrentGameMode = GetWorld()->GetAuthGameMode<AINSGameModeBase>();
 		if (CurrentGameMode)
 		{
@@ -765,7 +733,7 @@ void AINSPlayerController::ReceiveStartRespawn()
 
 void AINSPlayerController::RespawnPlayer()
 {
-	if (GetLocalRole() == ROLE_Authority)
+	if (HasAuthority())
 	{
 		AINSGameModeBase* const CurrentGameMode = GetWorld()->GetAuthGameMode<AINSGameModeBase>();
 		if (CurrentGameMode)

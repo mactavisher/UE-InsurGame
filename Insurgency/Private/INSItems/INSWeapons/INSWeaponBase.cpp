@@ -25,6 +25,11 @@
 #include "INSHud/INSHUDBase.h"
 #include "INSComponents/INSCharacterAudioComponent.h"
 #include "INSAssets/INSStaticAnimData.h"
+#ifndef UWorld
+#include "Engine/World.h"
+#endif // !UWorld
+
+#include "INSComponents/INSWeaponFireHandler.h"
 
 DEFINE_LOG_CATEGORY(LogINSWeapon);
 
@@ -53,6 +58,7 @@ AINSWeaponBase::AINSWeaponBase(const FObjectInitializer& ObjectInitializer) :Sup
 	WeaponMesh1PComp = ObjectInitializer.CreateDefaultSubobject<UINSWeaponMeshComponent>(this, TEXT("WeaponMesh1PComp"));
 	WeaponMesh3PComp = ObjectInitializer.CreateDefaultSubobject<UINSWeaponMeshComponent>(this, TEXT("WeaponMesh3PComp"));
 	WeaponParticleComp = ObjectInitializer.CreateDefaultSubobject<UParticleSystemComponent>(this, TEXT("ParticelSystemComp"));
+	WeaponFireHandler = ObjectInitializer.CreateDefaultSubobject<UINSWeaponFireHandler>(this, TEXT("WeaponFireHandler"));
 	WeaponMesh1PComp->AlwaysLoadOnClient = true;
 	WeaponMesh1PComp->AlwaysLoadOnServer = true;
 	WeaponMesh3PComp->AlwaysLoadOnClient = true;
@@ -93,6 +99,7 @@ void AINSWeaponBase::Tick(float DeltaTime)
 void AINSWeaponBase::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
+	WeaponFireHandler->SetOwnerWeapon(this);
 }
 
 void AINSWeaponBase::BeginPlay()
@@ -105,23 +112,11 @@ void AINSWeaponBase::BeginPlay()
 	}
 }
 
-void AINSWeaponBase::FireWeapon()
+void AINSWeaponBase::StartWeaponFire()
 {
-	if (!CheckCanFire())
+	if (WeaponFireHandler) 
 	{
-		return;
-	}
-	if (CurrentWeaponFireMode == EWeaponFireMode::SEMI)
-	{
-		SimulateEachSingleShoot();
-	}
-	if (CurrentWeaponFireMode == EWeaponFireMode::SEMIAUTO)
-	{
-		InternalHandleSemiAutoFire();
-	}
-	if (CurrentWeaponFireMode == EWeaponFireMode::FULLAUTO)
-	{
-		InternalHandleBurstFire();
+		WeaponFireHandler->BeginWeaponFire(CurrentWeaponFireMode);
 	}
 }
 
@@ -238,14 +233,20 @@ void AINSWeaponBase::GetWeaponAttachmentSlotStruct(FName SlotName, FWeaponAttach
 	OutWeaponAttachmentSlot = *TargetAttachmentSlot;
 }
 
-void AINSWeaponBase::SpawnProjectile(FVector SpawnLoc, FVector SpawnDir, float TimeBetweenShots)
+void AINSWeaponBase::SpawnProjectile(FVector SpawnLoc, FVector SpawnDir)
 {
-	if (GetLocalRole() == ROLE_Authority)
+	if (HasAuthority())
 	{
 		FTransform ProjectileSpawnTransform;
 		ProjectileSpawnTransform.SetLocation(SpawnLoc + SpawnDir * 20.f);
 		ProjectileSpawnTransform.SetRotation(SpawnDir.ToOrientationQuat());
-		AINSProjectile* SpawnedProjectile = GetWorld()->SpawnActorDeferred<AINSProjectile>(
+		UWorld* world = GetWorld();
+		if (world == nullptr)
+		{
+			UE_LOG(LogINSWeapon, Warning, TEXT("world context object is null"));
+			return;
+		}
+		AINSProjectile* SpawnedProjectile = world->SpawnActorDeferred<AINSProjectile>(
 			ProjectileClass,
 			ProjectileSpawnTransform,
 			GetOwnerCharacter()->GetController(),
@@ -266,12 +267,12 @@ void AINSWeaponBase::SpawnProjectile(FVector SpawnLoc, FVector SpawnDir, float T
 	}
 }
 
-void AINSWeaponBase::ServerSpawnProjectile_Implementation(FVector SpawnLoc, FVector SpawnDir, float TimeBetweenShots)
+void AINSWeaponBase::ServerSpawnProjectile_Implementation(FVector SpawnLoc, FVector SpawnDir)
 {
-	SpawnProjectile(SpawnLoc, SpawnDir, TimeBetweenShots);
+	SpawnProjectile(SpawnLoc, SpawnDir);
 }
 
-bool AINSWeaponBase::ServerSpawnProjectile_Validate(FVector SpawnLoc, FVector SpawnDir, float TimeBetweenShots)
+bool AINSWeaponBase::ServerSpawnProjectile_Validate(FVector SpawnLoc, FVector SpawnDir)
 {
 	return true;
 }
@@ -288,13 +289,27 @@ void AINSWeaponBase::SetOwnerCharacter(class AINSCharacter* NewOwnerCharacter)
 
 void AINSWeaponBase::SetWeaponState(EWeaponState NewWeaponState)
 {
-	CurrentWeaponState = NewWeaponState;
 	if (GetLocalRole() == ROLE_Authority)
 	{
+		CurrentWeaponState = NewWeaponState;
 		OnRep_CurrentWeaponState();
+	}
+	else if (GetLocalRole() == ROLE_AutonomousProxy)
+	{
+		ServerSetWeaponState(NewWeaponState);
 	}
 }
 
+
+void AINSWeaponBase::ServerSetWeaponState_Implementation(EWeaponState NewWeaponState)
+{
+	SetWeaponState(NewWeaponState);
+}
+
+bool AINSWeaponBase::ServerSetWeaponState_Validate(EWeaponState NewWeaponState)
+{
+	return true;
+}
 
 FORCEINLINE class UINSWeaponAnimInstance* AINSWeaponBase::GetWeapon1PAnimInstance()
 {
@@ -348,6 +363,47 @@ bool AINSWeaponBase::CheckScanTraceRange()
 		return true;
 	}
 	return false;
+}
+
+void AINSWeaponBase::FireShot()
+{
+	if (HasAuthority())
+	{
+		FTransform ProjectileSpawnTransform;
+		FVector AdjustDir(ForceInit);
+		AdjustProjectileDir(AdjustDir);
+		FVector SpreadDir(ForceInit);
+		AddWeaponSpread(SpreadDir, AdjustDir);
+		SpawnProjectile(WeaponMesh1PComp->GetMuzzleLocation(), SpreadDir);
+		RepWeaponFireCount++;
+		if (IsNetMode(NM_Standalone) || IsNetMode(NM_ListenServer))
+		{
+			OnRep_WeaponFireCount();
+		}
+#if WITH_EDITORONLY_DATA&&!UE_BUILD_SHIPPING
+		if (bShowDebugTrace && GetOwnerCharacter()->IsLocallyControlled())
+		{
+			const FVector TraceStart = WeaponMesh1PComp->GetMuzzleLocation();
+			const FVector TraceEnd = TraceStart + SpreadDir * 1000;
+			DrawDebugLine(GetWorld(), WeaponMesh1PComp->GetMuzzleLocation(), TraceEnd, FColor::Blue, false, 2.0f);
+			DrawDebugSphere(GetWorld(), ProjectileSpawnTransform.GetLocation(), 5.f, 5, FColor::Red, false, 10.f);
+		}
+#endif
+	}
+	else if(GetLocalRole()==ROLE_AutonomousProxy)
+	{
+		ServerFireShot();
+	}
+}
+
+void AINSWeaponBase::ServerFireShot_Implementation()
+{
+	FireShot();
+}
+
+bool AINSWeaponBase::ServerFireShot_Validate()
+{
+	return true;
 }
 
 bool AINSWeaponBase::IsSightAlignerExist() const
@@ -598,8 +654,8 @@ void AINSWeaponBase::AdjustProjectileDir(FVector& OutDir)
 
 bool AINSWeaponBase::CheckCanFire()
 {
-	AINSPlayerController* const PlayerController = GetOwnerPlayer<AINSPlayerController>();
-	const AINSPlayerCharacter* const PlayerCharacter = PlayerController == nullptr ? nullptr : PlayerController->GetINSPlayerCharacter();
+	AINSPlayerController* PlayerController = Cast<AINSPlayerController>(GetOwner());
+	AINSPlayerCharacter*PlayerCharacter = PlayerController == nullptr ? nullptr : PlayerController->GetINSPlayerCharacter();
 	if (!PlayerController)
 	{
 		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s has no owner player , can't fire"), *GetName());
@@ -658,45 +714,9 @@ bool AINSWeaponBase::CheckCanFire()
 	return true;
 }
 
-void AINSWeaponBase::InternalHandleSemiAutoFire()
-{
-	if (GetLocalRole() == ROLE_Authority && CheckCanFire())
-	{
-		GetWorldTimerManager().SetTimer(WeaponSemiAutoTimerHandle
-			, this
-			, &AINSWeaponBase::SimulateEachSingleShoot
-			, WeaponConfigData.TimeBetweenShots
-			, true
-			, 0.f);
-	}
-}
-
-void AINSWeaponBase::InternalHandleBurstFire()
-{
-	if (GetLocalRole() == ROLE_Authority && CheckCanFire())
-	{
-		GetWorldTimerManager().SetTimer(WeaponBurstTimerHandle
-			, this
-			, &AINSWeaponBase::SimulateEachSingleShoot
-			, WeaponConfigData.TimeBetweenShots
-			, true
-			, 0.f);
-	}
-}
-
 void AINSWeaponBase::StopWeaponFire()
 {
-	GetWorldTimerManager().ClearTimer(WeaponBurstTimerHandle);
-	GetWorldTimerManager().ClearTimer(WeaponSemiAutoTimerHandle);
-	SetWeaponState(EWeaponState::IDLE);
-}
-
-void AINSWeaponBase::ResetFireState()
-{
-	if (GetLocalRole() == ROLE_Authority)
-	{
-		SetWeaponState(EWeaponState::IDLE);
-	}
+	WeaponFireHandler->StopWeaponFire();
 }
 
 bool AINSWeaponBase::CheckCanReload()
@@ -761,39 +781,7 @@ bool AINSWeaponBase::CheckCanReload()
 
 void AINSWeaponBase::SimulateEachSingleShoot()
 {
-	FTransform ProjectileSpawnTransform;
-	FVector AdjustDir(ForceInit);
-	AdjustProjectileDir(AdjustDir);
-	FVector SpreadDir(ForceInit);
-	AddWeaponSpread(SpreadDir, AdjustDir);
-	if (GetLocalRole() == ROLE_Authority)
-	{
-		SetWeaponState(EWeaponState::FIRING);
-		SpawnProjectile(WeaponMesh1PComp->GetMuzzleLocation(), SpreadDir, GetWorld()->GetTimeSeconds() - LastFireTime);
-
-	}
-	if (CurrentWeaponFireMode == EWeaponFireMode::SEMIAUTO)
-	{
-		SemiAutoCurrentRoundCount++;
-		if (SemiAutoCurrentRoundCount == 3)
-		{
-			GetWorldTimerManager().ClearTimer(WeaponSemiAutoTimerHandle);
-		}
-	}
-	if (GetNetMode() == ENetMode::NM_Standalone || GetNetMode() == ENetMode::NM_ListenServer)
-	{
-		OnRep_WeaponFireCount();
-	}
-#if WITH_EDITORONLY_DATA&&!UE_BUILD_SHIPPING
-	if (bShowDebugTrace && GetOwnerCharacter()->IsLocallyControlled())
-	{
-		const FVector TraceStart = WeaponMesh1PComp->GetMuzzleLocation();
-		const FVector TraceEnd = TraceStart + SpreadDir * 1000;
-		DrawDebugLine(GetWorld(), WeaponMesh1PComp->GetMuzzleLocation(), TraceEnd, FColor::Blue, false, 2.0f);
-		DrawDebugSphere(GetWorld(), ProjectileSpawnTransform.GetLocation(), 5.f, 5, FColor::Red, false, 10.f);
-	}
-#endif
-	RepWeaponFireCount++;
+	
 }
 
 void AINSWeaponBase::AddWeaponSpread(FVector& OutSpreadDir, FVector& BaseDirection)
@@ -832,16 +820,11 @@ void AINSWeaponBase::CalculateAmmoAfterReload()
 
 void AINSWeaponBase::ConsumeAmmo()
 {
-	if (GetLocalRole() == ROLE_Authority)
+	if (HasAuthority() && CurrentClipAmmo > 0)
 	{
-		if (CurrentClipAmmo > 0)
-		{
-			CurrentClipAmmo = FMath::Clamp<int32>(CurrentClipAmmo--, 0, CurrentClipAmmo);
-		}
+		CurrentClipAmmo = FMath::Clamp<int32>(CurrentClipAmmo - 1, 0, CurrentClipAmmo);
 		if (CurrentClipAmmo == 0)
 		{
-			GetWorldTimerManager().ClearTimer(WeaponBurstTimerHandle);
-			GetWorldTimerManager().ClearTimer(WeaponSemiAutoTimerHandle);
 			StopWeaponFire();
 			bDryReload = true;
 			StartReloadWeapon();
@@ -903,6 +886,7 @@ void AINSWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AINSWeaponBase, CurrentWeaponState);
+	DOREPLIFETIME(AINSWeaponBase, CurrentWeaponFireMode);
 	DOREPLIFETIME(AINSWeaponBase, RepWeaponFireCount);
 	DOREPLIFETIME(AINSWeaponBase, OwnerCharacter);
 	DOREPLIFETIME(AINSWeaponBase, bIsAimingWeapon);
@@ -1053,12 +1037,12 @@ bool AINSWeaponBase::CheckCanAim()
 #if UE_SERVER
 	if (!OwnerPC)
 	{
-		UE_LOG(LogINSWeapon, Warning, TEXT("Weapon :%s has no owner player , can't reload"), *GetName());
+		UE_LOG(LogINSWeapon, Warning, TEXT("Weapon :%s has no owner player , can't Aim"), *GetName());
 		return false;
 	}
-	if (!OwnerPC)
+	if (!OwnerChar)
 	{
-		UE_LOG(LogINSWeapon, Warning, TEXT("Weapon :%s has no owner character , can't reload"), *GetName());
+		UE_LOG(LogINSWeapon, Warning, TEXT("Weapon :%s has no owner character , can't Aim"), *GetName());
 		return false;
 	}
 #endif
@@ -1190,6 +1174,7 @@ void AINSWeaponBase::StartSwitchFireMode()
 			{
 				OnRep_CurrentFireMode();
 			}
+			break;
 		}
 	}
 }
