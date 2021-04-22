@@ -60,6 +60,7 @@ void UINSFPAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	PlayWeaponBasePose();
 	FPPlayIdleOrMovingAnim();
 	UpdateSight();
+	UpdateCanEnterSprint();
 }
 
 void UINSFPAnimInstance::NativeInitializeAnimation()

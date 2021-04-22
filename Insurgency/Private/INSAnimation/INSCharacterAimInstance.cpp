@@ -32,6 +32,7 @@ UINSCharacterAimInstance::UINSCharacterAimInstance(const FObjectInitializer& Obj
 	bStartJump = false;
 	bIsCrouching = false;
 	WeaponIKSwayRotationAlpha = 0.f;
+	bCanEnterSprint = false;
 	CurrentWeaponBaseType = EWeaponBasePoseType::FOREGRIP;
 #if WITH_EDITORONLY_DATA
 	bShowDebugTrace = true;
@@ -51,19 +52,18 @@ void UINSCharacterAimInstance::NativeInitializeAnimation()
 void UINSCharacterAimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
-	if (!OwnerPlayerCharacter || !CharacterMovementComponent || OwnerPlayerCharacter->GetIsCharacterDead())
+	if (OwnerPlayerCharacter && CharacterMovementComponent && !OwnerPlayerCharacter->GetIsCharacterDead())
 	{
-		return;
+		UpdateDirection();
+		UpdateHorizontalSpeed();
+		UpdateVerticalSpeed();
+		UpdatePitchAndYaw();
+		UpdateIsMoving();
+		UpdateSprintPlaySpeed();
+		UpdateIsFalling();
+		UpdateIsAiming();
+		UpdateWeaponBasePoseType();
 	}
-	UpdateDirection();
-	UpdateHorizontalSpeed();
-	UpdateVerticalSpeed();
-	UpdatePitchAndYaw();
-	UpdateIsMoving();
-	UpdateSprintPlaySpeed();
-	UpdateIsFalling();
-	UpdateIsAiming();
-	UpdateWeaponBasePoseType();
 }
 
 void UINSCharacterAimInstance::UpdateHorizontalSpeed()
@@ -129,10 +129,7 @@ void UINSCharacterAimInstance::FPPlayMoveAnimation()
 	{
 		return;
 	}
-	UAnimMontage* CurrentMoveMontage = bIsAiming ?
-		CurrentWeaponAnimData->FPMoveAnim :
-		CurrentWeaponAnimData->FPAimMoveAnim;
-
+	UAnimMontage* CurrentMoveMontage = bIsAiming ? CurrentWeaponAnimData->FPMoveAnim : CurrentWeaponAnimData->FPAimMoveAnim;
 	UAnimMontage* AimMoveMontage = CurrentWeaponAnimData->FPMoveAnim;
 	UAnimMontage* MoveMontage = CurrentWeaponAnimData->FPAimMoveAnim;
 	const bool bIsPlaying1pMoveAnim = Montage_IsPlaying(CurrentMoveMontage);
@@ -253,27 +250,26 @@ void UINSCharacterAimInstance::PlayStopAimAnim()
 void UINSCharacterAimInstance::PlaySprintAnim()
 {
 	bIsSprinting = true;
-	if (CurrentViewMode == EViewMode::FPS)
+	UAnimMontage* const SelectedSprintMontage = CurrentWeaponAnimData->FPSprintAnim;
+	if (!Montage_IsPlaying(SelectedSprintMontage))
 	{
-		UAnimMontage* const SelectedSprintMontage = CurrentWeaponAnimData->FPSprintAnim;
-		if (!Montage_IsPlaying(SelectedSprintMontage))
-		{
-			Montage_Play(SelectedSprintMontage);
-		}
+		Montage_Play(SelectedSprintMontage);
 	}
 }
 
 void UINSCharacterAimInstance::StopPlaySprintAnim()
 {
 	bIsSprinting = false;
-	if (CurrentViewMode == EViewMode::FPS)
+	UAnimMontage* const SelectedSprintMontage = CurrentWeaponAnimData->FPSprintAnim;
+	if (Montage_IsPlaying(SelectedSprintMontage))
 	{
-		UAnimMontage* const SelectedSprintMontage = CurrentWeaponAnimData->FPSprintAnim;
-		if (Montage_IsPlaying(SelectedSprintMontage))
-		{
-			Montage_Stop(0.3f, SelectedSprintMontage);
-		}
+		Montage_Stop(0.3f, SelectedSprintMontage);
 	}
+}
+
+void UINSCharacterAimInstance::OnCharacterJustLanded()
+{
+
 }
 
 void UINSCharacterAimInstance::OnWeaponAnimDelegateBindingFinished()
@@ -301,6 +297,18 @@ void UINSCharacterAimInstance::PlayWeaponIdleAnim()
 	{
 		FPPlayWeaponIdleAnim();
 	}
+}
+
+void UINSCharacterAimInstance::SetSprintPressed(bool NewSprintPressed)
+{
+	this->bSprintPressed = NewSprintPressed;
+	bCanEnterSprint = bSprintPressed;
+}
+
+void UINSCharacterAimInstance::UpdateCanEnterSprint()
+{
+	//bCanEnterSprint = bSprintPressed && CharacterMovementComponent;
+	//bIsSprinting = bCanEnterSprint;
 }
 
 void UINSCharacterAimInstance::SetIsAiming(bool IsAiming)

@@ -125,7 +125,7 @@ void AINSCharacter::ApplyDamageMomentum(float DamageTaken, FDamageEvent const& D
 
 void AINSCharacter::HandleOnTakePointDamage(AActor* DamagedActor, float Damage, AController* InstigatedBy, FVector HitLocation, UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotFromDirection, const UDamageType* DamageType, AActor* DamageCauser)
 {
-
+	
 }
 
 void AINSCharacter::HandleOnTakeAnyDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
@@ -141,26 +141,20 @@ float AINSCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, A
 {
 	if (HasAuthority())
 	{
-		const float DamageToApply = Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
 		if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
 		{
-			float DamageBeforeModify = DamageToApply;
 			float DamageAfterModify = 0.f;
-			const FPointDamageEvent* const PointDamageEventPtr = (FPointDamageEvent*)&DamageEvent;
 			AINSGameModeBase* const GameMode = GetWorld()->GetAuthGameMode<AINSGameModeBase>();
+			const FPointDamageEvent* const PointDamageEventPtr = (FPointDamageEvent*)&DamageEvent;
 			// modify any damage according to game rules and other settings
 			if (GameMode)
 			{
-				GameMode->ModifyDamage(DamageAfterModify, DamageBeforeModify, EventInstigator
-					, this->GetController()
-					, DamageEvent
-					, PointDamageEventPtr->HitInfo.BoneName);
+				GameMode->ModifyDamage(DamageAfterModify, Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser), EventInstigator, this->GetController(), DamageEvent, PointDamageEventPtr->HitInfo.BoneName);
 			}
 			if (PointDamageEventPtr)
 			{
 				FTakeHitInfo HitInfo;
 				HitInfo.bIsTeamDamage = GameMode->GetIsTeamDamage(EventInstigator, GetController());
-				HitInfo.originalDamage = DamageBeforeModify;
 				HitInfo.Damage = GetIsCharacterDead() ? 0.f : DamageAfterModify;
 				HitInfo.DamageCauser = DamageCauser;
 				HitInfo.Victim = this;
@@ -180,7 +174,7 @@ float AINSCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, A
 				}
 			}
 		}
-		CharacterHealthComp->ReduceHealth(LastHitInfo.Damage, DamageCauser, EventInstigator);
+		CharacterHealthComp->OnTakingDamage(LastHitInfo.Damage, DamageCauser, EventInstigator);
 		if (GetIsCharacterDead())
 		{
 			AINSGameStateBase* CurrentGameState = GetWorld()->GetGameState<AINSGameStateBase>();
@@ -297,7 +291,7 @@ void AINSCharacter::OnRep_Dead()
 	GetINSCharacterMovement()->StopMovementImmediately();
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
-	if (GetNetMode() != ENetMode::NM_DedicatedServer && GetCharacterAudioComp())
+	if (!IsNetMode(NM_DedicatedServer) && GetCharacterAudioComp())
 	{
 		GetCharacterAudioComp()->OnDeath();
 	}
@@ -458,6 +452,22 @@ void AINSCharacter::HandleWeaponRealoadRequest()
 	}
 }
 
+void AINSCharacter::OnWeaponCollide(const FHitResult& Hit)
+{
+	if (Hit.bBlockingHit)
+	{
+		AActor* HitOtherActor = Hit.GetActor();
+		if (HitOtherActor->GetClass()->IsChildOf(APawn::StaticClass())) 
+		{
+			GetController()->SetIgnoreMoveInput(true);
+		}
+	}
+	else
+	{
+		GetController()->SetIgnoreMoveInput(false);
+	}
+}
+
 void AINSCharacter::HandleAimWeaponRequest()
 {
 	if (HasAuthority())
@@ -571,8 +581,29 @@ void AINSCharacter::HandleStartSprintRequest()
 {
 	if (HasAuthority())
 	{
-		bIsSprint = true;
-		OnRep_Sprint();
+		UE_LOG(LogINSCharacter, Log, TEXT("Handle sprint request"));
+			if (!GetCharacterMovement()->GetLastInputVector().IsNearlyZero())
+			{
+				FMatrix RotMatrix = FRotationMatrix(GetActorForwardVector().ToOrientationRotator());
+				FVector ForwardVector = RotMatrix.GetScaledAxis(EAxis::X);
+				FVector RightVector = RotMatrix.GetScaledAxis(EAxis::Y);
+				FVector NormalizedVel = GetCharacterMovement()->GetLastInputVector().GetSafeNormal2D();
+
+				// get a cos(alpha) of forward vector vs velocity
+				float ForwardCosAngle = FVector::DotProduct(ForwardVector, NormalizedVel);
+				// now get the alpha and convert to degree
+				float ForwardDeltaDegree = FMath::RadiansToDegrees(FMath::Acos(ForwardCosAngle));
+
+				// depending on where right vector is, flip it
+				float RightCosAngle = FVector::DotProduct(RightVector, NormalizedVel);
+				if (RightCosAngle < 0)
+				{
+					ForwardDeltaDegree *= -1;
+				}
+				UE_LOG(LogINSCharacter, Log, TEXT("sprint requset calculated delta:%f"), ForwardDeltaDegree);
+				bIsSprint = FMath::IsNearlyEqual(ForwardDeltaDegree,0,1);
+				OnRep_Sprint();
+			}
 	}
 }
 

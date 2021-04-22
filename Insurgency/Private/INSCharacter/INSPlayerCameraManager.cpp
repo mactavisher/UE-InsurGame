@@ -20,22 +20,25 @@ void AINSPlayerCameraManager::LimitViewPitch(FRotator& ViewRotation, float InVie
 
 void AINSPlayerCameraManager::UpdateCamera(float DeltaTime)
 {
-	Super::UpdateCamera(DeltaTime);
-	FOVBlendSpeed = (DefaultFOV - ADSFov) / (FOVBlendTime == 0.f ? 0.5f : FOVBlendTime);
-	if (bWantsToADS)
+	if (!IsNetMode(NM_DedicatedServer))
 	{
-		SetFOV(LockedFOV - DeltaTime * FOVBlendSpeed);
-		if (LockedFOV <= ADSFov)
+		Super::UpdateCamera(DeltaTime);
+		FOVBlendSpeed = (DefaultFOV - ADSFov) / (FOVBlendTime == 0.f ? 0.5f : FOVBlendTime);
+		if (bWantsToADS)
 		{
-			SetFOV(ADSFov);
+			SetFOV(LockedFOV - DeltaTime * FOVBlendSpeed);
+			if (LockedFOV <= ADSFov)
+			{
+				SetFOV(ADSFov);
+			}
 		}
-	}
-	if (!bWantsToADS)
-	{
-		SetFOV(LockedFOV + DeltaTime * FOVBlendSpeed);
-		if (LockedFOV >= DefaultFOV)
+		if (!bWantsToADS)
 		{
-			SetFOV(DefaultFOV);
+			SetFOV(LockedFOV + DeltaTime * FOVBlendSpeed);
+			if (LockedFOV >= DefaultFOV)
+			{
+				SetFOV(DefaultFOV);
+			}
 		}
 	}
 }

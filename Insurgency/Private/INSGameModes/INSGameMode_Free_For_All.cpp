@@ -6,6 +6,5 @@
 bool AINSGameMode_Free_For_All::GetIsTeamDamage(class AController* DamageInstigator, class AController* Victim)
 {
 	// DO NOT call super here
-
 	return false;
 }

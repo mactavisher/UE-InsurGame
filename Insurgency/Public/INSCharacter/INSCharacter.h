@@ -314,6 +314,8 @@ public:
 	/** handles Reload request from player  */
 	virtual void HandleWeaponRealoadRequest();
 
+	virtual void OnWeaponCollide(const FHitResult& Hit);
+
 	/** handles Aim request from player  */
 	virtual void HandleAimWeaponRequest();
 
@@ -397,6 +399,8 @@ public:
 		virtual void OnDeath();
 
 	inline virtual bool GetIsAiming()const { return bIsAiming; }
+
+
 
 	inline bool GetIsCharacterMoving()const;
 };

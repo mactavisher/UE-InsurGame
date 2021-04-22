@@ -46,7 +46,7 @@ float UINSHealthComponent::GetCurrentHealth() const
 	return CurrentHealth;
 }
 
-void UINSHealthComponent::ReduceHealth(float ReduceAmount, class AActor* DamageCauser, class AController* DamageInstigator)
+void UINSHealthComponent::OnTakingDamage(float ReduceAmount, class AActor* DamageCauser, class AController* DamageInstigator)
 {
 	CurrentHealth -= FMath::CeilToInt(ReduceAmount);
 	CurrentHealth = FMath::CeilToInt(FMath::Clamp<float>(CurrentHealth - ReduceAmount, 0.f, CurrentHealth));

@@ -95,8 +95,6 @@ void AINSGameModeBase::PreInitializeComponents()
 	AINSGameStateBase* CurrentGameState = GetGameState<AINSGameStateBase>();
 	if (GameState)
 	{
-		//CurrentGameState->SetAllowFire(bAllowFire);
-		//CurrentGameState->SetAllowMove(bAllowMove);
 		CurrentGameState->SetRespawnTime(DefaultRestartTime);
 		CurrentGameState->SetCTTeam(CTTeam);
 		CurrentGameState->SetTerroristTeam(TerroristTeam);
@@ -168,10 +166,7 @@ void AINSGameModeBase::ModifyDamage(float& OutDamage, const float& OriginDamage,
 		const float BoneDamageModifier = BoneDamageModifierStruct.GetBoneDamageModifier(BoneName);
 		const float ModifiedDamage = OriginDamage * BoneDamageModifier;
 		OutDamage = ModifiedDamage;
-		if (BoneName.ToString().Contains("Head", ESearchCase::IgnoreCase))
-		{
-			bIsHeadShot = true;
-		}
+		bIsHeadShot = BoneName.ToString().Contains("Head", ESearchCase::IgnoreCase);
 		UE_LOG(LogINSCharacter
 			, Warning
 			, TEXT("character %s hit with bone:%s,damage modifier values is:%f,Modified damage value is %f")

@@ -61,10 +61,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "CharacterMesh")
 		UINSCharSkeletalMeshComponent* CharacterMesh3P;
 
-	///** Player character's 3P mesh comp,only visible to non-owner player */
-	//UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FeedBackEffects")
-	//	TSubclassOf<UCameraShake> TakeHitCameraShake;
-
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Replicated,ReplicatedUsing=OnRep_TeamType, Category = "Team")
 	    ETeamType MyTeamType;
 

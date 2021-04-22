@@ -51,8 +51,12 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|Transform")
 		uint8 bStartJump : 1;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|Transform")
 		uint8 bSprintPressed : 1;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|Transform")
+		uint8 bCanEnterSprint : 1;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BlendSpace")
 		float Yaw;
@@ -115,6 +119,8 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Stance")
 		ECharacterStance CurrentStance;
 
+
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AnimDelegate")
 		uint8 bWeaponAnimDelegateBindingFinished : 1;
@@ -149,7 +155,9 @@ public:
 
 	virtual void SetIsSprinting(bool bIsSprintingNow) { this->bIsSprinting = bIsSprintingNow; }
 
-	virtual void SetSprintPressed(bool NewSprintPressed) { this->bSprintPressed = NewSprintPressed; }
+	virtual void SetSprintPressed(bool NewSprintPressed);
+
+	virtual void UpdateCanEnterSprint();
 
 	virtual void SetIsCrouching(bool bIsCrouchingNow) { this->bIsCrouching = bIsCrouchingNow; }
 
@@ -160,6 +168,8 @@ public:
 	virtual bool GetIsAiming()const { return bIsAiming; }
 
 	virtual void SetStartJump(bool NewJumpState) { this->bStartJump = NewJumpState; }
+
+
 
 	/**
 	 * Set the currently used weapon and weapon animation data
@@ -225,6 +235,8 @@ public:
 	virtual void PlaySprintAnim()override;
 
 	virtual void StopPlaySprintAnim()override;
+
+	virtual void OnCharacterJustLanded();
 
 	UFUNCTION()
 		virtual void StopFPPlayingWeaponIdleAnim();

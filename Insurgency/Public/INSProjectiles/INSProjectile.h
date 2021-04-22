@@ -151,7 +151,7 @@ protected:
 		uint8  HitCounter;
 
 	/** indicates that this projectile actually hits something , and replicated to notify any other clients*/
-	UPROPERTY(VisibleAnywhere,Category = "Repliciation|Hit")
+	UPROPERTY(VisibleAnywhere, Category = "Repliciation|Hit")
 		bool bIsProcessingHit;
 
 	/** how much time to wait since last movement info replication happens before next update,controls some sort of frequency and used for optimization*/
@@ -214,13 +214,13 @@ protected:
 		uint8 bIsGatheringMovement : 1;
 
 	UPROPERTY()
-	FActorTickFunction InitRepTickFunc;
+		FActorTickFunction InitRepTickFunc;
 
 	UPROPERTY()
-	FActorTickFunction TracerPaticleSizeTickFun;
+		FActorTickFunction TracerPaticleSizeTickFun;
 
 	UPROPERTY()
-	FVector TraceScale;
+		FVector TraceScale;
 
 
 	/** force a update to clients */
@@ -285,7 +285,7 @@ protected:
 	virtual void GatherCurrentMovement()override;
 
 	/** happens right before replication occurs,override some properties */
-	virtual void PreReplication(IRepChangedPropertyTracker & ChangedPropertyTracker)override;
+	virtual void PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker)override;
 
 	/**
 	 * @desc override function, to support custom replicated properties
@@ -298,17 +298,18 @@ protected:
 	// ~End AActor interface
 
 	/**
-	 * instantiate a client fake projectile for providing visual effect purpose
-	 * if use the directly replicated Projectile from server ,it's may get choppy
-	 * since we have modify it's replication frequency,so the solution is when the
-	 * server side projectile Replicated and it's owner is Replicated,instantiate the
-	 * client fake projectile immediately and still simulate it's physic state,and by
-	 * each time we received a update ,just update the fake to match the server one
+	 * @Desc instantiate a client fake projectile for providing visual effect purpose
+	 *       if use the directly replicated Projectile from server ,it's may get choppy
+	 *       since we have modify it's replication frequency,so the solution is when the
+	 *       server side projectile Replicated and it's owner is Replicated,instantiate the
+	 *       client fake projectile immediately and still simulate it's physic state,and by
+	 *       each time we received a update ,just update the fake to match the server one
 	 */
 	virtual void InitClientFakeProjectile();
 
 	/**
-	 * sends a initial replication after replicated
+	 * @Desc send a initial replication to relevant clients for extremely fast moving projectiles
+	 *       work with InitRepTickFunc
 	 */
 	virtual void SendInitialReplication();
 

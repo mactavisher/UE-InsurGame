@@ -13,6 +13,7 @@
 #include "DrawDebugHelpers.h"
 #include "Sound/SoundCue.h"
 #include "INSEffects/INSProjectileShell.h"
+#include "INSProjectiles/INSProjectile.h"
 #include "TimerManager.h"
 #include "INSItems/INSItems.h"
 #include "Particles/ParticleSystemComponent.h"
@@ -47,7 +48,6 @@ AINSWeaponBase::AINSWeaponBase(const FObjectInitializer& ObjectInitializer) :Sup
 	RepWeaponFireCount = 0;
 	bIsAimingWeapon = false;
 	bInfinitAmmo = false;
-	SemiAutoCurrentRoundCount = 0;
 	AimTime = 0.3f;
 	RecoilVerticallyFactor = -3.f;
 	RecoilHorizontallyFactor = 6.f;
@@ -76,6 +76,7 @@ AINSWeaponBase::AINSWeaponBase(const FObjectInitializer& ObjectInitializer) :Sup
 #if WITH_EDITORONLY_DATA
 	bShowDebugTrace = false;
 #endif
+	ProbeSize = 10.f;
 }
 
 void AINSWeaponBase::Tick(float DeltaTime)
@@ -94,6 +95,7 @@ void AINSWeaponBase::Tick(float DeltaTime)
 			UpdateRecoilVertically(DeltaTime, GetRecoilVerticallyFactor());
 		}
 	}
+	UpdateWeaponCollide();
 }
 
 void AINSWeaponBase::PostInitializeComponents()
@@ -142,7 +144,7 @@ void AINSWeaponBase::SetupWeaponMeshRenderings()
 			WeaponMesh3PComp->SetCastShadow(false);
 			WeaponMesh3PComp->bCastDynamicShadow = false;
 		}
-		else if (GetNetMode() == ENetMode::NM_Standalone || GetNetMode() == ENetMode::NM_ListenServer)
+		else if (IsNetMode(NM_Standalone) || IsNetMode(NM_ListenServer))
 		{
 			//const APlayerController* const MyPlayerController = UGameplayStatics::GetPlayerController(GetWorld(), 0);
 			WeaponMesh1PComp->SetHiddenInGame(false);
@@ -257,7 +259,6 @@ void AINSWeaponBase::SpawnProjectile(FVector SpawnLoc, FVector SpawnDir)
 		{
 			SpawnedProjectile->SetOwnerWeapon(this);
 			SpawnedProjectile->SetIsFakeProjectile(false);
-			//SpawnedProjectile->SetOwner(GetOwnerCharacter()->GetController());
 			SpawnedProjectile->SetMuzzleSpeed(WeaponConfigData.MuzzleSpeed);
 			SpawnedProjectile->SetCurrentPenetrateCount(0);
 			SpawnedProjectile->SetInstigatedPlayer(Cast<AController>(GetOwner()));
@@ -279,7 +280,7 @@ bool AINSWeaponBase::ServerSpawnProjectile_Validate(FVector SpawnLoc, FVector Sp
 
 void AINSWeaponBase::SetOwnerCharacter(class AINSCharacter* NewOwnerCharacter)
 {
-	if (GetLocalRole() == ROLE_Authority)
+	if (HasAuthority())
 	{
 		this->OwnerCharacter = NewOwnerCharacter;
 		OnRep_OwnerCharacter();
@@ -289,7 +290,7 @@ void AINSWeaponBase::SetOwnerCharacter(class AINSCharacter* NewOwnerCharacter)
 
 void AINSWeaponBase::SetWeaponState(EWeaponState NewWeaponState)
 {
-	if (GetLocalRole() == ROLE_Authority)
+	if (HasAuthority())
 	{
 		CurrentWeaponState = NewWeaponState;
 		OnRep_CurrentWeaponState();
@@ -486,6 +487,7 @@ void AINSWeaponBase::OnRep_CurrentWeaponState()
 			}
 		}
 	}
+	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("Weapon state replicated," + GetWeaponReadableCurrentState()));
 }
 
 void AINSWeaponBase::OnRep_AimWeapon()
@@ -779,6 +781,46 @@ bool AINSWeaponBase::CheckCanReload()
 	return true;
 }
 
+void AINSWeaponBase::UpdateWeaponCollide()
+{
+	if (!GetOwnerCharacter()->GetIsCharacterDead()&&GetLocalRole() == ROLE_AutonomousProxy)
+	{
+		FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(SpringArm), false, GetOwner());
+		QueryParams.AddIgnoredActor(this);
+		QueryParams.AddIgnoredActor(this->GetOwner());
+		QueryParams.AddIgnoredComponent(WeaponMesh1PComp);
+		QueryParams.AddIgnoredComponent(WeaponMesh3PComp);
+		QueryParams.AddIgnoredActor(this->GetOwnerCharacter());
+#if WITH_EDITOR&&!UE_BUILD_SHIPPING
+		QueryParams.bDebugQuery = true;
+#endif
+		FHitResult Result;
+		bool bCollide = GetWorld()->SweepSingleByChannel(Result, WeaponMesh1PComp->GetMuzzleLocation(), WeaponMesh1PComp->GetMuzzleLocation()+FVector::OneVector, WeaponMesh1PComp->GetMuzzleRotation().Quaternion(), ECollisionChannel::ECC_Camera, FCollisionShape::MakeSphere(ProbeSize), QueryParams);
+		if (bCollide)
+		{
+			OnWeaponCollide(Result);
+		}
+		else
+		{
+			FHitResult EmptyCollide(ForceInit);
+			EmptyCollide.bBlockingHit = false;
+			OnWeaponCollide(EmptyCollide);
+		}
+	}
+}
+
+void AINSWeaponBase::OnWeaponCollide(const FHitResult& CollideResult)
+{
+	if (CollideResult.bBlockingHit)
+	{
+		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s collided with other things,collide actor:%s,collide component:%s"), *GetName(), *CollideResult.GetActor()->GetName(), *CollideResult.Component->GetName());
+	}
+	if (GetOwnerCharacter())
+	{
+		GetOwnerCharacter()->OnWeaponCollide(CollideResult);
+	}
+}
+
 void AINSWeaponBase::SimulateEachSingleShoot()
 {
 	
@@ -835,37 +877,28 @@ void AINSWeaponBase::ConsumeAmmo()
 void AINSWeaponBase::OnRep_WeaponFireCount()
 {
 	AINSPlayerCharacter* const PlayerCharacter = Cast<AINSPlayerCharacter>(GetOwnerCharacter());
+	AINSPlayerController* const OwnerPC = GetOwnerPlayer<AINSPlayerController>();
 	if (PlayerCharacter && !PlayerCharacter->GetIsCharacterDead())
 	{
-		if (GetLocalRole() == ROLE_AutonomousProxy || GetLocalRole() == ROLE_Authority)
+		if (OwnerPC)
 		{
-			if (PlayerCharacter)
-			{
-				PlayerCharacter->Get1PAnimInstance()->StopFPPlayingWeaponIdleAnim();
-				PlayerCharacter->Get1PAnimInstance()->PlayFireAnim();
-				GetWeapon1PAnimInstance()->PlayFireAnim();
-			}
+			PlayerCharacter->Get1PAnimInstance()->StopFPPlayingWeaponIdleAnim();
+			PlayerCharacter->Get1PAnimInstance()->PlayFireAnim();
+			GetWeapon1PAnimInstance()->PlayFireAnim();
+			OwnerPC->PlayerCameraManager->PlayCameraShake(FireCameraShakingClass);
 		}
-		else if (GetLocalRole() == ROLE_SimulatedProxy)
+		else
 		{
-			if (PlayerCharacter)
-			{
-				PlayerCharacter->Get3PAnimInstance()->PlayFireAnim();
-				GetWeapon3pAnimINstance()->PlayFireAnim();
-			}
+			PlayerCharacter->Get3PAnimInstance()->PlayFireAnim();
+			GetWeapon3pAnimINstance()->PlayFireAnim();
 		}
 		SimulateWeaponFireFX();
-		AINSPlayerController* PlayerController = Cast<AINSPlayerController>(GetOwnerCharacter()->GetController());
-		if (PlayerController)
-		{
-			PlayerController->PlayerCameraManager->PlayCameraShake(FireCameraShakingClass);
-		}
 	}
 }
 
 void AINSWeaponBase::OnRep_OwnerCharacter()
 {
-	if (GetNetMode() != ENetMode::NM_DedicatedServer)
+	if (!IsNetMode(NM_DedicatedServer))
 	{
 		const AINSPlayerCharacter* const PlayerCharacter = Cast<AINSPlayerCharacter>(GetOwnerCharacter());
 		if (PlayerCharacter)

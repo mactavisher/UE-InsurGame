@@ -69,7 +69,7 @@ public:
 		, ZoomingInTime(0.15f)
 		, ZoomingOutTime(0.1f)
 		, BaseDamage(20.f)
-		, MuzzleSpeed(40000.f)
+		, MuzzleSpeed(10000.f)
 		, ScanTraceRange(1000.f)
 	{
 	}
@@ -216,7 +216,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 {
 	GENERATED_UCLASS_BODY()
 
-		friend class UINSWeaponFireManager;
+	friend class UINSWeaponFireManager;
 	friend class UINSWeaponFireHandler;
 
 	/** stores available fire modes to switch between */
@@ -266,10 +266,6 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	/** is this weapon equip a fore grip */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Ammo")
 		uint8 bForeGripEquipt : 1;
-
-	/** count fire shots when in a semi-auto mode for control taking  */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = "FireMode")
-		uint8 SemiAutoCurrentRoundCount;
 
 	/** stores last fire time , used for validate if weapon can fire it's next shot */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
@@ -357,6 +353,10 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControll")
 		FVector BaseHandsIk;
 
+	/** How big should the query probe sphere be (in unreal units) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = WeaponCollision, meta = (editcondition = "bDoCollisionTest"))
+		float ProbeSize;
+
 	/** WeaponAttachment Slots */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponAttachments")
 		TMap<FName, FWeaponAttachmentSlot> WeaponAttachementSlots;
@@ -396,6 +396,10 @@ protected:
 	 * @Desc check if can enter reload  state
 	 */
 	virtual bool CheckCanReload();
+
+	virtual void UpdateWeaponCollide();
+
+	virtual void OnWeaponCollide(const FHitResult& CollideResult);
 
 	/** adjust projectile make them spread */
 	virtual void AddWeaponSpread(FVector& OutSpreadDir, FVector& BaseDirection);

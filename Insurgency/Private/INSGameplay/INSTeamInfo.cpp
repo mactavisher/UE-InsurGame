@@ -37,7 +37,7 @@ void AINSTeamInfo::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLife
 
 void AINSTeamInfo::SetTeamType(ETeamType NewTeamType)
 {
-	if (GetLocalRole() == ROLE_Authority)
+	if (HasAuthority())
 	{
 		ThisTeamType = NewTeamType;
 		OnRep_TeamType();

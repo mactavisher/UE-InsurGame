@@ -195,10 +195,6 @@ struct FTakeHitInfo
 	UPROPERTY()
 		int32 Damage;
 
-	/** initial damage should have applied before game mode to modify it's damage */
-	UPROPERTY()
-		int32 originalDamage;
-
 	/** the location of the hit (relative to Pawn center) */
 	UPROPERTY()
 		FVector_NetQuantize RelHitLocation;
@@ -237,7 +233,6 @@ struct FTakeHitInfo
 		, DamageCauser(NULL)
 		, Victim(NULL)
 		, Damage(0)
-		, originalDamage(0)
 		, RelHitLocation(ForceInit)
 		, Momentum(ForceInit)
 		, DamageType(NULL)

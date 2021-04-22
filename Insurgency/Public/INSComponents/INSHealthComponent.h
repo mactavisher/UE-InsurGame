@@ -56,8 +56,8 @@ protected:
 	UPROPERTY()
 		FTimerHandle HealthRestoreTimerHandle;
 
-	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Owner")
-	  class AINSCharacter* OwnerCharacter;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Owner")
+		class AINSCharacter* OwnerCharacter;
 
 
 	//~begin AActorComponent interface
@@ -96,7 +96,7 @@ public:
 	 * @param ReduceAmount          how much health to reduce        float
 	 */
 	UFUNCTION(BlueprintCallable, Category = "HealthComponent")
-		virtual void ReduceHealth(float ReduceAmount, class AActor* DamageCauser, class AController* DamageInstigator);
+		virtual void OnTakingDamage(float ReduceAmount, class AActor* DamageCauser, class AController* DamageInstigator);
 
 	/**
 	 * @desc restore current health value

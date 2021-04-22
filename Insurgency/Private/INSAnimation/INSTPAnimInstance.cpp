@@ -34,6 +34,7 @@ void UINSTPAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	PlayWeaponBasePose();
 	UpdateJogSpeed();
 	UpdateCanEnterJogCondition();
+	UpdateCanEnterSprint();
 	//UpdateIsAiming();
 	
 	//GEngine->AddOnScreenDebugMessage(-1, 0.5f, FColor::Green, bIsAiming ? TEXT("TP anim is aiming") : TEXT(" TP anim not aiming"));
