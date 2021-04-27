@@ -54,7 +54,7 @@ float AINSZombie::TakeDamage(float Damage, struct FDamageEvent const& DamageEven
 
 void AINSZombie::HandlesAttackRequest(class AINSZombieController* RequestZombieController)
 {
-	if (GetLocalRole() == ROLE_Authority)
+	if (HasAuthority())
 	{
 		uint8 AvailableAttackNum = 3;
 		uint8 SelectedAttackModeIndex = FMath::RandHelper(AvailableAttackNum - 1);
@@ -65,7 +65,7 @@ void AINSZombie::HandlesAttackRequest(class AINSZombieController* RequestZombieC
 		case 2:CurrenAttackMode = EZombieAttackMode::Hyper; break;
 		default:CurrenAttackMode = EZombieAttackMode::LeftHand; break;
 		}
-		if (GetNetMode() == ENetMode::NM_Standalone || GetNetMode() == ENetMode::NM_ListenServer)
+		if (IsNetMode(NM_Standalone) || IsNetMode(NM_ListenServer))
 		{
 			OnRep_ZombieAttackMode();
 			//actual hand hit point damage;
@@ -79,7 +79,7 @@ void AINSZombie::HandlesAttackRequest(class AINSZombieController* RequestZombieC
 
 void AINSZombie::PerfromLineTraceDamage()
 {
-	if (GetLocalRole() == ROLE_Authority)
+	if (HasAuthority())
 	{
 		FRotator ViewRotation;
 		FVector ViewPoint;
