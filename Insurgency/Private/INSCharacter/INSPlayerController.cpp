@@ -56,6 +56,7 @@ void AINSPlayerController::SetupInputComponent()
 	InputComponent->BindAction("Crouch", IE_Released, this, &AINSPlayerController::UnCrouch);
 	InputComponent->BindAction("Sprint", IE_Pressed, this, &AINSPlayerController::Sprint);
 	InputComponent->BindAction("Sprint", IE_Released, this, &AINSPlayerController::StopSprint);
+	InputComponent->BindAction("Jump", IE_Pressed, this, &AINSPlayerController::Jump);
 	UE_LOG(LogAINSPlayerController, Log, TEXT("finish Setting up and bind Player inputs"));
 	//InputComponent->BindAction("Fire", IE_Pressed, this, &AINSPlayerController::Fire);
 }
@@ -351,6 +352,31 @@ void AINSPlayerController::Sprint()
 	{
 		ServerSprint();
 	}
+}
+
+void AINSPlayerController::Jump()
+{
+	if (HasAuthority())
+	{
+		if (GetINSPlayerCharacter())
+		{
+			GetINSPlayerCharacter()->HandleJumpRequest();
+		}
+	}
+	else
+	{
+		ServerJump();
+	}
+}
+
+void AINSPlayerController::ServerJump_Implementation()
+{
+	Jump();
+}
+
+bool AINSPlayerController::ServerJump_Validate()
+{
+	return true;
 }
 
 void AINSPlayerController::ServerSprint_Implementation()

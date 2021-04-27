@@ -349,6 +349,9 @@ public:
 	/** handles stop sprint request from player*/
 	virtual void HandleStopSprintRequest();
 
+	/** handles jump request from player*/
+	virtual void HandleJumpRequest();
+
 	/** callback when character crouched or un-crouched */
 	virtual void OnRep_IsCrouched()override;
 
@@ -403,4 +406,10 @@ public:
 
 
 	inline bool GetIsCharacterMoving()const;
+
+	virtual void OnEnterIdleState() {};
+
+	virtual void OnOutIdleState() {};
+
+	virtual void OnEnterBoredState() {};
 };

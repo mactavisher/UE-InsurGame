@@ -221,6 +221,7 @@ void AINSCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLif
 
 void AINSCharacter::Landed(const FHitResult& Hit)
 {
+	UE_LOG(LogINSCharacter, Log, TEXT("Character %s just landed"),*GetName());
 	if (HasAuthority())
 	{
 		Super::Landed(Hit);
@@ -581,29 +582,14 @@ void AINSCharacter::HandleStartSprintRequest()
 {
 	if (HasAuthority())
 	{
-		UE_LOG(LogINSCharacter, Log, TEXT("Handle sprint request"));
-			if (!GetCharacterMovement()->GetLastInputVector().IsNearlyZero())
-			{
-				FMatrix RotMatrix = FRotationMatrix(GetActorForwardVector().ToOrientationRotator());
-				FVector ForwardVector = RotMatrix.GetScaledAxis(EAxis::X);
-				FVector RightVector = RotMatrix.GetScaledAxis(EAxis::Y);
-				FVector NormalizedVel = GetCharacterMovement()->GetLastInputVector().GetSafeNormal2D();
-
-				// get a cos(alpha) of forward vector vs velocity
-				float ForwardCosAngle = FVector::DotProduct(ForwardVector, NormalizedVel);
-				// now get the alpha and convert to degree
-				float ForwardDeltaDegree = FMath::RadiansToDegrees(FMath::Acos(ForwardCosAngle));
-
-				// depending on where right vector is, flip it
-				float RightCosAngle = FVector::DotProduct(RightVector, NormalizedVel);
-				if (RightCosAngle < 0)
-				{
-					ForwardDeltaDegree *= -1;
-				}
-				UE_LOG(LogINSCharacter, Log, TEXT("sprint requset calculated delta:%f"), ForwardDeltaDegree);
-				bIsSprint = FMath::IsNearlyEqual(ForwardDeltaDegree,0,1);
-				OnRep_Sprint();
-			}
+		FVector Forward = GetActorForwardVector();
+		FVector MoveDirection = GetINSCharacterMovement()->GetLastUpdateVelocity().GetSafeNormal();
+		//Ignore vertical movement
+		Forward.Z = 0.0f;
+		MoveDirection.Z = 0.0f;
+		float VelocityDot = FVector::DotProduct(Forward, MoveDirection);
+		bIsSprint = VelocityDot > 0.8f&&!GetCharacterMovement()->IsFalling();
+		OnRep_Sprint();
 	}
 }
 
@@ -613,6 +599,21 @@ void AINSCharacter::HandleStopSprintRequest()
 	{
 		bIsSprint = false;
 		OnRep_Sprint();
+	}
+}
+
+void AINSCharacter::HandleJumpRequest()
+{
+	if (HasAuthority())
+	{
+		if (CanJump() && !bPressedJump)
+		{
+			if (bIsSprint)
+			{
+				HandleStopSprintRequest();
+			}
+			Jump();
+		}
 	}
 }
 

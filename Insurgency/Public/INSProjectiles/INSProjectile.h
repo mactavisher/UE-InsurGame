@@ -261,39 +261,15 @@ protected:
 protected:
 
 	// ~Begin AActor interface
-	/** event begin play happens */
 	virtual void BeginPlay() override;
-
-	/** called every frame*/
 	virtual void Tick(float DeltaSeconds)override;
-
 	virtual void TickActor(float DeltaTime, enum ELevelTick TickType, FActorTickFunction& ThisTickFunction)override;
-
-	/** called after all components being initiated */
 	virtual void PostInitializeComponents()override;
-
 	virtual void PostNetReceiveVelocity(const FVector& NewVelocity)override;
-
 	virtual void PostNetReceiveLocationAndRotation()override;
-
-	/**
-	 * @desc Gathering MovementInfo,add a gather time interval to optimize the projectiles movement
-	 *  since server and clients are simulated the same projectile with same properties,we just need
-	 *  server send movement update to clients for fixing it transformation with a rather low frequency,
-	 *  we do not need to send a update to all clients each server tick
-	 */
 	virtual void GatherCurrentMovement()override;
-
-	/** happens right before replication occurs,override some properties */
 	virtual void PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker)override;
-
-	/**
-	 * @desc override function, to support custom replicated properties
-	 * @param OutLiftTimeProps   Replicated Property tracker
-	 */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
-
-
 	virtual void OnRep_ReplicatedMovement()override;
 	// ~End AActor interface
 
@@ -324,10 +300,11 @@ public:
 
 	/**
 	 * @desc set the initial speed this projectile will use to travel
-	 * @Param NewSpeed     The New Speed to set
+	 * @Param NewSpeed  The New Speed to set
 	 */
 	virtual void SetMuzzleSpeed(float NewSpeed);
 
+	/** get the current penetrate count */
 	inline virtual uint8 GetCurrentPenetrateCount()const { return CurrentPenetrateCount; }
 
 	virtual void SetCurrentPenetrateCount(uint8 AddInCount = 1) { CurrentPenetrateCount += AddInCount; }
@@ -347,6 +324,7 @@ public:
 	/** get owner weapon */
 	virtual class AINSWeaponBase* GetOwnerWeapon()const { return OwnerWeapon; }
 
+	/** get the client fake projectile */
 	virtual class AINSProjectile* GetClientFakeProjectile()const { return ClientFakeProjectile; }
 
 	/**

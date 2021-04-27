@@ -191,6 +191,27 @@ void AINSPlayerCharacter::SetTeamType(const ETeamType NewTeamType)
 	MyTeamType = NewTeamType;
 }
 
+void AINSPlayerCharacter::OnEnterIdleState()
+{
+	Super::OnEnterBoredState();
+	if (GetCurrentWeapon() && GetCurrentWeapon()->GetCurrentWeaponState() == EWeaponState::IDLE)
+	{
+		UE_LOG(LogINSCharacter, Log, TEXT("Character:%s is not moving and not using weapon for too much time ,enter idle state"));
+		Get1PAnimInstance()->SetIdleState(true);
+		Get3PAnimInstance()->SetIdleState(true);
+	}
+}
+
+void AINSPlayerCharacter::OnOutIdleState()
+{
+	Super::OnOutIdleState();
+}
+
+void AINSPlayerCharacter::OnEnterBoredState()
+{
+	Super::OnEnterBoredState();
+}
+
 void AINSPlayerCharacter::OnDeath()
 {
 	if (!GetIsCharacterDead())

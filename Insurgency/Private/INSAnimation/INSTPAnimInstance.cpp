@@ -56,9 +56,7 @@ void UINSTPAnimInstance::SetCurrentWeaponAndAnimationData(class AINSWeaponBase* 
 
 void UINSTPAnimInstance::UpdateCanEnterJogCondition()
 {
-	bCanEnterJog = CharacterMovementComponent
-		&& CharacterMovementComponent->GetLastUpdateVelocity().Size2D() > 0.f
-		&& JogSpeed > 0.f;
+	bCanEnterJog = CharacterMovementComponent && CharacterMovementComponent->GetLastUpdateVelocity().Size2D() > 0.f && JogSpeed > 0.f;
 }
 
 
@@ -205,26 +203,16 @@ void UINSTPAnimInstance::PlayWeaponStartEquipAnim()
 	UAnimMontage* SelectedEquipAnim = nullptr;
 	switch (CurrentWeaponBaseType)
 	{
-	case EWeaponBasePoseType::ALTGRIP:SelectedEquipAnim =
-		CurrentWeaponAnimData->TPWeaponAltGripAnim.DeployAnim.CharAnim;
-		break;
-	case EWeaponBasePoseType::FOREGRIP:SelectedEquipAnim =
-		CurrentWeaponAnimData->TPWeaponForeGripAnim.DeployAnim.CharAnim;
-		break;
-	case EWeaponBasePoseType::DEFAULT:SelectedEquipAnim =
-		CurrentWeaponAnimData->TPWeaponDefaultPoseAnim.DeployAnim.CharAnim;
-		break;
-	default:SelectedEquipAnim = nullptr;
-		break;
+	case EWeaponBasePoseType::ALTGRIP:SelectedEquipAnim = CurrentWeaponAnimData->TPWeaponAltGripAnim.DeployAnim.CharAnim; break;
+	case EWeaponBasePoseType::FOREGRIP:SelectedEquipAnim = CurrentWeaponAnimData->TPWeaponForeGripAnim.DeployAnim.CharAnim; break;
+	case EWeaponBasePoseType::DEFAULT:SelectedEquipAnim = CurrentWeaponAnimData->TPWeaponDefaultPoseAnim.DeployAnim.CharAnim; break;
+	default:SelectedEquipAnim = nullptr; break;
 	}
 	Montage_Play(SelectedEquipAnim);
 }
 
 void UINSTPAnimInstance::UpdatePredictFallingToLandAlpha()
 {
-	// from this distance we start to update falling Alpha value ,any distance beyond this value will ignore and falling alpha is 0
-	// means this character is full falling state and not prepared to land,with trace start hit frame , prepare to land and from where start 
-	// to update falling alpha ,used for land and moving animation blending
 	const float FallingCalMinDistance = 30.f;
 	if (CharacterMovementComponent->IsFalling())
 	{

@@ -69,7 +69,7 @@ public:
 		, ZoomingInTime(0.15f)
 		, ZoomingOutTime(0.1f)
 		, BaseDamage(20.f)
-		, MuzzleSpeed(10000.f)
+		, MuzzleSpeed(20000.f)
 		, ScanTraceRange(1000.f)
 	{
 	}

@@ -64,6 +64,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BlendSpace")
 		float Pitch;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "State")
+		float bIdleState;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "State")
+		float bBoredState;
+
 	/** is this character is landed ,default is landed ,which is 1.0f */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BlendSpace")
 		float CustomNotIsFallingAlpha;
@@ -118,6 +124,12 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Stance")
 		ECharacterStance CurrentStance;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControl")
+		float  LastBoredAnimPlayTime;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControl")
+		float  BoredAnimPlayTimeInterval;
 
 
 
@@ -237,6 +249,10 @@ public:
 	virtual void StopPlaySprintAnim()override;
 
 	virtual void OnCharacterJustLanded();
+
+	virtual void SetIdleState(bool NewIdleState);
+
+	virtual void SetBoredState(bool NewBoredState);
 
 	UFUNCTION()
 		virtual void StopFPPlayingWeaponIdleAnim();

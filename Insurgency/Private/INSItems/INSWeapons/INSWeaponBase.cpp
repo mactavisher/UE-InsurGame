@@ -783,7 +783,7 @@ bool AINSWeaponBase::CheckCanReload()
 
 void AINSWeaponBase::UpdateWeaponCollide()
 {
-	if (!GetOwnerCharacter()->GetIsCharacterDead()&&GetLocalRole() == ROLE_AutonomousProxy)
+	if (GetOwnerCharacter()&& !GetOwnerCharacter()->GetIsCharacterDead()&&GetLocalRole() == ROLE_AutonomousProxy)
 	{
 		FCollisionQueryParams QueryParams(SCENE_QUERY_STAT(SpringArm), false, GetOwner());
 		QueryParams.AddIgnoredActor(this);

@@ -130,6 +130,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim|SharedAddtive")
 		UAnimMontage* FPSprintAnim;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim|SharedAddtive")
+		UAnimMontage* FPBoredAnim;
+
 	/** weapon fire trigger and bolt animation */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim|SharedAddtive")
 		UAnimMontage* WeaponFireAnim;

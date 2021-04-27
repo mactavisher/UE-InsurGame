@@ -6,6 +6,8 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "INSCharacterMovementComponent.generated.h"
 
+class AINSPlayerCharacter;
+
 /**
  *
  */
@@ -39,6 +41,32 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "StanimaModifier")
 		float SpeedBeforeAim;
 
+	/** accumulated idle time */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "StanimaModifier")
+		float AccumulatedIdleTime;
+
+	/** how much time this player can enter idle state */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "StanimaModifier")
+		float IdleStateTime;
+
+	/** how much time this player can enter bored state */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "StanimaModifier")
+		float BoredStateTime;
+
+	UPROPERTY()
+	uint8 bInIdleState:1;
+
+	UPROPERTY()
+	uint8 bInBoredState : 1;
+
+protected:
+	AINSCharacter* INSCharacterOwner;
+
+protected:
+	//~ begin UCharacterMovement Interface
+	virtual void BeginPlay()override;
+	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)override;
+	//~ end UCharacterMovement Interface
 public:
 
 	virtual void StartCrouch();
@@ -57,9 +85,13 @@ public:
 
 	virtual void EndAim();
 
+	virtual void CheckCharacterIdleState(const float DeltaTime);
+
 	inline virtual float GetSprintSpeed()const { return BaseWalkSpeed * SprintSpeedModifier; }
 
 	inline virtual float GetCrouchSpeed()const { return BaseWalkSpeed * CrouchSpeedModifier; }
 
 	inline virtual float GetAimSpeed()const { return SpeedBeforeAim * AimSpeedModifier; }
+
+	inline virtual float GetAcculatedIdleTime()const { return AccumulatedIdleTime; }
 };

@@ -132,6 +132,11 @@ public:
 
 	virtual void Sprint();
 
+	virtual void Jump();
+
+	UFUNCTION(Server, Unreliable, WithValidation)
+	virtual void ServerJump();
+
 	UFUNCTION(Server, Unreliable, WithValidation)
 		virtual void ServerSprint();
 

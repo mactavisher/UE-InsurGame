@@ -107,6 +107,14 @@ protected:
 	 */
 	virtual void SetIsAiming(bool IsAiming)override;
 
+	virtual void SetIsSprinting(bool bIsSprintingNow)override;
+
+	virtual void SetSprintPressed(bool NewSprintPressed)override;
+
+	virtual void SetIdleState(bool NewIdleState)override;
+
+	virtual void SetBoredState(bool NewBoredState)override;
+
 	virtual void SetCurrentWeaponAndAnimationData(class AINSWeaponBase* NewWeapon)override;
 
 public:

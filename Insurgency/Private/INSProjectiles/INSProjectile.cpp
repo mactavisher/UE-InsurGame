@@ -46,6 +46,7 @@ AINSProjectile::AINSProjectile(const FObjectInitializer& ObjectInitializer) :Sup
 	TracerParticle->SetupAttachment(CollisionComp);
 	ProjectileMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	TracerParticle->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	TracerParticle->SetWorldScale3D(FVector(0.1f, 0.1f, 0.1f));
 	InitialLifeSpan = 5.f;
 	SetReplicatingMovement(true);
 	bIsGatheringMovement = false;
@@ -302,7 +303,6 @@ void AINSProjectile::PostInitializeComponents()
 		TracerPaticleSizeTickFun.bTickEvenWhenPaused = true;
 		TracerPaticleSizeTickFun.RegisterTickFunction(GetLevel());
 		TracerPaticleSizeTickFun.Target = this;
-		//GetProjectileMovementComp()->PrimaryComponentTick.AddPrerequisite(this);
 	}
 }
 
@@ -321,12 +321,8 @@ void AINSProjectile::PostNetReceiveLocationAndRotation()
 	Super::PostNetReceiveLocationAndRotation();
 	if (GetClientFakeProjectile())
 	{
-		SetActorLocationAndRotation(
-			GetReplicatedMovement().Location,
-			GetReplicatedMovement().Rotation);
-		GetClientFakeProjectile()->SetActorLocationAndRotation(
-			GetReplicatedMovement().Location,
-			GetReplicatedMovement().Rotation);
+		SetActorLocationAndRotation(GetReplicatedMovement().Location,GetReplicatedMovement().Rotation);
+		GetClientFakeProjectile()->SetActorLocationAndRotation(GetReplicatedMovement().Location,GetReplicatedMovement().Rotation);
 	}
 }
 
@@ -411,12 +407,7 @@ void AINSProjectile::InitClientFakeProjectile()
 		SpawnLoc = GetOwnerWeapon()->WeaponMesh3PComp->GetMuzzleLocation() + 10.f * SpawDir;
 	}
 	const FTransform SpawnTransform(SpawDir.ToOrientationRotator(), SpawnLoc, FVector::OneVector);
-	ClientFakeProjectile = GetWorld()->SpawnActorDeferred<AINSProjectile>(
-		this->GetClass(),
-		SpawnTransform,
-		this,
-		nullptr,
-		ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+	ClientFakeProjectile = GetWorld()->SpawnActorDeferred<AINSProjectile>(this->GetClass(),SpawnTransform,this,nullptr,ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 	if (ClientFakeProjectile)
 	{
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
@@ -528,22 +519,25 @@ void AINSProjectile::TickActor(float DeltaTime, enum ELevelTick TickType, FActor
 	}
 	Super::TickActor(DeltaTime, TickType, ThisTickFunction);
 	
-	/*if (&ThisTickFunction == &TracerPaticleSizeTickFun)
+	if (&ThisTickFunction == &TracerPaticleSizeTickFun)
 	{
 		//GEngine->AddOnScreenDebugMessage(-1, 0.5f, FColor::Green, TEXT("TickActor calling Tracer scale"));
 		FVector CurrentTracerScale = TracerParticle->GetComponentTransform().GetScale3D();
-		float ScaleX = CurrentTracerScale.X;
-		float ScaleY = CurrentTracerScale.Y;
-		float ScaleZ = CurrentTracerScale.Z;
-		FVector NewScale(FMath::Clamp<float>(ScaleX += DeltaTime*100, ScaleX, 10.f)
-			, ScaleY
-			, FMath::Clamp<float>(ScaleZ += DeltaTime, ScaleZ, 2.f));
-		TracerParticle->SetWorldScale3D(NewScale);
-		if (ScaleX >= 20.f)
+		float CurrentScaleX = CurrentTracerScale.X;
+		float CurrentScaleY = CurrentTracerScale.Y;
+		float CurrentScaleZ = CurrentTracerScale.Z;
+		float UpdatedScaleX = FMath::FInterpTo(CurrentScaleX, 1.f, DeltaTime, 10.f);
+		float UpdateScaeleY = FMath::FInterpTo(CurrentScaleY, 1.f, DeltaTime, 10.f);
+		float UpdateScaeleZ = FMath::FInterpTo(CurrentScaleZ, 1.f, DeltaTime, 10.f);
+		if (CurrentScaleX <= 5.f)
+		{
+			TracerParticle->SetWorldScale3D(FVector(UpdatedScaleX, UpdateScaeleY, UpdateScaeleZ));
+		}
+		else 
 		{
 			TracerPaticleSizeTickFun.SetTickFunctionEnable(false);
 			TracerPaticleSizeTickFun.UnRegisterTickFunction();
 		}
-	}*/
+	}
 
 }

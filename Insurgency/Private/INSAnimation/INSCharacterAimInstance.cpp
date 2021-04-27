@@ -37,6 +37,10 @@ UINSCharacterAimInstance::UINSCharacterAimInstance(const FObjectInitializer& Obj
 #if WITH_EDITORONLY_DATA
 	bShowDebugTrace = true;
 #endif
+	bIdleState = false;
+	bBoredState = false;
+	LastBoredAnimPlayTime = 0.f;
+	BoredAnimPlayTimeInterval = 15.f;
 }
 
 void UINSCharacterAimInstance::NativeInitializeAnimation()
@@ -220,6 +224,7 @@ void UINSCharacterAimInstance::UpdateHandsIk()
 	}*/
 }
 
+
 void UINSCharacterAimInstance::UpdateSprintPlaySpeed()
 {
 	SprintPlaySpeed = CharacterMovementComponent->GetLastUpdateVelocity().Size2D() / CharacterMovementComponent->MaxWalkSpeed;
@@ -270,6 +275,16 @@ void UINSCharacterAimInstance::StopPlaySprintAnim()
 void UINSCharacterAimInstance::OnCharacterJustLanded()
 {
 
+}
+
+void UINSCharacterAimInstance::SetIdleState(bool NewIdleState)
+{
+	bIdleState = NewIdleState;
+}
+
+void UINSCharacterAimInstance::SetBoredState(bool NewBoredState)
+{
+	bBoredState = NewBoredState;
 }
 
 void UINSCharacterAimInstance::OnWeaponAnimDelegateBindingFinished()

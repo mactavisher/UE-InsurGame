@@ -194,4 +194,10 @@ public:
 	inline bool GetIsMesh3pHidden()const;
 
 	virtual void SetTeamType(const ETeamType NewTeamType);
+
+	virtual void OnEnterIdleState()override;
+
+	virtual void OnOutIdleState()override;
+
+	virtual void OnEnterBoredState()override;
 };

@@ -118,11 +118,11 @@ void UINSFPAnimInstance::FPPlayIdleOrMovingAnim()
 	{
 		return;
 	}
-	if (bIsMoving)
+	if (!bIdleState)
 	{
 		if (Montage_IsPlaying(CurrentWeaponAnimData->FPAimIdleAnim))
 		{
-			Montage_Stop(0.1f,CurrentWeaponAnimData->FPAimIdleAnim);
+			Montage_Stop(0.1f, CurrentWeaponAnimData->FPAimIdleAnim);
 		}
 		if (Montage_IsPlaying(CurrentWeaponAnimData->FPIdleAnim))
 		{
@@ -161,25 +161,35 @@ void UINSFPAnimInstance::FPPlayIdleOrMovingAnim()
 		{
 			Montage_Stop(0.25f, CurrentWeaponAnimData->FPAimMoveAnim);
 		}
-		if (bIsAiming)
+		if (bBoredState)
 		{
-			if (Montage_IsPlaying(CurrentWeaponAnimData->FPIdleAnim))
+			if (!Montage_IsPlaying(CurrentWeaponAnimData->FPBoredAnim))
 			{
-				Montage_Stop(0.1f, CurrentWeaponAnimData->FPIdleAnim);
+				Montage_Play(CurrentWeaponAnimData->FPBoredAnim);
 			}
 		}
 		else
 		{
-			if (Montage_IsPlaying(CurrentWeaponAnimData->FPMoveAnim))
+			if (bIsAiming)
 			{
-				Montage_Stop(0.1f,CurrentWeaponAnimData->FPMoveAnim);
+				if (Montage_IsPlaying(CurrentWeaponAnimData->FPIdleAnim))
+				{
+					Montage_Stop(0.1f, CurrentWeaponAnimData->FPIdleAnim);
+				}
 			}
-			if (!Montage_IsPlaying(CurrentWeaponAnimData->FPIdleAnim))
+			else
 			{
-				Montage_Play(CurrentWeaponAnimData->FPIdleAnim);
+				if (Montage_IsPlaying(CurrentWeaponAnimData->FPMoveAnim))
+				{
+					Montage_Stop(0.1f, CurrentWeaponAnimData->FPMoveAnim);
+				}
+				if (!Montage_IsPlaying(CurrentWeaponAnimData->FPIdleAnim))
+				{
+					Montage_Play(CurrentWeaponAnimData->FPIdleAnim);
+				}
 			}
 		}
-		
+
 	}
 }
 
@@ -218,17 +228,10 @@ void UINSFPAnimInstance::PlayWeaponStartEquipAnim()
 	UAnimMontage* SelectedEquipAnim = nullptr;
 	switch (CurrentWeaponBaseType)
 	{
-	case EWeaponBasePoseType::ALTGRIP:SelectedEquipAnim =
-		CurrentWeaponAnimData->FPWeaponAltGripAnim.DeployAnim.CharAnim;
-		break;
-	case EWeaponBasePoseType::FOREGRIP:SelectedEquipAnim =
-		CurrentWeaponAnimData->FPWeaponForeGripAnim.DeployAnim.CharAnim;
-		break;
-	case EWeaponBasePoseType::DEFAULT:SelectedEquipAnim =
-		CurrentWeaponAnimData->FPWeaponDefaultPoseAnim.DeployAnim.CharAnim;
-		break;
-	default:SelectedEquipAnim = nullptr;
-		break;
+	case EWeaponBasePoseType::ALTGRIP:SelectedEquipAnim = CurrentWeaponAnimData->FPWeaponAltGripAnim.DeployAnim.CharAnim; break;
+	case EWeaponBasePoseType::FOREGRIP:SelectedEquipAnim = CurrentWeaponAnimData->FPWeaponForeGripAnim.DeployAnim.CharAnim; break;
+	case EWeaponBasePoseType::DEFAULT:SelectedEquipAnim = CurrentWeaponAnimData->FPWeaponDefaultPoseAnim.DeployAnim.CharAnim; break;
+	default:SelectedEquipAnim = nullptr; break;
 	}
 	Montage_Play(SelectedEquipAnim);
 }
@@ -262,14 +265,10 @@ void UINSFPAnimInstance::PlayWeaponBasePose()
 	UAnimMontage* SelectedBasePoseAnim = nullptr;
 	switch (CurrentWeaponBaseType)
 	{
-	case EWeaponBasePoseType::ALTGRIP:SelectedBasePoseAnim = CurrentWeaponAnimData->FPAltGripBasePose.CharAnim;
-		break;
-	case EWeaponBasePoseType::FOREGRIP:SelectedBasePoseAnim = CurrentWeaponAnimData->FPForeGripBasePose.CharAnim;
-		break;
-	case EWeaponBasePoseType::DEFAULT:SelectedBasePoseAnim = CurrentWeaponAnimData->FPDefaultBasePose.CharAnim;
-		break;
-	default:SelectedBasePoseAnim = nullptr;
-		break;
+	case EWeaponBasePoseType::ALTGRIP:SelectedBasePoseAnim = CurrentWeaponAnimData->FPAltGripBasePose.CharAnim;break;
+	case EWeaponBasePoseType::FOREGRIP:SelectedBasePoseAnim = CurrentWeaponAnimData->FPForeGripBasePose.CharAnim;break;
+	case EWeaponBasePoseType::DEFAULT:SelectedBasePoseAnim = CurrentWeaponAnimData->FPDefaultBasePose.CharAnim;break;
+	default:SelectedBasePoseAnim = nullptr;break;
 	}
 	Montage_Play(SelectedBasePoseAnim);
 }
@@ -317,6 +316,56 @@ void UINSFPAnimInstance::SetIsAiming(bool IsAiming)
 		MaxWeaponSwayPitch = 5.f;
 		MaxWeaponSwayYaw = 5.f;
 	}
+}
+
+void UINSFPAnimInstance::SetIsSprinting(bool bIsSprintingNow)
+{
+	
+}
+
+void UINSFPAnimInstance::SetSprintPressed(bool NewSprintPressed)
+{
+	Super::SetIsSprinting(NewSprintPressed);
+	if (bIsSprinting)
+	{
+		if (Montage_IsPlaying(CurrentWeaponAnimData->FPAimIdleAnim))
+		{
+			Montage_Stop(0.1f, CurrentWeaponAnimData->FPAimIdleAnim);
+		}
+		if (Montage_IsPlaying(CurrentWeaponAnimData->FPIdleAnim))
+		{
+			Montage_Stop(0.1f, CurrentWeaponAnimData->FPIdleAnim);
+		}
+		if (Montage_IsPlaying(CurrentWeaponAnimData->FPMoveAnim))
+		{
+			Montage_Stop(0.1f, CurrentWeaponAnimData->FPMoveAnim);
+		}
+		if (Montage_IsPlaying(CurrentWeaponAnimData->FPAimMoveAnim))
+		{
+			Montage_Stop(0.1f, CurrentWeaponAnimData->FPAimMoveAnim);
+		}
+		if (!Montage_IsPlaying(CurrentWeaponAnimData->FPSprintAnim))
+		{
+			Montage_Play(CurrentWeaponAnimData->FPSprintAnim);
+		}
+	}
+	else
+	{
+		if (Montage_IsPlaying(CurrentWeaponAnimData->FPSprintAnim))
+		{
+			Montage_Stop(0.2f, CurrentWeaponAnimData->FPSprintAnim);
+		}
+	}
+}
+
+void UINSFPAnimInstance::SetIdleState(bool NewIdleState)
+{
+	Super::SetIdleState(NewIdleState);
+}
+
+void UINSFPAnimInstance::SetBoredState(bool NewBoredState)
+{
+	Super::SetBoredState(NewBoredState);
 }
 
 void UINSFPAnimInstance::SetCurrentWeaponAndAnimationData(class AINSWeaponBase* NewWeapon)
