@@ -87,6 +87,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Damage")
 	float AttackDamage;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rage")
+	float RagePoint;
 
 protected:
 
@@ -174,4 +177,14 @@ public:
 	 * performs a line trace damage
 	 */
 	virtual void PerfromLineTraceDamage();
+	
+	/**
+	 * retrieves the zomibe's current rage point
+	 */
+	inline virtual float GetZombieRagePoint(){return RagePoint;};
+	
+	/**
+	 * add rage point to  zomibe's current rage point
+	 */
+	virtual void AddZomieRagePoint(int32 RageToAdd){RagePoint+=RageToAdd;}
 };
