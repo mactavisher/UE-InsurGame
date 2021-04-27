@@ -21,6 +21,7 @@ DEFINE_LOG_CATEGORY(LogZombiePawn);
 AINSZombie::AINSZombie(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
 {
 	AttackDamage = 20.f;
+	RagePoint = 0.f;
 }
 
 void AINSZombie::OnRep_Dead()
