@@ -82,7 +82,7 @@ protected:
 		uint8 bIsSuppressed : 1;
 
 	/** cache take hit array */
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = "States")
 		TArray<FTakeHitInfo> CachedTakeHitArray;
 
 	/**  */
