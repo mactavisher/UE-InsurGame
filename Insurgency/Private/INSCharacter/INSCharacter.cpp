@@ -80,10 +80,11 @@ void AINSCharacter::BeginPlay()
 		CharacterHealthComp->OnCharacterShouldDie.Add(DieDelegate);
 		GetWorldTimerManager().SetTimer(DamageImmuneTimer, this, &AINSCharacter::TickDamageImmune, 1.f, true, 0.f);
 	}
-	// we don't need to attach the player sound comp in dedicated server,actually we can destroy it
+	// we don't need sound comp in dedicated server,actually we can destroy it
 	if (IsNetMode(NM_DedicatedServer))
 	{
 		CharacterAudioComp->DestroyComponent(true);
+		CharacterAudioComp=nulltpr;//help GC
 	}
 }
 
