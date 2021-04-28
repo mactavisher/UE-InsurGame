@@ -205,8 +205,13 @@ protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void ApplyDamageMomentum(float DamageTaken, FDamageEvent const& DamageEvent, APawn* PawnInstigator, AActor* DamageCauser)override;
 	virtual void Landed(const FHitResult& Hit)override;
+	virtual void BecomeViewTarget(APlayerController* PC)override;
+public:
+        virtual void Crouch(bool bClientSimulation /* = false */)override;
+	virtual void UnCrouch(bool bClientSimulation /* = false */)override;
 	//~ end ACharacter interface
-
+	
+protected:
 	/** handle take point damage event */
 	UFUNCTION()
 		virtual void HandleOnTakePointDamage(AActor* DamagedActor, float Damage, class AController* InstigatedBy, FVector HitLocation, class UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotFromDirection, const class UDamageType* DamageType, AActor* DamageCauser);
@@ -227,7 +232,7 @@ protected:
 	/** ~~--------------------------------------------------------------
 	   Rep callbacks-------------------------------------------*/
 
-	   /** things need to do when this character is dead  */
+	/** things need to do when this character is dead  */
 	UFUNCTION()
 		virtual void OnRep_Dead();
 
@@ -258,8 +263,7 @@ protected:
 	/** server+client ,call back function when this Character equips a weapon*/
 	UFUNCTION()
 		virtual void OnRep_CurrentWeapon();
-
-
+		
 	/** Damage Immune time Replicated call back on clients */
 	UFUNCTION()
 		virtual void OnRep_DamageImmuneTime();
@@ -267,21 +271,25 @@ protected:
 	/** ~~--------------------------------------------------------------
 		Timer Callbacks------------------------------------------------*/
 
-		/** fired by a timer to count down the damage Immune state */
+        /** fired by a timer to count down the damage Immune state */
 	UFUNCTION()
 		virtual void TickDamageImmune();
 
 	/** ~~--------------------------------------------------------------
 		Timers---------------------------------------------------------*/
 
-		/** timer ticks the damage Immune state  */
+	/** timer ticks the damage Immune state  */
 	UPROPERTY()
 		FTimerHandle DamageImmuneTimer;
+		
+	/** ~~--------------------------------------------------------------
+		Timers---------------------------------------------------------*/
+	
+	/** delegate callbacks */
+	UFUNCTION()
+		virtual void OnDeath();
 
 public:
-	/** return this character is dead or not */
-	inline virtual bool GetIsCharacterDead()const { return bIsDead; };
-
 	/** return current weapon instance used by this character */
 	UFUNCTION(BlueprintCallable)
 		virtual class AINSWeaponBase* GetCurrentWeapon()const { return CurrentWeapon; }
@@ -333,6 +341,9 @@ public:
 
 	/** handles switch fire mode request from player */
 	virtual void HandleSwitchFireModeRequest();
+	
+	/** return this character is dead or not */
+	inline virtual bool GetIsCharacterDead()const { return bIsDead; };
 
 	/** handles move forward request from player,negative value means move backwards*/
 	virtual void HandleMoveForwardRequest(float Value);
@@ -358,10 +369,6 @@ public:
 	/** spawns a weapon pick up  */
 	virtual void SpawnWeaponPickup();
 
-	virtual void Crouch(bool bClientSimulation /* = false */)override;
-
-	virtual void UnCrouch(bool bClientSimulation /* = false */)override;
-
 	/**
 	 * @desc set is character is in a Aim State
 	 * @param     NewAimState   NewAimState to set
@@ -373,43 +380,38 @@ public:
 	 * @param     NewWeapon   NewWeapon to set
 	 */
 	virtual void SetCurrentWeapon(class AINSWeaponBase* NewWeapon);
-
-	/** return is this character is suppressed by environment */
-	virtual bool GetIsSuppressed()const;
+	
 	/**
 	 * @desc set is character is suppressed
 	 * @param     InState   InState to set
 	 */
 	virtual void SetIsSuppressed(bool InState) { bIsSuppressed = InState; }
 
-	virtual void BecomeViewTarget(APlayerController* PC)override;
 
+	/** return is this character is suppressed by environment */
+	virtual bool GetIsSuppressed()const;
+	
+        /** return is this character is in low health state */
 	virtual bool GetIsLowHealth()const;
 
-	/**
-	 * @Desc get whether is character is in damage immune state
-	 * @Return Is in Immune state bool
-	 */
+	/** get whether is character is in damage immune state */
 	virtual bool GetIsDamageImmune()const { return bDamageImmuneState; }
 
-	/**
-	 * @Desc get character's damage immune time left
-	 * @Return damage immune time left
-	 */
+	/** get character's damage immune time left */
 	virtual uint8 GetDamageImmuneTimeLeft()const { return DamageImmuneLeft; }
-
-	UFUNCTION()
-		virtual void OnDeath();
-
+	
+        /** return is this character is in aiming state */
 	inline virtual bool GetIsAiming()const { return bIsAiming; }
-
-
-
+	
+        /** return is this character is in aiming state */
 	inline bool GetIsCharacterMoving()const;
 
+        /** called when this character enters idle state, mainly used by Player characters,empty impl by default */
 	virtual void OnEnterIdleState() {};
-
+	
+        /** called when this character out idle state, mainly used by Player characters,empty impl by default */
 	virtual void OnOutIdleState() {};
 
+        /** called when this character enters bored state, mainly used by Player characters,empty impl by default */
 	virtual void OnEnterBoredState() {};
 };
