@@ -7,12 +7,14 @@
 #include "INSGameModes\INSGameStateBase.h"
 #include "INSGameplay\INSTeamInfo.h"
 #include "INSHud\INSHUDBase.h"
+#include "INSDamageTypes\INSDamageType_Falling.h"
 #include "Engine\World.h"
 #include "INSCharacter\INSPlayerStateBase.h"
 #include "INSDamageTypes\INSDamageType_Falling.h"
 #include "INSPlayerSpawning/INSPlayerStart.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "EngineUtils.h"
+#include "Insurgency/Insurgency.h"
 #include "TimerManager.h"
 #include "..\..\Public\INSGameModes\INSGameModeBase.h"
 
@@ -137,10 +139,6 @@ void AINSGameModeBase::SpawnCounterTerroristTeam()
 	}
 }
 
-void AINSGameModeBase::PlayerScore(AINSPlayerController* ScoringPlayer)
-{
-
-}
 
 void AINSGameModeBase::EndMatchPerparing()
 {
@@ -154,9 +152,13 @@ void AINSGameModeBase::ModifyDamage(float& OutDamage, const float& OriginDamage,
 	{
 		//do not apply any damage when game is not in progress
 		OutDamage = 0.f;
+		return;
 	}
+
+	//handle falling damage
+	const UClass* const DmgTypeClass = DamageEvent.DamageTypeClass;
+	const bool bDamageCausedByWorld = DmgTypeClass && DmgTypeClass->IsChildOf(UINSDamageType_Falling::StaticClass());
 	bool bIsHeadShot = false;
-	bool isDamageCausedByWorld = DamageEvent.DamageTypeClass->IsChildOf(UINSDamageType_Falling::StaticClass());
 	//modify bone damage
 	AINSCharacter* const VictimCharacter = Victim->GetPawn() == nullptr ? nullptr : CastChecked<AINSCharacter>(Victim->GetPawn());
 	if (VictimCharacter)
@@ -176,7 +178,7 @@ void AINSGameModeBase::ModifyDamage(float& OutDamage, const float& OriginDamage,
 			, ModifiedDamage);
 	}
 	//modify team damage
-	const bool bIsTeamDamage = GetIsTeamDamage(PlayerInstigator, Victim) && !isDamageCausedByWorld;
+	const bool bIsTeamDamage = GetIsTeamDamage(PlayerInstigator, Victim) && !bDamageCausedByWorld;
 	if (bIsTeamDamage)
 	{
 		if (bAllowTeamDamage)
@@ -191,44 +193,54 @@ void AINSGameModeBase::ModifyDamage(float& OutDamage, const float& OriginDamage,
 	}
 }
 
-void AINSGameModeBase::ConfirmKill(AController* Killer, AController* Victim, int32 KillerScore, bool bIsTeamDamage)
+void AINSGameModeBase::PlayerScore(class AController* ScorePlayer, class AController* Victim, const FTakeHitInfo& HitInfo)
 {
 	AINSGameStateBase* GS = GetGameState<AINSGameStateBase>();
-	if (Killer->GetClass()->IsChildOf(AINSPlayerController::StaticClass()))
+	if (ScorePlayer->GetClass()->IsChildOf(AINSPlayerController::StaticClass()))
 	{
-		AINSPlayerStateBase* const KillerPlayerState = Cast<AINSPlayerController>(Killer)->GetINSPlayerState();
+		AINSPlayerStateBase* const KillerPlayerState = Cast<AINSPlayerController>(ScorePlayer)->GetINSPlayerState();
 		if (KillerPlayerState)
 		{
 			const float PlayerCurrentScore = KillerPlayerState->GetScore();
-			AINSTeamInfo* KillerTeam = Cast<AINSPlayerController>(Killer)->GetPlayerTeam();
-			if (bIsTeamDamage)
+			AINSTeamInfo* KillerTeam = Cast<AINSPlayerController>(ScorePlayer)->GetPlayerTeam();
+			if (HitInfo.bIsTeamDamage)
 			{
-				KillerPlayerState->SetScore(PlayerCurrentScore + FMath::CeilToFloat(KillerScore));
+				KillerPlayerState->SetScore(PlayerCurrentScore + FMath::CeilToFloat(-100.f));
 				KillerPlayerState->AddKill(1);
 				if (KillerTeam)
 				{
-					KillerTeam->AddTeamScore(FMath::CeilToFloat(KillerScore));
+					KillerTeam->AddTeamScore(FMath::CeilToFloat(-100.f));
 				}
 			}
 			else
 			{
-				KillerPlayerState->SetScore(FMath::Clamp<float>(PlayerCurrentScore - FMath::CeilToFloat(KillerScore), 0.f, PlayerCurrentScore));
-				KillerTeam->AddTeamScore(FMath::Clamp<float>(KillerTeam->GetTeamScore() - FMath::CeilToFloat(KillerScore), 0.f, KillerTeam->GetTeamScore()));
+				KillerPlayerState->SetScore(FMath::Clamp<float>(PlayerCurrentScore - FMath::CeilToFloat(100.f), 0.f, PlayerCurrentScore));
+				KillerTeam->AddTeamScore(FMath::Clamp<float>(KillerTeam->GetTeamScore() - FMath::CeilToFloat(100.f), 0.f, KillerTeam->GetTeamScore()));
 			}
 		}
 	}
+}
+
+void AINSGameModeBase::ConfirmPlayerKill(class AController* ScorePlayer, class AController* Victim, const FTakeHitInfo& HitInfo)
+{
+	// separate player and victim handling because there player controller class may not the same
+	// for example,one player controller and one ai controller
+	if (ScorePlayer->GetClass()->IsChildOf(AINSPlayerController::StaticClass()))
+	{
+		AINSPlayerStateBase* const KillerPlayerState = Cast<AINSPlayerController>(ScorePlayer)->GetINSPlayerState();
+		if (KillerPlayerState)
+		{
+			HitInfo.bIsTeamDamage ? KillerPlayerState->AddMissTakeKill() : KillerPlayerState->AddKill();
+		}
+	}
+
 	if (Victim->GetClass()->IsChildOf(AINSPlayerController::StaticClass()))
 	{
-		AINSPlayerStateBase* const VictimPlayerState = Cast<AINSPlayerController>(Killer)->GetINSPlayerState();
+		AINSPlayerStateBase* const VictimPlayerState = Cast<AINSPlayerController>(Victim)->GetINSPlayerState();
 		if (VictimPlayerState)
 		{
 			VictimPlayerState->AddDeath();
 		}
-	}
-
-	if (GS)
-	{
-		GS->OnPlayerKilled(Killer, Victim, KillerScore, bIsTeamDamage);
 	}
 }
 
@@ -309,10 +321,6 @@ void AINSGameModeBase::Tick(float DeltaSeconds)
 	}
 }
 
-void AINSGameModeBase::ScorePlayer(class AINSPlayerController* PlayerToScore, int32 Score)
-{
-
-}
 
 APlayerController* AINSGameModeBase::SpawnPlayerControllerCommon(ENetRole InRemoteRole, FVector const& SpawnLocation, FRotator const& SpawnRotation, TSubclassOf<APlayerController> InPlayerControllerClass)
 {

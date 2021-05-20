@@ -6,7 +6,9 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "INSCharacterMovementComponent.generated.h"
 
-class AINSPlayerCharacter;
+class AINSCharacter;
+
+INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogINSCharacterMovementComponent, Log, All);
 
 /**
  *
@@ -62,17 +64,18 @@ protected:
 protected:
 	AINSCharacter* INSCharacterOwner;
 
+	FActorComponentTickFunction IdleCheckFunction;
+
 protected:
 	//~ begin UCharacterMovement Interface
 	virtual void BeginPlay()override;
 	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)override;
-	//~ end UCharacterMovement Interface
 public:
+	virtual void Crouch(bool bClientSimulation /* = false */)override;
+	virtual void UnCrouch(bool bClientSimulation /* = false */)override;
+	//~ end UCharacterMovement Interface
 
-	virtual void StartCrouch();
-
-	virtual void EndCrouch();
-
+public:
 	virtual void StartSprint();
 
 	virtual void EndSprint();

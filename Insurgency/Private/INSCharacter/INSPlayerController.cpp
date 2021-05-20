@@ -18,7 +18,7 @@
 #include "TimerManager.h"
 #include "INSHud/INSHUDBase.h"
 #include "INSCharacter/INSPlayerStateBase.h"
-#include "INSItems/INSPickups/INSPickup_Weapon.h"
+#include "INSPickups/INSPickupBase.h"
 #include "Components/AudioComponent.h"
 #ifndef GEngine
 #include "Engine/Engine.h"
@@ -58,7 +58,6 @@ void AINSPlayerController::SetupInputComponent()
 	InputComponent->BindAction("Sprint", IE_Released, this, &AINSPlayerController::StopSprint);
 	InputComponent->BindAction("Jump", IE_Pressed, this, &AINSPlayerController::Jump);
 	UE_LOG(LogAINSPlayerController, Log, TEXT("finish Setting up and bind Player inputs"));
-	//InputComponent->BindAction("Fire", IE_Pressed, this, &AINSPlayerController::Fire);
 }
 
 void AINSPlayerController::MoveRight(float Value)
@@ -467,43 +466,31 @@ void AINSPlayerController::SwitchFireMode()
 }
 
 
-void AINSPlayerController::ReceiveGameKills(class APlayerState* Killer, APlayerState* Victim, int32 Score, bool bIsTeamDamage)
-{
-	//get the local machine player controller
-	AINSPlayerController* LocalPC = Cast<AINSPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
-	//if the killer is me
-	if (Killer->GetPlayerId() == LocalPC->PlayerState->GetPlayerId())
-	{
-		AINSHUDBase* PlayerHud = GetHUD<AINSHUDBase>();
-		if (PlayerHud)
-		{
-			PlayerHud->SetStartDrawScore(true, Score);
-			PlayerHud->SetStartDrawHitFeedBack(FLinearColor::Red);
-		}
-	}
-}
 
-
-void AINSPlayerController::ClientReceiveCauseDamage_Implementation(class AController* Victim, float DamageAmount, bool bIsTeamDamage)
+void AINSPlayerController::PlayerCauseDamage(const FTakeHitInfo& HitInfo)
 {
-	AINSHUDBase* PlayerHud = GetHUD<AINSHUDBase>();
+	AINSHUDBase* const  PlayerHud = GetHUD<AINSHUDBase>();
 	if (PlayerHud)
 	{
-		if (bIsTeamDamage)
+		if (HitInfo.bIsTeamDamage)
 		{
 			PlayerHud->SetStartDrawHitFeedBack(FLinearColor::Blue);
 		}
 		else
 		{
-			PlayerHud->SetStartDrawHitFeedBack(DamageAmount >= 30.f ? FLinearColor::Yellow : FLinearColor::White);
+			if (HitInfo.bVictimDead && !HitInfo.bVictimAlreadyDead)
+			{
+				//PlayerHud->SetStartDrawScore(true, Score);
+				PlayerHud->SetStartDrawHitFeedBack(FLinearColor::Red);
+			}
+			if (!HitInfo.bVictimDead)
+			{
+				PlayerHud->SetStartDrawHitFeedBack(HitInfo.Damage >= 30.f ? FLinearColor::Yellow : FLinearColor::White);
+			}
 		}
 	}
 }
 
-bool AINSPlayerController::ClientReceiveCauseDamage_Validate(class AController* Victim, float DamageAmount, bool bIsTeamDamage)
-{
-	return true;
-}
 
 void AINSPlayerController::InspecWeapon()
 {
@@ -528,9 +515,8 @@ bool AINSPlayerController::ServerInspectWeapon_Validate()
 
 void AINSPlayerController::PickupWeapon(class AINSPickup_Weapon* NewWeaponPickup)
 {
-	if (GetLocalRole() == ROLE_Authority)
+	/*if (GetLocalRole() == ROLE_Authority)
 	{
-		NewWeaponPickup->SetClaimedPlayer(this);
 		UClass* ActualWeaponClassFromPickup = NewWeaponPickup->GetActualWeaponClass();
 		if (ActualWeaponClassFromPickup)
 		{
@@ -550,7 +536,7 @@ void AINSPlayerController::PickupWeapon(class AINSPickup_Weapon* NewWeaponPickup
 	else
 	{
 		ServerPickupWeapon(NewWeaponPickup);
-	}
+	}*/
 }
 
 void AINSPlayerController::ServerPickupWeapon_Implementation(class AINSPickup_Weapon* NewWeaponPickup)
@@ -621,16 +607,16 @@ bool AINSPlayerController::ServerSetWeaponState_Validate(EWeaponState NewState)
 	return true;
 }
 
-void AINSPlayerController::ReceiveEnterPickups(class AINSItems_Pickup* PickupItem)
+void AINSPlayerController::ReceiveEnterPickups(class AINSPickupBase* PickupItem)
 {
 	AINSHUDBase* PlayerHud = GetHUD<AINSHUDBase>();
 	if (PlayerHud)
 	{
-		PlayerHud->SetPickupItemInfo(PickupItem->GetItemDisplayIcon(), true);
+		
 	}
 }
 
-void AINSPlayerController::ReceiveLeavePickups(class AINSItems_Pickup* PickupItem)
+void AINSPlayerController::ReceiveLeavePickups(class AINSPickupBase* PickupItem)
 {
 	AINSHUDBase* PlayerHud = GetHUD<AINSHUDBase>();
 	if (PlayerHud)

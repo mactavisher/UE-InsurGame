@@ -27,9 +27,11 @@ INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogINSCharacter, Log, All);
 /** mapped bone and damage modifier  */
 USTRUCT(BlueprintType)
 struct FBoneDamageModifier {
+
 	GENERATED_USTRUCT_BODY()
 
 protected:
+
 	/** collection of bone mapped damage modifier,could be assigned via blueprint */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BoneDamageMap")
 		TMap<FName, float> BoneMappedDamageModifier;
@@ -82,7 +84,7 @@ protected:
 		uint8 bIsSuppressed : 1;
 
 	/** cache take hit array */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = "States")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "States")
 		TArray<FTakeHitInfo> CachedTakeHitArray;
 
 	/**  */
@@ -90,7 +92,7 @@ protected:
 		uint8 bWantsToSwitchFireMode : 1;
 
 	/** replicated take hit info  */
-	UPROPERTY(Replicated, ReplicatedUsing = OnRep_LastHitInfo)
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_LastHitInfo)
 		FTakeHitInfo LastHitInfo;
 
 	/** current stance of this character */
@@ -194,6 +196,7 @@ protected:
 	virtual void GatherCurrentMovement()override;
 	virtual void OnRep_ReplicatedMovement()override;
 	virtual void Tick(float DeltaTime) override;
+	virtual void FellOutOfWorld(const class UDamageType& dmgType)override;
 	virtual void TickActor(float DeltaTime, enum ELevelTick TickType, FActorTickFunction& ThisTickFunction)override;
 	virtual bool ShouldTakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)const override;
 public:
@@ -207,10 +210,10 @@ protected:
 	virtual void Landed(const FHitResult& Hit)override;
 	virtual void BecomeViewTarget(APlayerController* PC)override;
 public:
-        virtual void Crouch(bool bClientSimulation /* = false */)override;
+	virtual void Crouch(bool bClientSimulation /* = false */)override;
 	virtual void UnCrouch(bool bClientSimulation /* = false */)override;
 	//~ end ACharacter interface
-	
+
 protected:
 	/** handle take point damage event */
 	UFUNCTION()
@@ -232,7 +235,7 @@ protected:
 	/** ~~--------------------------------------------------------------
 	   Rep callbacks-------------------------------------------*/
 
-	/** things need to do when this character is dead  */
+	   /** things need to do when this character is dead  */
 	UFUNCTION()
 		virtual void OnRep_Dead();
 
@@ -263,7 +266,7 @@ protected:
 	/** server+client ,call back function when this Character equips a weapon*/
 	UFUNCTION()
 		virtual void OnRep_CurrentWeapon();
-		
+
 	/** Damage Immune time Replicated call back on clients */
 	UFUNCTION()
 		virtual void OnRep_DamageImmuneTime();
@@ -271,21 +274,21 @@ protected:
 	/** ~~--------------------------------------------------------------
 		Timer Callbacks------------------------------------------------*/
 
-        /** fired by a timer to count down the damage Immune state */
+		/** fired by a timer to count down the damage Immune state */
 	UFUNCTION()
 		virtual void TickDamageImmune();
 
 	/** ~~--------------------------------------------------------------
 		Timers---------------------------------------------------------*/
 
-	/** timer ticks the damage Immune state  */
+		/** timer ticks the damage Immune state  */
 	UPROPERTY()
 		FTimerHandle DamageImmuneTimer;
-		
+
 	/** ~~--------------------------------------------------------------
 		Timers---------------------------------------------------------*/
-	
-	/** delegate callbacks */
+
+		/** delegate callbacks */
 	UFUNCTION()
 		virtual void OnDeath();
 
@@ -341,9 +344,9 @@ public:
 
 	/** handles switch fire mode request from player */
 	virtual void HandleSwitchFireModeRequest();
-	
+
 	/** return this character is dead or not */
-	inline virtual bool GetIsCharacterDead()const { return bIsDead; };
+	inline virtual bool GetIsDead()const { return bIsDead; };
 
 	/** handles move forward request from player,negative value means move backwards*/
 	virtual void HandleMoveForwardRequest(float Value);
@@ -380,7 +383,7 @@ public:
 	 * @param     NewWeapon   NewWeapon to set
 	 */
 	virtual void SetCurrentWeapon(class AINSWeaponBase* NewWeapon);
-	
+
 	/**
 	 * @desc set is character is suppressed
 	 * @param     InState   InState to set
@@ -390,8 +393,8 @@ public:
 
 	/** return is this character is suppressed by environment */
 	virtual bool GetIsSuppressed()const;
-	
-        /** return is this character is in low health state */
+
+	/** return is this character is in low health state */
 	virtual bool GetIsLowHealth()const;
 
 	/** get whether is character is in damage immune state */
@@ -399,19 +402,28 @@ public:
 
 	/** get character's damage immune time left */
 	virtual uint8 GetDamageImmuneTimeLeft()const { return DamageImmuneLeft; }
-	
-        /** return is this character is in aiming state */
+
+	/** return is this character is in aiming state */
 	inline virtual bool GetIsAiming()const { return bIsAiming; }
-	
-        /** return is this character is in aiming state */
+
+	/** return is this character is in aiming state */
 	inline bool GetIsCharacterMoving()const;
 
-        /** called when this character enters idle state, mainly used by Player characters,empty impl by default */
+	/** called when this character enters idle state, mainly used by Player characters,empty impl by default */
 	virtual void OnEnterIdleState() {};
-	
-        /** called when this character out idle state, mainly used by Player characters,empty impl by default */
+
+	/** called when this character out idle state, mainly used by Player characters,empty impl by default */
 	virtual void OnOutIdleState() {};
 
-        /** called when this character enters bored state, mainly used by Player characters,empty impl by default */
+	/** called when this character enters bored state, mainly used by Player characters,empty impl by default */
 	virtual void OnEnterBoredState() {};
+
+	/** on low health  */
+	virtual void OnLowHealth();
+
+	/** returns the current health of this character */
+	virtual float GetCurrentHealth()const;
+
+	/** called when this character damages other character */
+	virtual void OnCauseDamage(const FTakeHitInfo& HitInfo);
 };

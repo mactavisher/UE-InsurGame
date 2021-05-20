@@ -77,6 +77,8 @@ protected:
 
 	virtual void Tick(float DeltaTime)override;
 
+	virtual void OnCauseDamage(const FTakeHitInfo& HitInfo)override;
+
 	virtual void PossessedBy(AController* NewController)override;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
@@ -200,4 +202,6 @@ public:
 	virtual void OnOutIdleState()override;
 
 	virtual void OnEnterBoredState()override;
+
+	virtual void OnLowHealth()override;
 };

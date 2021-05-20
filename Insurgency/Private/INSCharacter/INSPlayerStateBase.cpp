@@ -16,6 +16,8 @@
 #ifndef AINSTeamInfo
 #include "INSGameplay/INSTeamInfo.h"
 #endif
+
+DEFINE_LOG_CATEGORY(LogINSPlayerState);
 AINSPlayerStateBase::AINSPlayerStateBase(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
 {
 	bIsWaitingForRespawn = false;
@@ -23,15 +25,14 @@ AINSPlayerStateBase::AINSPlayerStateBase(const FObjectInitializer& ObjectInitial
 	CachedDamageInfoMaxSize = 5;
 	CachedDamageInfos.SetNum(CachedDamageInfoMaxSize);
 	Kills = 0;
-	Death = 0;
+	Deaths = 0;
 }
 void AINSPlayerStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AINSPlayerStateBase, PlayerTeam);
-	DOREPLIFETIME(AINSPlayerStateBase, MyScore);
 	DOREPLIFETIME(AINSPlayerStateBase, Kills);
-	DOREPLIFETIME(AINSPlayerStateBase, Death);
+	DOREPLIFETIME(AINSPlayerStateBase, Deaths);
 	DOREPLIFETIME(AINSPlayerStateBase, bIsWaitingForRespawn);
 	DOREPLIFETIME(AINSPlayerStateBase, ReplicatedRespawnRemainingTime);
 }
@@ -48,11 +49,6 @@ void AINSPlayerStateBase::BeginPlay()
 {
 	Super::BeginPlay();
 	AINSGameStateBase*CurrentGameState = GetWorld()->GetGameState<AINSGameStateBase>();
-	if (CurrentGameState)
-	{
-		CurrentGameState->OnKill.AddDynamic(this, &AINSPlayerStateBase::OnPlayerKill);
-		CurrentGameState->OnDamage.AddDynamic(this, &AINSPlayerStateBase::OnPlayerDamage);
-	}
 }
 
 void AINSPlayerStateBase::OnRep_TeamInfo()
@@ -60,16 +56,25 @@ void AINSPlayerStateBase::OnRep_TeamInfo()
 	
 }
 
-void AINSPlayerStateBase::OnRep_MyScore()
+void AINSPlayerStateBase::OnRep_Deaths()
 {
-	
+	UpdateKDRatio();
+}
+
+void AINSPlayerStateBase::OnRep_Kills()
+{
+	UpdateKDRatio();
+}
+
+void AINSPlayerStateBase::OnRep_MistakeKill()
+{
+
 }
 
 void AINSPlayerStateBase::OnRep_RespawnRemainingTime()
 {
 
 }
-
 
 void AINSPlayerStateBase::SetPlayerTeam(class AINSTeamInfo* NewTeam)
 {
@@ -85,25 +90,46 @@ void AINSPlayerStateBase::UpdateRepliatedRespawnRemaingTime()
 
 }
 
-void AINSPlayerStateBase::ReceiveHitInfo(const struct FTakeHitInfo TakeHitInfo)
+void AINSPlayerStateBase::AddKill(int32 KillNum /*= 1*/)
 {
-	
+	if (HasAuthority())
+	{
+		Kills += KillNum;
+		UpdateKDRatio();
+	}
 }
 
-void AINSPlayerStateBase::PlayerScore(int32 ScoreToAdd)
+void AINSPlayerStateBase::AddMissTakeKill(int32 KillsToAdd /*= 1*/)
 {
-
+	if (HasAuthority())
+	{
+		MissTakeKill += MissTakeKill;
+		UpdateKDRatio();
+	}
 }
 
-void AINSPlayerStateBase::OnPlayerKill(class APlayerState* Killer, class APlayerState* Victim, int32 KillerScore, bool bIsTeamDamage)
+void AINSPlayerStateBase::AddDeath(const int32 DeathToAdd /*= 1*/)
 {
-
+	if (HasAuthority())
+	{
+		Deaths += 1;
+		UpdateKDRatio();
+	}
 }
 
-void AINSPlayerStateBase::OnPlayerDamage(class APlayerState* Killer, class APlayerState* Victim, int32 DamagaCauserScore, bool bIsTeamDamage)
+void AINSPlayerStateBase::UpdateKDRatio()
 {
-
+	UE_LOG(LogINSPlayerState,Log,TEXT("start update k/d ration for player %s,last k/d ration:%s"), *GetName(), *FString::SanitizeFloat(KDRatio));
+	KDRatio = Kills / Deaths;
+	UE_LOG(LogINSPlayerState,Log,TEXT("end update k/d ration for player %s,updated k/d ration:%s"), *GetName(), *FString::SanitizeFloat(KDRatio));
 }
+
+
+void AINSPlayerStateBase::AddScore(const float ScoreToAdd)
+{
+	SetScore(GetScore() + ScoreToAdd);
+}
+
 
 void AINSPlayerStateBase::TickRespawnTime()
 {

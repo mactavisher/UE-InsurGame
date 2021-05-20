@@ -71,6 +71,4 @@ public:
 
 	virtual bool CheckCanFireAgian();
 
-	virtual void RefireAndCheckTimer();
-
 };

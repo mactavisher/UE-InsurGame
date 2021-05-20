@@ -61,6 +61,7 @@ protected:
 
 
 	//~begin AActorComponent interface
+
 	/**
 	 * @override  component begin play event
 	 */
@@ -94,9 +95,10 @@ public:
 	/**
 	 * @desc health reduce logic here
 	 * @param ReduceAmount          how much health to reduce        float
+	 * @Return whether this damage will cause the player dead        bool
 	 */
 	UFUNCTION(BlueprintCallable, Category = "HealthComponent")
-		virtual void OnTakingDamage(float ReduceAmount, class AActor* DamageCauser, class AController* DamageInstigator);
+		virtual bool OnTakingDamage(float ReduceAmount, class AActor* DamageCauser, class AController* DamageInstigator);
 
 	/**
 	 * @desc restore current health value

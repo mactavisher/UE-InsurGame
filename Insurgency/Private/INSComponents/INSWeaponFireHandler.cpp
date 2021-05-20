@@ -62,18 +62,21 @@ bool UINSWeaponFireHandler::CheckCanFireAgian()
 	return OwnerWeapon && OwnerWeapon->CheckCanFire()&&GetWorld()->GetTimeSeconds() - LastFireTime >= FireInterval;
 }
 
-void UINSWeaponFireHandler::RefireAndCheckTimer()
-{
-	if (CheckCanFireAgian())
-	{
-		OwnerWeapon->FireShot();
-		ShotTimeRemaining += FireInterval;
-	}
-}
 
 void UINSWeaponFireHandler::FireShot()
 {
-	OwnerWeapon->FireShot();
+	//get the base fire location
+	FVector FireLoc(ForceInit);
+	OwnerWeapon->GetFireLoc(FireLoc);
+
+	//get the fire shot dir
+	FVector FireDir(ForceInit);
+	OwnerWeapon->GetFireDir(FireDir);
+
+	//add weapon fire spread
+	FVector SpreadDir(ForceInit);
+	OwnerWeapon->AddWeaponSpread(SpreadDir, FireDir);
+	OwnerWeapon->FireShot(FireLoc,SpreadDir.Rotation());
 	LastFireTime = GetWorld()->GetTimeSeconds();
 	OwnerWeapon->SetWeaponState(EWeaponState::FIRING);
 	bIsFiring = true;

@@ -68,7 +68,6 @@ void AINSPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	SetupMeshVisibility();
-	//init animation view mode
 	if (Get1PAnimInstance())
 	{
 		Get1PAnimInstance()->SetViewMode(EViewMode::FPS);
@@ -89,6 +88,20 @@ void AINSPlayerCharacter::PostInitializeComponents()
 void AINSPlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+}
+
+void AINSPlayerCharacter::OnCauseDamage(const FTakeHitInfo& HitInfo)
+{
+	Super::OnCauseDamage(HitInfo);
+
+	if (GetCharacterAudioComp())
+	{
+		GetCharacterAudioComp()->OnCauseDamage(HitInfo.bIsTeamDamage, HitInfo.bVictimDead);
+	}
+	// 	if (GetINSPlayerController())
+	// 	{
+	// 		GetINSPlayerController()->ReceiveGameKills(GetPlayerState(), Cast<AINSPlayerStateBase>(LastHitInfo.Victim), KillerScore, bIsTeamDamage);
+	// 	}
 }
 
 void AINSPlayerCharacter::PossessedBy(AController* NewController)
@@ -193,12 +206,58 @@ void AINSPlayerCharacter::SetTeamType(const ETeamType NewTeamType)
 
 void AINSPlayerCharacter::OnEnterIdleState()
 {
-	Super::OnEnterBoredState();
-	if (GetCurrentWeapon() && GetCurrentWeapon()->GetCurrentWeaponState() == EWeaponState::IDLE)
+	Super::OnEnterIdleState();
+	if (!GetCurrentWeapon())
 	{
-		UE_LOG(LogINSCharacter, Log, TEXT("Character:%s is not moving and not using weapon for too much time ,enter idle state"));
+		UE_LOG(LogINSCharacter
+			, Log
+			, TEXT("Character:%s with no weapon is not moving for too much time ,enter idle state")
+			, *GetName());
 		Get1PAnimInstance()->SetIdleState(true);
 		Get3PAnimInstance()->SetIdleState(true);
+	}
+	if (GetCurrentWeapon() && GetCurrentWeapon()->GetCurrentWeaponState() == EWeaponState::IDLE)
+	{
+		UE_LOG(LogINSCharacter
+			, Log, TEXT("Character:%s with weapon %s is not moving and not using weapon for too much time ,enter idle state")
+			, *GetName()
+			, *(GetCurrentWeapon()->GetName()));
+		Get1PAnimInstance()->SetIdleState(true);
+		Get3PAnimInstance()->SetIdleState(true);
+	}
+}
+
+void AINSPlayerCharacter::OnEnterBoredState()
+{
+	Super::OnEnterBoredState();
+	if (!GetCurrentWeapon())
+	{
+		UE_LOG(LogINSCharacter
+			, Log
+			, TEXT("Character:%s with no weapon is not moving for too much time ,enter bored state")
+			, *GetName());
+		Get1PAnimInstance()->SetBoredState(true);
+		Get3PAnimInstance()->SetBoredState(true);
+	}
+	if (GetCurrentWeapon() && GetCurrentWeapon()->GetCurrentWeaponState() == EWeaponState::IDLE)
+	{
+		UE_LOG(LogINSCharacter
+			, Log
+			, TEXT("Character:%s with weapon %s is not moving and not using weapon for too much time ,enter bored state")
+			, *GetName(),
+			*(GetCurrentWeapon()->GetName()));
+		Get1PAnimInstance()->SetBoredState(true);
+		Get3PAnimInstance()->SetBoredState(true);
+	}
+}
+
+
+void AINSPlayerCharacter::OnLowHealth()
+{
+	Super::OnLowHealth();
+	if (!IsNetMode(NM_DedicatedServer))
+	{
+		// TODO,do some audio effects
 	}
 }
 
@@ -207,14 +266,9 @@ void AINSPlayerCharacter::OnOutIdleState()
 	Super::OnOutIdleState();
 }
 
-void AINSPlayerCharacter::OnEnterBoredState()
-{
-	Super::OnEnterBoredState();
-}
-
 void AINSPlayerCharacter::OnDeath()
 {
-	if (!GetIsCharacterDead())
+	if (!GetIsDead())
 	{
 		SetLifeSpan(3.0f);
 		bIsDead = true;
@@ -252,8 +306,7 @@ void AINSPlayerCharacter::OnRep_Dead()
 void AINSPlayerCharacter::OnRep_Aim()
 {
 	Super::OnRep_Aim();
-	if (!CurrentWeapon || GetNetMode() == ENetMode::NM_DedicatedServer
-		|| !GetINSPlayerController())
+	if (!CurrentWeapon || GetNetMode() == ENetMode::NM_DedicatedServer || !GetINSPlayerController())
 	{
 		return;
 	}
@@ -263,9 +316,7 @@ void AINSPlayerCharacter::OnRep_Aim()
 	{
 		return;
 	}
-	bIsAiming ? CameraManager->OnAim(CurrentWeapon->GetWeaponAimTime())
-		: CameraManager->OnStopAim(CurrentWeapon->GetWeaponAimTime());
-	//update and perform aiming animation
+	bIsAiming ? CameraManager->OnAim(CurrentWeapon->GetWeaponAimTime()) : CameraManager->OnStopAim(CurrentWeapon->GetWeaponAimTime());
 	if (Get1PAnimInstance())
 	{
 		Get1PAnimInstance()->SetIsAiming(bIsAiming);
@@ -310,9 +361,14 @@ void AINSPlayerCharacter::OnRep_PlayerState()
 void AINSPlayerCharacter::OnRep_LastHitInfo()
 {
 	Super::OnRep_LastHitInfo();
-	if (IsLocallyControlled() && LastHitInfo.Damage > 0)
+	AINSPlayerCharacter* const PlayerCharacter = Cast<AINSPlayerCharacter>(LastHitInfo.InstigatorPawn);
+	if (PlayerCharacter)
 	{
-//		GetINSPlayerController()->ClientPlayCameraShake(TakeHitCameraShake);
+		AINSPlayerController* const PC = PlayerCharacter->GetINSPlayerController();
+		if (PC)
+		{
+			PC->PlayerCauseDamage(LastHitInfo);
+		}
 	}
 }
 

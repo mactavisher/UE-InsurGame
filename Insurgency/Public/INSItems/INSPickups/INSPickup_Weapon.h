@@ -5,20 +5,23 @@
 #include "CoreMinimal.h"
 #include "INSItems/INSPickups/INSItems_Pickup.h"
 #include "INSItems/INSWeapons/INSWeaponBase.h"
+#include "INSPickups/INSPickupBase.h"
 #include "INSPickup_Weapon.generated.h"
 
 class AINSWeaponBase;
 class AINSPlayerController;
 class AINSItems_Pickup;
 class USkeletalMeshComponent;
+class USkeletalMesh;
 
 /**
  *  weapon pickup
  */
-UCLASS(Abstract,Blueprintable)
-class INSURGENCY_API AINSPickup_Weapon : public AINSItems_Pickup
+UCLASS(Abstract, Blueprintable)
+class INSURGENCY_API AINSPickup_Weapon : public AINSPickupBase
 {
 	GENERATED_UCLASS_BODY()
+
 protected:
 
 	/** actual weapon class to spawn when player picks this up */
@@ -26,17 +29,13 @@ protected:
 		TSubclassOf<AINSWeaponBase> ActualWeaponClass;
 
 	/** create a visual mesh for this weapon pick up actor */
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"),Category="VisualMesh")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"), Category = "VisualMesh")
 		USkeletalMeshComponent* VisualMeshComp;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated,ReplicatedUsing=OnRep_VisualMesh, Category = "PickupClass")
-	    USkeletalMesh* VisualMesh;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PickupClass")
+		USkeletalMesh* VisualMesh;
 
-	/** destroy this pick up if nobody touches it  */
-	UPROPERTY()
-		FTimerHandle DestoryTimer;
-
-	/** how many ammo stored in current clip */
+	/** how many ammo stored in current clip ,the current clip ammo should stay the same after picked up*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Ammo")
 		int32 CurrentClipAmmo;
 
@@ -44,14 +43,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Ammo")
 		int32 AmmoLeft;
 
-	/** if no player interact with this item ,start destroy it */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Timer")
-		float DestroyTime;
-
-	/** player who want this pick up */
-	TWeakObjectPtr<AController> ClaimedPlayer;
+protected:
+	//~ begin AActor interface
+	virtual void BeginPlay()override;
+	virtual void PostInitializeComponents()override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
+	//~ end AActor interface
 
 public:
+
 	/**
 	 * set the weapon pick up class
 	 * @params WeaponClass the actual weapon class to spawn
@@ -61,30 +61,14 @@ public:
 	/** get the pick up weapon class */
 	virtual UClass* GetActualWeaponClass()const { return ActualWeaponClass; }
 
-	/** replication support */
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
-
-	/** handle when this pick up is overlapped with characters */
-	virtual void HandleOnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)override;
-
-	/** handles when when player leave this pick up */
-	virtual void HandleOnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)override;
-
 	/** give this to a claimed player */
-	virtual void GiveThisToPlayer(class AController* NewClaimedPlayer);
+	virtual void GiveTo(class AController* PlayerToGive)override;
 
-	virtual void NotifyCharacterEnter(class AINSPlayerCharacter* CharacterToNotify)override;
-
-	virtual void NotifyCharacterLeave(class AINSPlayerCharacter* CharacterToNotify)override;
-
-	/** begin play */
-	virtual void BeginPlay()override;
-
-	/** set current clip ammo that this weapon pick up should have stored */
-	virtual void SetCurrentClipAmmo(int32 AmmoSize) { CurrentClipAmmo = AmmoSize; }
+	/** set ammo amount that could be looted if player hold the ammo compatible weapon*/
+	virtual void SetLootableAmmo(int32 AmmoSize) { CurrentClipAmmo = AmmoSize; }
 
 	/** return current clip ammo this weapon pick up should have stored */
-	inline virtual int32 GetCurrentClipAmmo()const{return CurrentClipAmmo;}
+	inline virtual int32 GetLootableAmmoAmount()const { return CurrentClipAmmo; }
 
 	/** set ammo left this weapon should have stored */
 	virtual void SetAmmoLeft(int32 AmmoLeftSize) { AmmoLeft = AmmoLeftSize; }
@@ -92,34 +76,12 @@ public:
 	/** return ammo left this weapon pick up should have stored */
 	inline virtual int32 GetAmmoLeft()const { return AmmoLeft; }
 
-	/** set player who claimed for this weapon pick up */
-	virtual void SetClaimedPlayer(AController* ClaimedBy) { ClaimedPlayer = ClaimedBy; }
-
-	/** return player who claimed for this weapon pick up */
-	inline virtual AController* GetClaimedPlayer();
-
 	/** set the visual mesh of this visual mesh comp */
 	virtual void SetViualMesh(class USkeletalMesh* NewVisualMesh);
-
-	/** after OnRep_Movent called,sync transformation from server replicated transform info */
-	virtual void PostNetReceiveLocationAndRotation()override;
-
-	/** optimized version of ReplicatedMovent info  */
-	virtual void GatherCurrentMovement()override;
 
 	/** set the visual skin mesh for the skeletal mesh component */
 	virtual void SetSkinMeshComp(USkeletalMeshComponent* NewVisualMeshComp) { VisualMeshComp = NewVisualMeshComp; }
 
-	/**  */
-	virtual void PostInitializeComponents()override;
-
-	
-	UFUNCTION()
-	virtual void OnRep_VisualMesh();
-
+	/** returns the Visual mesh */
 	FORCEINLINE virtual USkinnedMeshComponent* GetVisualMeshComp()const { return VisualMeshComp; }
-
-	/** destroy this weapon pick up when nobody touches it for a period of time */
-	UFUNCTION()
-	virtual void DestroyThisWeaponPickup();
 };

@@ -10,6 +10,8 @@ class AINSTeamInfo;
 class AINSPlayerController;
 class AINSWeaponBase;
 
+INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogINSPlayerState, Log, All);
+
 USTRUCT(BlueprintType)
 struct FCachedDamageInfo
 {
@@ -45,76 +47,149 @@ class INSURGENCY_API AINSPlayerStateBase : public APlayerState
 {
 	GENERATED_UCLASS_BODY()
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_TeamInfo, Category = "TeamInfo")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_TeamInfo, Category = Team)
 		AINSTeamInfo* PlayerTeam;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_MyScore, Category = "MyScore")
-		int32 MyScore;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Repawn")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = PlayerState)
 		float RespawnRemainingTime;
 
 	/** bandwidth save version to replicate  */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_RespawnRemainingTime, Category = "Repawn")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_RespawnRemainingTime, Category = PlayerState)
 		uint8 ReplicatedRespawnRemainingTime;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Respawn")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = PlayerState)
 		uint8 bIsWaitingForRespawn : 1;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "CachedDamageinfo")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Damage)
 		uint8 CachedDamageInfoMaxSize;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "CachedDamageinfo")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Damage)
 		TArray<FCachedDamageInfo> CachedDamageInfos;
 
 	/** indicate how many plays does this player kill */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Kills")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = "OnRep_Kills", Category = PlayerState)
 		int32 Kills;
 
+	/** indicate how many player does this player kill by mistake,kill friendlies typically */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = "OnRep_MistakeKill", Category = PlayerState)
+		int32 MissTakeKill;
+
 	/** indicate how many death happens on this player */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Deaths")
-		int32 Death;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = "OnRep_Deaths", Category = PlayerState)
+		int32 Deaths;
+
+	/** k/d ratio,not this is not replicated so client will need to update this  */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = PlayerState)
+		float KDRatio;
 
 protected:
+	//~ Begin AActor interface
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
-	virtual void OnRep_Score()override;
 	virtual void BeginPlay()override;
+	virtual void Tick(float DeltaSeconds)override;
+	//~ End AActor interface
 
+	//~ Begin APlayerState interface
+	virtual void OnRep_Score()override;
+	//~ End APlayerState interface
+
+	/** rep callbacks */
 	UFUNCTION()
 		virtual void OnRep_TeamInfo();
 
 	UFUNCTION()
-		virtual void OnRep_MyScore();
+		virtual void OnRep_Deaths();
 
-	FTimerHandle RespawnTimer;
+	UFUNCTION()
+		virtual void OnRep_Kills();
+
+	UFUNCTION()
+		virtual void OnRep_MistakeKill();
 
 	UFUNCTION()
 		virtual void OnRep_RespawnRemainingTime();
 
-public:
-	virtual void SetPlayerTeam(class AINSTeamInfo* NewTeam);
-	virtual AINSTeamInfo* GetPlayerTeam()const { return PlayerTeam; }
-	virtual void SetRepawnRemainingTime(float NewTime) { RespawnRemainingTime = NewTime; }
-	virtual float GetRespawnRemainingTime()const { return RespawnRemainingTime; }
-	virtual void UpdateRepliatedRespawnRemaingTime();
-	virtual bool GetIsWaitingForRespawn()const { return bIsWaitingForRespawn; }
-	virtual void SetWaitingForRespawn(bool NewState) { bIsWaitingForRespawn = NewState; }
-	virtual uint8 GetReplicatedRespawnRemainingTime()const { return ReplicatedRespawnRemainingTime; }
-	virtual void ReceiveHitInfo(const struct FTakeHitInfo TakeHitInfo);
-	inline int32 GetNumKills()const { return Kills; }
-	inline int32 GetNumDeaths()const { return Death; }
-	inline void AddKill(int32 KillNum = 1) { Kills += KillNum; }
-	inline void AddDeath() { Death += 1; };
-	inline float GetKDRation()const { return Kills / Death; }
-	virtual void PlayerScore(int32 ScoreToAdd);
+	/** re_spawn timer after kill */
+	FTimerHandle RespawnTimer;
 
-	UFUNCTION()
-		virtual void OnPlayerKill(class APlayerState* Killer, class APlayerState* Victim, int32 KillerScore, bool bIsTeamDamage);
-
-	UFUNCTION()
-		virtual void OnPlayerDamage(class APlayerState* Killer, class APlayerState* Victim, int32 DamagaCauserScore, bool bIsTeamDamage);
+	/** re_spawn timer callback */
 	UFUNCTION()
 		virtual void TickRespawnTime();
-	virtual void Tick(float DeltaSeconds)override;
+
+public:
+	/**
+	 * @Desc  Set the player team
+	 * @Param NewTeam the team set for this player
+	 */
+	virtual void SetPlayerTeam(class AINSTeamInfo* NewTeam);
+
+	/**
+	 * @Desc  Set the re_spawn remaining time for this player if killed
+	 * @Param NewTime time to set
+	 */
+	virtual void SetRepawnRemainingTime(float NewTime) { RespawnRemainingTime = NewTime; }
+
+	/**
+	 * @Desc  Set the player waiting for re_spawn state
+	 * @Param NewState new state to set
+	 */
+	virtual void SetWaitingForRespawn(bool NewState) { bIsWaitingForRespawn = NewState; }
+
+	/**
+	 * @Desc  add the score to the current score so score gets accumulated
+	 * @Param ScoreToAdd  score to add
+	 */
+	virtual void AddScore(const float ScoreToAdd);
+
+	/**
+	 * @Desc  Add kill num
+	 * @Param KillNum kills to add
+	 */
+	inline void AddKill(int32 KillNum = 1);
+
+	/**
+	 * @Desc  Add mistake kill num, such as kill friendlies
+	 * @Param mistake kills to add
+	 */
+	inline void AddMissTakeKill(int32 KillsToAdd = 1);
+
+	/**
+	 * @Desc  called when the pawn is dead
+	 * @Param DeadPlayer the player who's controlled pawn is dead
+	 */
 	virtual void ReceivePlayerDeath(AINSPlayerController* DeadPlayer);
+
+	/**
+	 * @Desc Add deaths num
+	 * @Param DeathToAdd deaths to add ,default is 1
+	 */
+	inline void AddDeath(const int32 DeathToAdd = 1);
+
+	/** gets the current player team */
+	virtual AINSTeamInfo* GetPlayerTeam()const { return PlayerTeam; }
+
+	/** gets the re_spawn remaining time */
+	virtual float GetRespawnRemainingTime()const { return RespawnRemainingTime; }
+
+	/** ticking and update the remaining re_spawn time */
+	virtual void UpdateRepliatedRespawnRemaingTime();
+
+	/** get whether this player is waiting for a re_spawn */
+	virtual bool GetIsWaitingForRespawn()const { return bIsWaitingForRespawn; }
+
+	/** gets the replicated re_spawn remaining time */
+	virtual uint8 GetReplicatedRespawnRemainingTime()const { return ReplicatedRespawnRemainingTime; }
+
+	/** gets the kills of this player */
+	inline int32 GetNumKills()const { return Kills; }
+
+	/** gets the deaths of this player */
+	inline int32 GetNumDeaths()const { return Deaths; }
+
+	/** returns the current K/D Ratio */
+	inline float GetKDRatio()const { return KDRatio; }
+
+	/** update the k/d ration after kill or death */
+	virtual void UpdateKDRatio();
+
 };

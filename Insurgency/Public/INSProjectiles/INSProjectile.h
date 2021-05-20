@@ -12,7 +12,7 @@ class UStaticMeshComponent;
 class UParticleSystemComponent;
 class UProjectileMovementComponent;
 class UStaticMeshComponent;
-class UProjectileMovementComponent;
+class UINSProjectileMovementComponent;
 class UParticleSystemComponent;
 class AINSImpactEffect;
 class UMatineeCameraShake;
@@ -23,12 +23,12 @@ class AINSWeaponBase;
 INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogINSProjectile, Log, All);
 
 //no need to override engine's replicate movement system,since it has be optimized
-/*USTRUCT()
+USTRUCT()
 struct FRepINSProjMovement
 {
 	GENERATED_USTRUCT_BODY()
 
-	UPROPERTY()
+		UPROPERTY()
 		FVector_NetQuantize LinearVelocity;
 
 	UPROPERTY()
@@ -82,7 +82,7 @@ struct FRepINSProjMovement
 	{
 		return !(*this == Other);
 	}
-};*/
+};
 
 
 /**
@@ -112,7 +112,7 @@ protected:
 
 	/** projectile movement comp */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "ProjectileMoveMentComp", meta = (AllowPrivateAccess = "true"))
-		UProjectileMovementComponent* ProjectileMoveComp;
+		UINSProjectileMovementComponent* ProjectileMoveComp;
 
 	/** projectile trace effect  */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadWrite, category = "Effects|Trace", meta = (AllowPrivateAccess = "true"))
@@ -125,10 +125,6 @@ protected:
 	/** radius impact effect class */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects|Impacts")
 		TSubclassOf<AINSImpactEffect>ExplodeImapactEffectsClass;
-
-	///** camera shake feed back to player hit by this projectile */
-	//UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects|CameraShake")
-	//	TSubclassOf<UCameraShake> CameraShakeClass;
 
 	/** point damage type class */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Damage|DamageType")
@@ -154,7 +150,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Repliciation|Hit")
 		bool bIsProcessingHit;
 
-	/** how much time to wait since last movement info replication happens before next update,controls some sort of frequency and used for optimization*/
+	/** how much time to wait before next movement replication happens,used for band width saving purpose*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "MovementRepInterval")
 		float MovementRepInterval;
 
@@ -166,29 +162,37 @@ protected:
 	UPROPERTY(VisibleAnywhere, Replicated, BlueprintReadOnly, Category = "Repliciation|Hit")
 		uint8  CurrentPenetrateCount;
 
-	/** indicates maximum times will the net authority projectile penetrates*/
+	/** indicates maximum times will the first net authority projectile spawned by a weapon penetrates*/
 	UPROPERTY(VisibleAnywhere, Replicated, ReplicatedUsing = OnRep_HitCounter, BlueprintReadOnly, Category = "Repliciation|Hit")
 		uint8  PenetrateCountThreshold;
 
-	/** hit result when this projectile hit something */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BFProjectile|HitResult")
-		FHitResult ImpactHit;
-
-	/** is this projectile is explosive such as frags */
+	/** is this projectile is explosive such as frag */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BFProjectile|Explosive")
 		uint8 bIsExplosive : 1;
 
+	/** due to unavoidable net working delay,we need a little more time for projectile to catch up with net authority version projectile and check impact hit */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BFProjectile|Explosive")
+		uint8 bDelayedHit : 1;
+
 	/** is this projectile exploded last frame */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_Explode, Category = "Repliciation|Hit")
-		uint8 bIsExplode : 1;
+		uint8 bExploded : 1;
 
-	/** is a visual fake projectile */
+	/** is a client fake projectile used for providing visuals for client */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BFProjectile|Explosive")
 		uint8 bClientFakeProjectile : 1;
 
-	/** is a visual fake projectile */
+	/** when movement replication received, check if need a position sync to match server projecile */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BFProjectile|Explosive")
-		uint8 bHideVisualWhenSpawened : 1;
+		uint8 bNeedPositionSync : 1;
+
+	/** is this projectile hit by way of scan trace, if true ,we just need to tell client where it flies and no need movement replication */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "BFProjectile|Explosive")
+		uint8 bScanTraceProjectile : 1;
+
+	/** config the velocity and location quantize level when replicating movement,replicated to client for unpack the movement data */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Replication")
+		EVectorQuantization MovementQuantizeLevel;
 
 	/** Net authority version */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BFProjectile")
@@ -205,27 +209,20 @@ protected:
 	/** weak ptr type ,player that actually fire this projectile */
 	TWeakObjectPtr<AController> InstigatorPlayer;
 
-	/** force a update to clients */
+	/** force a movement info replicate to clients */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MovementReplication")
 		uint8 bForceMovementReplication : 1;
 
-	/** force a update to clients */
+	/** indicate that movement replication is in progress*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MovementReplication")
-		uint8 bIsGatheringMovement : 1;
+		bool bIsGatheringMovement;
 
+	/** this used to send a initial replication to relevant client immediately if projectile flies fast */
 	UPROPERTY()
 		FActorTickFunction InitRepTickFunc;
 
 	UPROPERTY()
 		FActorTickFunction TracerPaticleSizeTickFun;
-
-	UPROPERTY()
-		FVector TraceScale;
-
-
-	/** force a update to clients */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MovementReplication")
-		uint8 bUsingScanTrace : 1;
 
 #if WITH_EDITORONLY_DATA
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Projectile|Debug")
@@ -289,24 +286,18 @@ protected:
 	 */
 	virtual void SendInitialReplication();
 
+	virtual void CheckImpactHit();
+
 
 public:
-
-	/** return Hit Result */
-	virtual FHitResult GetHitResult()const { return ImpactHit; }
 
 	/** return base damage amount */
 	inline virtual float GetBaseDamage()const { return DamageBase; }
 
-	/**
-	 * @desc set the initial speed this projectile will use to travel
-	 * @Param NewSpeed  The New Speed to set
-	 */
-	virtual void SetMuzzleSpeed(float NewSpeed);
-
 	/** get the current penetrate count */
 	inline virtual uint8 GetCurrentPenetrateCount()const { return CurrentPenetrateCount; }
 
+	/** set the current penetrate count */
 	virtual void SetCurrentPenetrateCount(uint8 AddInCount = 1) { CurrentPenetrateCount += AddInCount; }
 
 	/** set owner weapon */
@@ -327,12 +318,6 @@ public:
 	/** get the client fake projectile */
 	virtual class AINSProjectile* GetClientFakeProjectile()const { return ClientFakeProjectile; }
 
-	/**
-	 * Set the fake projectile of the net Authority one,Each client will have one of this fake projectile
-	 * @param NewFakeProjectile  New Fake Projectile to set
-	 */
-	virtual void SetClientFakeProjectile(class AINSProjectile* NewFakeProjectile) { ClientFakeProjectile = NewFakeProjectile; };
-
 	/** get actual damage taken */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "BFProjectile")
 		virtual float GetDamageTaken();
@@ -344,5 +329,24 @@ public:
 	FORCEINLINE UStaticMeshComponent* GetProjectileMesh()const { return ProjectileMesh; }
 
 	/** return projectile movement comp */
-	FORCEINLINE UProjectileMovementComponent* GetProjectileMovementComp()const { return ProjectileMoveComp; }
+	FORCEINLINE UINSProjectileMovementComponent* GetProjectileMovementComp()const { return ProjectileMoveComp; }
+
+	/**
+	 * @desc set the initial speed this projectile will use to travel
+	 * @Param NewSpeed  The New Speed to set
+	 */
+	virtual void SetMuzzleSpeed(float NewSpeed);
+
+	/**
+	 * @Desc  set if this projectile is spawned by way of scan trace
+	 * @Param bFromScanTrace whether this projectile is spawned by way of scan trace or not
+	 */
+	virtual void SetScanTraceProjectile(bool bFromScanTrace) { bScanTraceProjectile = bFromScanTrace; }
+
+	/**
+	 * Set the fake projectile of the net Authority one,Each client will have one of this fake projectile
+	 * @param NewFakeProjectile  New Fake Projectile to set
+	 */
+	virtual void SetClientFakeProjectile(class AINSProjectile* NewFakeProjectile) { ClientFakeProjectile = NewFakeProjectile; };
+
 };

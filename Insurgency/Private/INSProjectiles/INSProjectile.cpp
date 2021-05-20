@@ -13,6 +13,7 @@
 #include "PhysicalMaterials/PhysicalMaterial.h"
 #include "INSCharacter/INSPlayerCharacter.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "INSComponents/INSProjectileMovementComponent.h"
 #include "PhysicalMaterials/PhysicalMaterial.h"
 #include "Particles/ParticleSystemComponent.h"
 #include "Engine/Engine.h"
@@ -39,27 +40,29 @@ AINSProjectile::AINSProjectile(const FObjectInitializer& ObjectInitializer) :Sup
 	CurrentPenetrateCount = 0;
 	PenetrateCountThreshold = 3;
 	ProjectileMesh = ObjectInitializer.CreateDefaultSubobject<UStaticMeshComponent>(this, TEXT("MeshComp"));
-	ProjectileMoveComp = ObjectInitializer.CreateDefaultSubobject<UProjectileMovementComponent>(this, TEXT("ProjectileMovementComp"));
+	ProjectileMoveComp = ObjectInitializer.CreateDefaultSubobject<UINSProjectileMovementComponent>(this, TEXT("ProjectileMovementComp"));
 	TracerParticle = ObjectInitializer.CreateDefaultSubobject<UParticleSystemComponent>(this, TEXT("TraceParticle"));
 	ProjectileMoveComp->UpdatedComponent = CollisionComp;
 	ProjectileMesh->SetupAttachment(CollisionComp);
 	TracerParticle->SetupAttachment(CollisionComp);
 	ProjectileMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	TracerParticle->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	TracerParticle->SetWorldScale3D(FVector(0.1f, 0.1f, 0.1f));
+	TracerParticle->SetWorldScale3D(FVector(0.f, 0.f, 0.f));
 	InitialLifeSpan = 5.f;
 	SetReplicatingMovement(true);
 	bIsGatheringMovement = false;
 	MovementRepInterval = 0.1f;
 	LastMovementRepTime = 0.f;
 	bForceMovementReplication = true;
+	bNeedPositionSync = false;
 	bIsProcessingHit = false;
+	bScanTraceProjectile = false;
+	bDelayedHit = false;
 	CollisionComp->SetCollisionProfileName(FName(TEXT("Projectile")));
 	/** turn this on because projectile's collision should be accurate to detect hit events and it's fast moving  */
 	CollisionComp->SetAllUseCCD(true);
-	CollisionComp->SetSphereRadius(5.f);
+	CollisionComp->SetSphereRadius(1.f);
 	bClientFakeProjectile = false;
-	TraceScale = FVector::OneVector;
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
 	bUsingDebugTrace = true;
 #endif
@@ -67,6 +70,7 @@ AINSProjectile::AINSProjectile(const FObjectInitializer& ObjectInitializer) :Sup
 	InitRepTickFunc.bTickEvenWhenPaused = true;
 	InitRepTickFunc.SetTickFunctionEnable(true);
 	ProjectileMoveComp->PrimaryComponentTick.AddPrerequisite(this, InitRepTickFunc);
+	MovementQuantizeLevel = EVectorQuantization::RoundTwoDecimals;
 }
 
 void AINSProjectile::OnRep_Explode()
@@ -78,66 +82,12 @@ void AINSProjectile::OnRep_HitCounter()
 {
 	if (HitCounter > 0)
 	{
-		FVector ProjectileLoc(ForceInit);
-		FVector ProjectileDir(ForceInit);
-		if (GetNetMode() == ENetMode::NM_Standalone || GetNetMode() == ENetMode::NM_ListenServer)
+		if (GetClientFakeProjectile())
 		{
-			ProjectileLoc = GetActorLocation();
-			ProjectileDir = GetActorForwardVector();
+			GetClientFakeProjectile()->GetProjectileMovementComp()->SetComponentTickEnabled(false);
+			GetClientFakeProjectile()->bNeedPositionSync = true;
 		}
-		else if (GetNetMode() == ENetMode::NM_Client)
-		{
-			if (GetClientFakeProjectile())
-			{
-				GetClientFakeProjectile()->GetProjectileMovementComp()->StopMovementImmediately();
-				ProjectileDir = GetClientFakeProjectile()->GetReplicatedMovement().Rotation.Vector();
-				ProjectileLoc = GetClientFakeProjectile()->GetReplicatedMovement().Location - ProjectileDir * 200.f;
-			}
-		}
-		FCollisionQueryParams QueryParams;
-		QueryParams.AddIgnoredActor(this);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               
-		if (ClientFakeProjectile)
-		{
-			QueryParams.AddIgnoredActor(ClientFakeProjectile);
-		}
-		QueryParams.AddIgnoredActor(GetOwnerWeapon());
-		QueryParams.AddIgnoredActor(GetOwnerWeapon()->GetOwnerCharacter());
-		QueryParams.bReturnPhysicalMaterial = true;
-		const FVector TraceStart = ProjectileLoc;
-		const float TraceRange = 1000.f;
-		const FVector TraceEnd = TraceStart + ProjectileDir * TraceRange;
-		GetWorld()->LineTraceSingleByChannel(ImpactHit, TraceStart, TraceEnd, ECollisionChannel::ECC_Camera, QueryParams);
-		const AActor* HitActor = ImpactHit.Actor.Get();
-		UClass* HitActorClass = HitActor == nullptr ? nullptr : HitActor->GetClass();
-		if (ImpactHit.bBlockingHit
-			&& HitActor
-			&& HitActorClass
-			//not character ,because it already handles visual effects if self on Rep_LastHitInfo
-			&& !HitActorClass->IsChildOf(AINSCharacter::StaticClass())
-			&& !HitActorClass->IsChildOf(AINSWeaponBase::StaticClass()))
-		{
-			FTransform EffctActorTransform(ImpactHit.ImpactNormal.ToOrientationRotator(), ImpactHit.ImpactPoint, FVector::OneVector);
-			AINSImpactEffect* EffctActor = GetWorld()->SpawnActorDeferred<AINSImpactEffect>(PointImapactEffectsClass,
-				EffctActorTransform,
-				nullptr,
-				nullptr,
-				ESpawnActorCollisionHandlingMethod::AlwaysSpawn);                     
-			if (EffctActor)
-			{
-				EffctActor->SetImpactHit(ImpactHit);
-				UGameplayStatics::FinishSpawningActor(EffctActor, EffctActorTransform);
-			}
-		}
-#if WITH_EDITOR&&!UE_BUILD_SHIPPING
-		if (bUsingDebugTrace)
-		{
-			DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 3.0f);
-		}
-#endif
-	}
-	if (ClientFakeProjectile)
-	{
-		ClientFakeProjectile->Destroy();
+		CheckImpactHit();
 	}
 }
 
@@ -160,11 +110,16 @@ void AINSProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* 
 	{
 		TGuardValue<bool> HitGuard(bIsProcessingHit, true);
 		GetProjectileMovementComp()->StopMovementImmediately();
+		GetProjectileMovementComp()->SetComponentTickEnabled(false);
 		CollisionComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		CollisionComp->SetCollisionResponseToAllChannels(ECR_Ignore);
-		UE_LOG(LogINSProjectile,
-			Log,
-			TEXT("Projectile hit something,this hit component name:%s,hit other component name:%s,other actor name :%s")
+		bForceMovementReplication = true;
+		//force a transformation update to clients
+		HitCounter++;
+		GatherCurrentMovement();
+		UE_LOG(LogINSProjectile
+			,Log
+			,TEXT("Projectile hit something,this hit component name:%s,hit other component name:%s,other actor name :%s")
 			, HitComponent == nullptr ? TEXT("NULL") : *HitComponent->GetName()
 			, OtherComp == nullptr ? TEXT("NULL") : *OtherComp->GetName()
 			, OtherActor == nullptr ? TEXT("NULL") : *OtherActor->GetName());
@@ -177,22 +132,14 @@ void AINSProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* 
 			PointDamageEvent.ShotDirection = this->GetVelocity().GetSafeNormal();
 			HitCharacter->TakeDamage(DamageBase, PointDamageEvent, InstigatorPlayer.Get(), this);
 		}
-		bForceMovementReplication = true;
-		bIsGatheringMovement = false;
-		GatherCurrentMovement();
-		//force a transformation update to clients
-		HitCounter++;
-		UE_LOG(LogINSProjectile
-			, Log
-			, TEXT("Projectile%s Hit Happened,Will Force Send a Movement info to all Conected Clients")
-			, *GetName());
+		UE_LOG(LogINSProjectile, Log, TEXT("Projectile%s Hit Happened,Will Force Send a Movement info to all Conected Clients"), *GetName());
 		if (GetNetMode() == ENetMode::NM_Standalone || GetNetMode() == ENetMode::NM_ListenServer)
 		{
 			OnRep_HitCounter();
 		}
-		//CalAndSpawnPenetrateProjectile(Hit, GetVelocity());
-		SetLifeSpan(1.f);
 		bIsProcessingHit = false;
+		//CalAndSpawnPenetrateProjectile(Hit, GetVelocity());
+		SetLifeSpan(0.2f);
 	}
 }
 
@@ -260,10 +207,23 @@ void AINSProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* 
 // Called when the game starts or when spawned
 void AINSProjectile::BeginPlay()
 {
+	if (HasAuthority())
+	{
+		FRepMovement* const RepMovement = (FRepMovement*)&GetReplicatedMovement();
+		RepMovement->LocationQuantizationLevel = MovementQuantizeLevel;
+		RepMovement->RotationQuantizationLevel = ERotatorQuantization::ByteComponents;
+		RepMovement->VelocityQuantizationLevel = MovementQuantizeLevel;
+	}
 	Super::BeginPlay();
 	if (!bClientFakeProjectile)
 	{
 		SetActorHiddenInGame(true);
+		TracerParticle->DestroyComponent(true);
+		ProjectileMesh->DestroyComponent(true);
+		if (IsNetMode(NM_ListenServer) || IsNetMode(NM_Standalone))
+		{
+			InitClientFakeProjectile();
+		}
 	}
 	if (GetClientFakeProjectile())
 	{
@@ -321,58 +281,64 @@ void AINSProjectile::PostNetReceiveLocationAndRotation()
 	Super::PostNetReceiveLocationAndRotation();
 	if (GetClientFakeProjectile())
 	{
-		SetActorLocationAndRotation(GetReplicatedMovement().Location,GetReplicatedMovement().Rotation);
-		GetClientFakeProjectile()->SetActorLocationAndRotation(GetReplicatedMovement().Location,GetReplicatedMovement().Rotation);
+		SetActorLocationAndRotation(GetReplicatedMovement().Location, GetReplicatedMovement().Rotation);
+		//GetClientFakeProjectile()->SetActorLocationAndRotation(GetActorLocation(),GetActorRotation());
+		//GetClientFakeProjectile()->SetActorRotation(GetActorRotation());
+		if (HitCounter > 0)
+		{
+			if (!GetClientFakeProjectile()->GetActorLocation().Equals(GetClientFakeProjectile()->GetReplicatedMovement().Location))
+			{
+				GetClientFakeProjectile()->bNeedPositionSync = true;
+				GetClientFakeProjectile()->SetActorRotation(GetReplicatedMovement().Rotation);
+			}
+		}
+		else
+		{
+			GetClientFakeProjectile()->SetActorLocationAndRotation(GetClientFakeProjectile()->GetReplicatedMovement().Location, GetClientFakeProjectile()->GetReplicatedMovement().Rotation);
+		}
 	}
 }
 
 void AINSProjectile::GatherCurrentMovement()
 {
-	if (GetLocalRole() != ROLE_Authority)
+	if (RootComponent != NULL)
 	{
-		return;
-	}
-	const bool bRepDeltaTimeAllowed = GetWorld()->GetRealTimeSeconds() - LastMovementRepTime >= MovementRepInterval;
-	if (bRepDeltaTimeAllowed || bForceMovementReplication)
-	{
-		if (bIsGatheringMovement)
+		// If we are attached, don't replicate absolute position
+		if (RootComponent->GetAttachParent() != NULL)
 		{
-			return;
+			Super::GatherCurrentMovement();
 		}
 		else
 		{
-			bIsGatheringMovement = true;
-			Super::GatherCurrentMovement();
-			FRepMovement OptRepMovement = GetReplicatedMovement();
+			FRepMovement OptRepMovement;
+			OptRepMovement.Location = FRepMovement::RebaseOntoZeroOrigin(RootComponent->GetComponentLocation(), this);
+			OptRepMovement.Rotation = RootComponent->GetComponentRotation();
+			OptRepMovement.LinearVelocity = GetVelocity();
+			OptRepMovement.AngularVelocity = FVector::ZeroVector;
 			OptRepMovement.bRepPhysics = true;
-			OptRepMovement.LocationQuantizationLevel = bForceMovementReplication ? EVectorQuantization::RoundWholeNumber : EVectorQuantization::RoundOneDecimal;
+			OptRepMovement.LocationQuantizationLevel = MovementQuantizeLevel;
 			OptRepMovement.RotationQuantizationLevel = ERotatorQuantization::ByteComponents;
-			OptRepMovement.VelocityQuantizationLevel = bForceMovementReplication ? EVectorQuantization::RoundWholeNumber : EVectorQuantization::RoundOneDecimal;
+			OptRepMovement.VelocityQuantizationLevel = MovementQuantizeLevel;
 			SetReplicatedMovement(OptRepMovement);
-			if (bForceMovementReplication)
-			{
-				bForceMovementReplication = false;
-			}
+		}
+	}
+}
+
+
+void AINSProjectile::PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker)
+{
+	if (HasAuthority() && !bIsGatheringMovement)
+	{
+		const bool bRepDeltaTimeAllowed = GetWorld()->GetRealTimeSeconds() - LastMovementRepTime >= MovementRepInterval;
+		if (bRepDeltaTimeAllowed || bForceMovementReplication)
+		{
+			TGuardValue<bool> HitGuard(bIsGatheringMovement, true);
+			GatherCurrentMovement();
+			bForceMovementReplication = false;
 			bIsGatheringMovement = false;
 			LastMovementRepTime = GetWorld()->GetRealTimeSeconds();
 		}
 	}
-	//****************************************************************************************************/
-	//      API Deprecation handling version
-	//      compress and less byte will be sent
-	// 	    PRAGMA_DISABLE_DEPRECATION_WARNINGS
-	// 		ReplicatedMovement.bRepPhysics = true;
-	// 		ReplicatedMovement.LocationQuantizationLevel = EVectorQuantization::RoundOneDecimal;
-	// 		ReplicatedMovement.RotationQuantizationLevel = ERotatorQuantization::ByteComponents;
-	// 		ReplicatedMovement.VelocityQuantizationLevel = EVectorQuantization::RoundOneDecimal;
-	// 		PRAGMA_DISABLE_DEPRECATION_WARNINGS
-	// 		LastMovementRepTime = GetWorld()->GetTimeSeconds();
-	//***************************************************************************************************/
-}
-
-void AINSProjectile::PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker)
-{
-	Super::PreReplication(ChangedPropertyTracker);
 }
 
 void AINSProjectile::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -381,32 +347,38 @@ void AINSProjectile::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AINSProjectile, HitCounter);
 	DOREPLIFETIME(AINSProjectile, OwnerWeapon);
 	DOREPLIFETIME(AINSProjectile, CurrentPenetrateCount);
+	DOREPLIFETIME(AINSProjectile, bScanTraceProjectile);
+	DOREPLIFETIME(AINSProjectile, MovementQuantizeLevel);
 }
 
 void AINSProjectile::OnRep_ReplicatedMovement()
 {
+	//GEngine->AddOnScreenDebugMessage(-1, 0.5, FColor::Green, GetReplicatedMovement().Location.ToString());
+	//GEngine->AddOnScreenDebugMessage(-1, 0.5, FColor::Green, FString::FromInt((int)GetReplicatedMovement().LocationQuantizationLevel));
+	FRepMovement DecompressedMovementRep = GetReplicatedMovement();
+	switch (MovementQuantizeLevel)
+	{
+	case EVectorQuantization::RoundOneDecimal:
+		DecompressedMovementRep.Location = DecompressedMovementRep.Location / 10.f;
+		DecompressedMovementRep.LinearVelocity = DecompressedMovementRep.LinearVelocity / 10.f;
+		break;
+	case EVectorQuantization::RoundTwoDecimals:
+		DecompressedMovementRep.Location = DecompressedMovementRep.Location / 100.f;
+		DecompressedMovementRep.LinearVelocity = DecompressedMovementRep.LinearVelocity / 100.f;
+		break;
+	case EVectorQuantization::RoundWholeNumber:break;
+	}
+	SetReplicatedMovement(DecompressedMovementRep);
+	Super::OnRep_ReplicatedMovement();
 	if (GetClientFakeProjectile())
 	{
 		GetClientFakeProjectile()->SetReplicatedMovement(GetReplicatedMovement());
 	}
-	Super::OnRep_ReplicatedMovement();
 }
 
 void AINSProjectile::InitClientFakeProjectile()
 {
-	FVector SpawnLoc(ForceInit);
-	FVector SpawDir(ForceInit);
-	if (GetOwnerWeapon()->GetLocalRole()==ROLE_AutonomousProxy||GetLocalRole()==ROLE_Authority)
-	{
-		SpawDir = GetOwnerWeapon()->WeaponMesh1PComp->GetMuzzleForwardVector();
-		SpawnLoc = GetOwnerWeapon()->WeaponMesh1PComp->GetMuzzleLocation() + 10.f * SpawDir;
-	}
-	else
-	{
-		SpawDir = GetOwnerWeapon()->WeaponMesh3PComp->GetMuzzleForwardVector();
-		SpawnLoc = GetOwnerWeapon()->WeaponMesh3PComp->GetMuzzleLocation() + 10.f * SpawDir;
-	}
-	const FTransform SpawnTransform(SpawDir.ToOrientationRotator(), SpawnLoc, FVector::OneVector);
+	const FTransform SpawnTransform(GetActorRotation(), GetActorLocation(), FVector::OneVector);
 	ClientFakeProjectile = GetWorld()->SpawnActorDeferred<AINSProjectile>(this->GetClass(),SpawnTransform,this,nullptr,ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 	if (ClientFakeProjectile)
 	{
@@ -420,8 +392,7 @@ void AINSProjectile::InitClientFakeProjectile()
 		GetClientFakeProjectile()->GetCollsioncomp()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		GetClientFakeProjectile()->GetCollsioncomp()->SetUseCCD(false);
 		GetClientFakeProjectile()->GetCollsioncomp()->SetAllUseCCD(false);
-		GetClientFakeProjectile()->SetActorLocation(GetActorLocation());
-		GetClientFakeProjectile()->GetProjectileMovementComp()->InitialSpeed = GetClientFakeProjectile()->GetOwnerWeapon()->GetMuzzleSpeedValue();
+		GetClientFakeProjectile()->GetProjectileMovementComp()->InitialSpeed = GetVelocity().Size();
 		UGameplayStatics::FinishSpawningActor(ClientFakeProjectile, SpawnTransform);
 	}
 }
@@ -429,7 +400,7 @@ void AINSProjectile::InitClientFakeProjectile()
 void AINSProjectile::SendInitialReplication()
 {
 	UE_LOG(LogINSProjectile, Log, TEXT("start send a initial bunch replocation %s manually to relavant Clients"),*GetName());
-	UNetDriver* NetDriver = GetNetDriver();
+	UNetDriver* const NetDriver = GetNetDriver();
 	if (NetDriver != nullptr && NetDriver->IsServer() && !IsPendingKillPending() && (ProjectileMoveComp->Velocity.Size() >= 7500.0f))
 	{
 		NetDriver->ReplicationFrame++;
@@ -437,7 +408,7 @@ void AINSProjectile::SendInitialReplication()
 		{
 			if (NetDriver->ClientConnections[i]->State == USOCK_Open && NetDriver->ClientConnections[i]->PlayerController != nullptr && NetDriver->ClientConnections[i]->IsNetReady(0))
 			{
-				AActor* ViewTarget = NetDriver->ClientConnections[i]->PlayerController->GetViewTarget();
+				const AActor* ViewTarget = NetDriver->ClientConnections[i]->PlayerController->GetViewTarget();
 				if (ViewTarget == nullptr)
 				{
 					ViewTarget = NetDriver->ClientConnections[i]->PlayerController;
@@ -453,10 +424,8 @@ void AINSProjectile::SendInitialReplication()
 					UActorChannel* Channel = NetDriver->ClientConnections[i]->FindActorChannelRef(this);
 					if (Channel == nullptr)
 					{
-						// can't - protected: if (NetDriver->IsLevelInitializedForActor(this, NetDriver->ClientConnections[i]))
 						if (NetDriver->ClientConnections[i]->GetClientWorldPackageName() == GetWorld()->GetOutermost()->GetFName() && NetDriver->ClientConnections[i]->ClientHasInitializedLevelFor(this))
 						{
-							//Ch = (UActorChannel*)NetDriver->ClientConnections[i]->AddActorChannel(CHTYPE_Actor, 1);
 							Channel = Cast<UActorChannel>(NetDriver->ClientConnections[i]->CreateChannelByName(NAME_Actor, EChannelCreateFlags::OpenedLocally, INDEX_NONE));
 							if (Channel != nullptr)
 							{
@@ -466,17 +435,87 @@ void AINSProjectile::SendInitialReplication()
 					}
 					if (Channel != nullptr && Channel->OpenPacketId.First == INDEX_NONE)
 					{
-						// bIsReplicatingActor being true should be impossible but let's be sure
 						if (!Channel->bIsReplicatingActor)
 						{
 							Channel->ReplicateActor();
-							UE_LOG(LogINSProjectile, Log, TEXT("send a initial bunch replocation %s manually to  all Conected Clients done"), *GetName());
+							UE_LOG(LogINSProjectile, Log, TEXT("send a initial bunch replocation %s manually to  all relavent Clients done"), *GetName());
 						}
 					}
 				}
 			}
 		}
 	}
+}
+
+void AINSProjectile::CheckImpactHit()
+{
+	FVector ProjectileLoc(ForceInit);
+	FVector ProjectileDir(ForceInit);
+	/*if (GetClientFakeProjectile())
+	{
+		ProjectileLoc = GetClientFakeProjectile()->GetActorLocation();
+		ProjectileDir = GetClientFakeProjectile()->GetReplicatedMovement().Rotation.Vector();
+	}*/
+	ProjectileLoc = GetReplicatedMovement().Location;
+	ProjectileDir = GetReplicatedMovement().Rotation.Vector();
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+	if (ClientFakeProjectile)
+	{
+		QueryParams.AddIgnoredActor(ClientFakeProjectile);
+	}
+	QueryParams.AddIgnoredActor(GetOwnerWeapon());
+	QueryParams.AddIgnoredActor(GetOwnerWeapon()->GetOwnerCharacter());
+	QueryParams.bReturnPhysicalMaterial = true;
+	const FVector TraceStart = ProjectileLoc - ProjectileDir * 100.f;
+	const float TraceRange = 500.f;
+	const FVector TraceEnd = TraceStart + ProjectileDir * TraceRange;
+	FHitResult ImpactHit(ForceInit);
+	GetWorld()->LineTraceSingleByChannel(ImpactHit, TraceStart, TraceEnd, ECollisionChannel::ECC_Camera, QueryParams);
+	const AActor* HitActor = ImpactHit.Actor.Get();
+	UClass* HitActorClass = HitActor == nullptr ? nullptr : HitActor->GetClass();
+	if (ImpactHit.bBlockingHit)
+	{
+		if (ClientFakeProjectile)
+		{
+			ClientFakeProjectile->bDelayedHit = false;
+		}
+		if (HitActor && HitActorClass && !HitActorClass->IsChildOf(AINSCharacter::StaticClass()) && !HitActorClass->IsChildOf(AINSWeaponBase::StaticClass()))
+		{
+			if (GetClientFakeProjectile())
+			{
+				GetClientFakeProjectile()->GetProjectileMovementComp()->StopMovementImmediately();
+			}
+			FTransform EffctActorTransform(ImpactHit.ImpactNormal.ToOrientationRotator(), ImpactHit.ImpactPoint, FVector::OneVector);
+			AINSImpactEffect* EffctActor = GetWorld()->SpawnActorDeferred<AINSImpactEffect>(PointImapactEffectsClass, EffctActorTransform, nullptr, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+			if (EffctActor)
+			{
+				EffctActor->SetImpactHit(ImpactHit);
+				UGameplayStatics::FinishSpawningActor(EffctActor, EffctActorTransform);
+			}
+		}
+		if (ClientFakeProjectile)
+		{
+			ClientFakeProjectile->Destroy();
+		}
+	}
+	if (bDelayedHit)
+	{
+		GetClientFakeProjectile()->Destroy();
+	}
+	else 
+	{
+		if (GetClientFakeProjectile())
+		{
+			GetClientFakeProjectile()->bDelayedHit = true;
+		}
+	}
+#if WITH_EDITOR&&!UE_BUILD_SHIPPING
+	if (bUsingDebugTrace)
+	{
+		DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 3.0f);
+	}
+#endif
 }
 
 void AINSProjectile::SetMuzzleSpeed(float NewSpeed)
@@ -499,12 +538,17 @@ float AINSProjectile::GetDamageTaken()
 void AINSProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (!bClientFakeProjectile)
+	if (IsNetMode(NM_Client) && GetClientFakeProjectile() && GetClientFakeProjectile()->bNeedPositionSync)
 	{
-		//invalid shot,just destroy it
-		if (GetActorLocation().Z >= 150000.f || GetActorLocation().Z <= -50000.f)
+		const float InterpSpeed = GetReplicatedMovement().LinearVelocity.Size() * DeltaTime / 100.f;
+		GetClientFakeProjectile()->SetActorLocation(FMath::VInterpTo(GetClientFakeProjectile()->GetActorLocation(), GetClientFakeProjectile()->GetReplicatedMovement().Location, DeltaTime, 10.f));
+		if (GetClientFakeProjectile()->GetReplicatedMovement().Location.Equals(GetClientFakeProjectile()->GetActorLocation()))
 		{
-			Destroy(false, true);
+			GetClientFakeProjectile()->bNeedPositionSync = false;
+			if (GetClientFakeProjectile()->bDelayedHit)
+			{
+				CheckImpactHit();
+			}
 		}
 	}
 }
@@ -518,18 +562,16 @@ void AINSProjectile::TickActor(float DeltaTime, enum ELevelTick TickType, FActor
 		InitRepTickFunc.UnRegisterTickFunction();
 	}
 	Super::TickActor(DeltaTime, TickType, ThisTickFunction);
-	
-	if (&ThisTickFunction == &TracerPaticleSizeTickFun)
+	if (&ThisTickFunction == &TracerPaticleSizeTickFun&&bClientFakeProjectile)
 	{
-		//GEngine->AddOnScreenDebugMessage(-1, 0.5f, FColor::Green, TEXT("TickActor calling Tracer scale"));
 		FVector CurrentTracerScale = TracerParticle->GetComponentTransform().GetScale3D();
 		float CurrentScaleX = CurrentTracerScale.X;
 		float CurrentScaleY = CurrentTracerScale.Y;
 		float CurrentScaleZ = CurrentTracerScale.Z;
-		float UpdatedScaleX = FMath::FInterpTo(CurrentScaleX, 1.f, DeltaTime, 10.f);
-		float UpdateScaeleY = FMath::FInterpTo(CurrentScaleY, 1.f, DeltaTime, 10.f);
-		float UpdateScaeleZ = FMath::FInterpTo(CurrentScaleZ, 1.f, DeltaTime, 10.f);
-		if (CurrentScaleX <= 5.f)
+		float UpdatedScaleX = FMath::FInterpTo(CurrentScaleX, 10.f, DeltaTime, 0.1f);
+		float UpdateScaeleY = FMath::FInterpTo(CurrentScaleY, 10.f, DeltaTime, 0.1f);
+		float UpdateScaeleZ = FMath::FInterpTo(CurrentScaleZ, 10.f, DeltaTime, 0.1f);
+		if (CurrentScaleX <= 10.f)
 		{
 			TracerParticle->SetWorldScale3D(FVector(UpdatedScaleX, UpdateScaeleY, UpdateScaeleZ));
 		}

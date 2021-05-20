@@ -328,7 +328,7 @@ void AINSHUDBase::DrawAmmoInfo()
 
 void AINSHUDBase::DrawHealth()
 {
-	if (GetINSOwingPlayerController()->GetINSPlayerCharacter() && !GetINSOwingPlayerController()->GetINSPlayerCharacter()->GetIsCharacterDead())
+	if (GetINSOwingPlayerController()->GetINSPlayerCharacter() && !GetINSOwingPlayerController()->GetINSPlayerCharacter()->GetIsDead())
 	{
 		FString AmmoMessage;
 		AmmoMessage.Append("HP:");
@@ -383,7 +383,7 @@ void AINSHUDBase::DrawScore()
 
 void AINSHUDBase::DrawWeaponFireMode()
 {
-	if (CurrentWeapon.Get() && !GetINSOwingPlayerController()->GetINSPlayerCharacter()->GetIsCharacterDead())
+	if (CurrentWeapon.Get() && !GetINSOwingPlayerController()->GetINSPlayerCharacter()->GetIsDead())
 	{
 		FString FireMode;
 		EWeaponFireMode CurrentWeaponFireMode = CurrentWeapon->GetCurrentWeaponFireMode();

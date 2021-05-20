@@ -139,26 +139,35 @@ enum class EGameType :uint8 {
 
 UENUM(BlueprintType)
 enum class EVoiceType :uint8 {
-	TAKEDAMAGE           UMETA(DisplayName = "TakeDamage"),
-	DIE                  UMETA(DisplayName = "Die"),
-	TEAMDAMAGE           UMETA(DisplayName = "TeamDamage"),
-	KILL                 UMETA(DisplayName = "kill"),
-	RELOADING            UMETA(DisplayName = "Reloading"),
-	SEEENEMY             UMETA(DisplayName = "See Enemy"),
-	THROWGRANADE         UMETA(DisplayName = "Throw Granade"),
-	THROWSMOKING         UMETA(DisplayName = "Throw Smoking"),
-	MANDOWN              UMETA(DisplayName = "Man down"),
-	FRIENDLYFIRE         UMETA(DisplayName = "Friendly Fire"),
+	TAKE_DAMAGE               UMETA(DisplayName = "TakeDamage"),
+	DIE                       UMETA(DisplayName = "Die"),
+	TAKE_TEAM_DAMAGE          UMETA(DisplayName = "TakeTeamDamage"),
+	KILL_PLAYER               UMETA(DisplayName = "Kill other player"),
+	RELOADING                 UMETA(DisplayName = "Reloading"),
+	SPOT_ENEMY                UMETA(DisplayName = "Spot Enemy"),
+	THROW_GRANADE             UMETA(DisplayName = "Throw Granade"),
+	THROW_SMOKING             UMETA(DisplayName = "Throw Smoking"),
+	MA_NDOWN                  UMETA(DisplayName = "Man down"),
+	CAUSE_FRIENDLY_DAMAGE     UMETA(DisplayName = "cause friendly damage"),
+	CAUSE_FFIENDLY_KILL       UMETA(DisplayName = "cause friendly kill"),
 };
 
 UENUM(BlueprintType)
 enum class EWeaponAttachmentType :uint8
 {
-	SIGHT                             UMETA(DisplayName = "Sight"),
-	UNDERBARREL                       UMETA(DisplayName = "UnderBarrel"),
-	MUZZLE                            UMETA(DisplayName = "Muzzle"),
-	LEFTRAIL                          UMETA(DisplayName = "LeftRail"),
-	RIGHTRAIL                         UMETA(DisplayName = "RightRail"),
+	SIGHT                              UMETA(DisplayName = "Sight"),
+	UNDER_BARREL                       UMETA(DisplayName = "Under Barrel"),
+	MUZZLE                             UMETA(DisplayName = "Muzzle"),
+	LEFT_RAIL                          UMETA(DisplayName = "Left Rail"),
+	RIGHT_RAIL                         UMETA(DisplayName = "Right Rail"),
+};
+
+UENUM(BlueprintType)
+enum class EDamageEventID :uint8
+{
+	FALLING                               UMETA(DisplayName = "falling"),
+	SHOT                                  UMETA(DisplayName = "weapon shot"),
+	EXPLOSION                             UMETA(DisplayName = "explosion"),
 };
 
 namespace TeamName
@@ -187,6 +196,10 @@ struct FTakeHitInfo
 	UPROPERTY()
 		class AActor* DamageCauser;
 
+	/** pawn instigate this damage */
+	UPROPERTY()
+		class APawn* InstigatorPawn;
+
 	/** actor that actually takes this damage */
 	UPROPERTY()
 		class AActor* Victim;
@@ -207,7 +220,7 @@ struct FTakeHitInfo
 	UPROPERTY()
 		TSubclassOf<UDamageType> DamageType;
 
-	/** will this damage make the victim dead? */
+	/** has this damage make the victim dead? */
 	UPROPERTY()
 		uint8 bVictimDead : 1;
 
@@ -219,7 +232,7 @@ struct FTakeHitInfo
 	UPROPERTY()
 		uint8 bIsTeamDamage : 1;
 
-	/** is this damage caused by team */
+	/** hit bone name */
 	UPROPERTY()
 		FName HitBoneName;
 
@@ -230,12 +243,13 @@ struct FTakeHitInfo
 	FTakeHitInfo()
 		: ShotDirPitch(0)
 		, ShotDirYaw(0)
-		, DamageCauser(NULL)
-		, Victim(NULL)
+		, DamageCauser(nullptr)
+		, InstigatorPawn(nullptr)
+		, Victim(nullptr)
 		, Damage(0)
 		, RelHitLocation(ForceInit)
 		, Momentum(ForceInit)
-		, DamageType(NULL)
+		, DamageType(nullptr)
 		, bVictimDead(false)
 		, bVictimAlreadyDead(false)
 		, bIsTeamDamage(false)

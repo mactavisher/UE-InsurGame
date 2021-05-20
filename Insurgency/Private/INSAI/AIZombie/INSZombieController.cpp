@@ -68,7 +68,6 @@ void AINSZombieController::TickActor(float DeltaTime, enum ELevelTick TickType, 
 void AINSZombieController::BroadCastEnemyTo()
 {
 	UWorld* const CurrentWorld = GetWorld();
-
 	for (TActorIterator<AINSZombieController> It(CurrentWorld); It; ++It)
 	{
 		const AINSZombieController* const ZombieController = *It;
@@ -129,7 +128,6 @@ void AINSZombieController::OnPossess(APawn* InPawn)
 		InitZombieMoveMode();
 		if (ZombieSensingComp)
 		{
-			// bind delegate
 			ZombieSensingComp->OnSeePawn.AddDynamic(this, &AINSZombieController::OnSeePawn);
 			ZombieSensingComp->OnHearNoise.AddDynamic(this, &AINSZombieController::OnHearNoise);
 			AttackRangeComp->OnComponentBeginOverlap.AddDynamic(this, &AINSZombieController::OnAttackRangeCompOverlap);
@@ -247,7 +245,7 @@ void AINSZombieController::TickEnemyVisibility()
 
 void AINSZombieController::ZombieAttack()
 {
-	if (GetZombiePawn()&&!GetZombiePawn()->GetIsCharacterDead())
+	if (GetZombiePawn()&&!GetZombiePawn()->GetIsDead())
 	{
 		
 	}

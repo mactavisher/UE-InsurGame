@@ -46,16 +46,17 @@ void AINSGameStateBase::OnRep_PrepareMath()
 
 void AINSGameStateBase::ClientsReceiveKillEvent_Implementation(class APlayerState* Killer, class APlayerState* Victim, int32 KillerScore, bool bIsTeamDamage)
 {
-	//OnKill.Broadcast(Killer->PlayerState, Victim->PlayerState, KillerScore, bIsTeamDamage);
+	
+	/*//OnKill.Broadcast(Killer->PlayerState, Victim->PlayerState, KillerScore, bIsTeamDamage);
 	if (Killer->GetClass()->IsChildOf(APlayerState::StaticClass()))
 	{
 		//get the local machine's player
 		AINSPlayerController* LocalPC = Cast<AINSPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
 		if (LocalPC)
 		{
-			LocalPC->ReceiveGameKills(Killer, Victim, KillerScore, bIsTeamDamage);
+			
 		}
-	}
+	}*/
 }
 
 bool AINSGameStateBase::ClientsReceiveKillEvent_Validate(class APlayerState* KillerState, class APlayerState* VictimState, int32 KillerScore, bool bIsTeamDamage)
@@ -84,7 +85,7 @@ void AINSGameStateBase::OnPlayerDamaged(class AController* DamageInstigtor, clas
 			AINSPlayerController* const PC = Cast<AINSPlayerController>(DamageInstigtor);
 			if (PC)
 			{
-				PC->ClientReceiveCauseDamage(Victim, DamageAmount, bIsTeamDamage);
+				//PC->ClientReceiveCauseDamage(Victim, DamageAmount, bIsTeamDamage);
 			}
 		}
 	}

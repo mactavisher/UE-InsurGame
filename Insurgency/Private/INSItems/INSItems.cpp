@@ -27,11 +27,7 @@ void AINSItems::BeginPlay()
 	/*
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		InteractCollisionComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-		InteractCollisionComp->SetCollisionResponseToAllChannels(ECR_Ignore);
-		InteractCollisionComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-		InteractCollisionComp->OnComponentBeginOverlap.AddDynamic(this, &AINSItems::HandleOnBeginOverlap);
-		InteractCollisionComp->OnComponentEndOverlap.AddDynamic(this, &AINSItems::HandleOnEndOverlap);
+		
 	}
 	else
 	{

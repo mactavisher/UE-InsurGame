@@ -35,16 +35,7 @@ void UINSFPAnimInstance::UpdateAdsAlpha(float DeltaSeconds)
 	{
 		return;
 	}
-	const float WeaponAimTime = CurrentWeapon->GetWeaponAimTime();
-	const float InterpSpeed = 1.f / WeaponAimTime;
-	if (bIsAiming)
-	{
-		ADSAlpha = FMath::Clamp<float>(ADSAlpha + InterpSpeed * DeltaSeconds, ADSAlpha, 1.f);
-	}
-	else
-	{
-		ADSAlpha = FMath::Clamp<float>(ADSAlpha - InterpSpeed * DeltaSeconds, 0.f, ADSAlpha);
-	}
+	ADSAlpha = CurrentWeapon->GetWeaponADSAlpha();
 }
 
 void UINSFPAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
@@ -118,7 +109,7 @@ void UINSFPAnimInstance::FPPlayIdleOrMovingAnim()
 	{
 		return;
 	}
-	if (!bIdleState)
+	if (bIsMoving)
 	{
 		if (Montage_IsPlaying(CurrentWeaponAnimData->FPAimIdleAnim))
 		{
@@ -161,32 +152,22 @@ void UINSFPAnimInstance::FPPlayIdleOrMovingAnim()
 		{
 			Montage_Stop(0.25f, CurrentWeaponAnimData->FPAimMoveAnim);
 		}
-		if (bBoredState)
+		if (bIsAiming)
 		{
-			if (!Montage_IsPlaying(CurrentWeaponAnimData->FPBoredAnim))
+			if (Montage_IsPlaying(CurrentWeaponAnimData->FPIdleAnim))
 			{
-				Montage_Play(CurrentWeaponAnimData->FPBoredAnim);
+				Montage_Stop(0.1f, CurrentWeaponAnimData->FPIdleAnim);
 			}
 		}
 		else
 		{
-			if (bIsAiming)
+			if (Montage_IsPlaying(CurrentWeaponAnimData->FPMoveAnim))
 			{
-				if (Montage_IsPlaying(CurrentWeaponAnimData->FPIdleAnim))
-				{
-					Montage_Stop(0.1f, CurrentWeaponAnimData->FPIdleAnim);
-				}
+				Montage_Stop(0.1f, CurrentWeaponAnimData->FPMoveAnim);
 			}
-			else
+			if (!Montage_IsPlaying(CurrentWeaponAnimData->FPIdleAnim))
 			{
-				if (Montage_IsPlaying(CurrentWeaponAnimData->FPMoveAnim))
-				{
-					Montage_Stop(0.1f, CurrentWeaponAnimData->FPMoveAnim);
-				}
-				if (!Montage_IsPlaying(CurrentWeaponAnimData->FPIdleAnim))
-				{
-					Montage_Play(CurrentWeaponAnimData->FPIdleAnim);
-				}
+				Montage_Play(CurrentWeaponAnimData->FPIdleAnim);
 			}
 		}
 

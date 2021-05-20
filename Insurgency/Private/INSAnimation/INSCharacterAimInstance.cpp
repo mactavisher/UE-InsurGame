@@ -56,7 +56,7 @@ void UINSCharacterAimInstance::NativeInitializeAnimation()
 void UINSCharacterAimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
-	if (OwnerPlayerCharacter && CharacterMovementComponent && !OwnerPlayerCharacter->GetIsCharacterDead())
+	if (OwnerPlayerCharacter && CharacterMovementComponent && !OwnerPlayerCharacter->GetIsDead())
 	{
 		UpdateDirection();
 		UpdateHorizontalSpeed();
@@ -93,7 +93,7 @@ bool UINSCharacterAimInstance::CheckValid()
 		return false;
 
 	}
-	if (OwnerPlayerCharacter->GetIsCharacterDead())
+	if (OwnerPlayerCharacter->GetIsDead())
 	{
 		UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("Owner character is dead,can't play animations"));
 		return false;

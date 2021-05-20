@@ -194,21 +194,24 @@ public:
 	UFUNCTION(Server, Unreliable, WithValidation)
 		virtual void ServerSetWeaponState(EWeaponState NewState);
 
+	/**
+	 * @Desc Receive a info when this player enters a pickup
+	 * @Param PickupItem  Item that this player enters
+	 */
+	virtual void ReceiveEnterPickups(class AINSPickupBase* PickupItem);
 
-
-	virtual void ReceiveEnterPickups(class AINSItems_Pickup* PickupItem);
-
-	virtual void ReceiveLeavePickups(class AINSItems_Pickup* PickupItem);
+	/**
+	 * @Desc Receive a info when this player leaves a pickup
+	 * @Param PickupItem  Item that this player leaves
+	 */
+	virtual void ReceiveLeavePickups(class AINSPickupBase* PickupItem);
 
 	UPROPERTY()
 		FTimerHandle CharacterRespawnTimer;
 
 public:
 
-	virtual void ReceiveGameKills(class APlayerState* Killer, APlayerState* Victim, int32 Score, bool bIsTeamDamage);
-
-	UFUNCTION(Client, Unreliable, WithValidation)
-		virtual void ClientReceiveCauseDamage(class AController* Victim, float DamageAmount, bool bIsTeamDamage);
+	virtual void PlayerCauseDamage(const FTakeHitInfo& HitInfo);
 
 public:
 	/** return possessed character  */

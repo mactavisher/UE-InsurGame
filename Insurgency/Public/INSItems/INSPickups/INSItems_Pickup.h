@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "INSItems/INSItems.h"
+#include "GameFramework/Actor.h"
 #include "INSItems_Pickup.generated.h"
 
 class USphereComponent;

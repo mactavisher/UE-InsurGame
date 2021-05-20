@@ -29,8 +29,8 @@ struct FWeaponConfigData
 {
 	GENERATED_USTRUCT_BODY()
 
-		/** the maximum ammo can be hold in a single clip */
-		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	/** the maximum ammo can be hold in a single clip */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		int32 AmmoPerClip;
 
 	/**the max ammo can carry with this weapon */
@@ -69,8 +69,8 @@ public:
 		, ZoomingInTime(0.15f)
 		, ZoomingOutTime(0.1f)
 		, BaseDamage(20.f)
-		, MuzzleSpeed(20000.f)
-		, ScanTraceRange(1000.f)
+		, MuzzleSpeed(12000.f)
+		, ScanTraceRange(25000.f)
 	{
 	}
 	void InitWeaponConfig()
@@ -132,8 +132,8 @@ struct FWeaponAttachmentSlot {
 
 	GENERATED_USTRUCT_BODY()
 
-		/**attachment class */
-		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	/**attachment class */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		TSubclassOf<AActor> WeaponAttachementClass;
 
 	/** attachment instance */
@@ -216,7 +216,6 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 {
 	GENERATED_UCLASS_BODY()
 
-	friend class UINSWeaponFireManager;
 	friend class UINSWeaponFireHandler;
 
 	/** stores available fire modes to switch between */
@@ -231,13 +230,17 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Animation")
 		UINSStaticAnimData* WeaponAnimation;
 
-	/** current selected(active) fire mode */
+	/** current selected active fire mode */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_CurrentFireMode, Category = "FireMode")
 		EWeaponFireMode CurrentWeaponFireMode;
 
 	/** current weapon state */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_CurrentWeaponState, Category = "WeaponState")
 		EWeaponState CurrentWeaponState;
+
+	/** current weapon state */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponState")
+		EZoomState CurrentWeaponZoomState;
 
 	/** rep counter to tell clients fire just happened and things will happen */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponFireCount, Category = "WeaponFire")
@@ -290,6 +293,12 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_Equipping, Category = "Equipping")
 		uint8 bWantsToEquip : 1;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite,Category = "Equipping")
+	    uint8 ZoomedInEventTriggered :1;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Equipping")
+		uint8 ZoomedOutEventTriggered :1;
+
 	/** mesh 1p */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WeaponMesh1PComp", meta = (AllowPrivateAccess = "true"))
 		UINSWeaponMeshComponent* WeaponMesh1PComp;
@@ -309,6 +318,20 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	/** fire sound 3p*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
 		USoundCue* FireSound3P;
+
+	/** sound played when enters ads*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
+		USoundCue* ADSInSound;
+
+	/** sound played when out ads*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
+		USoundCue* ADSOutSound;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
+	    float ADSAlpha;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_ScanTraceHit, Category = "ScanTraceHit")
+	FVector ScanTraceHitLoc;
 
 	/** fire Particle 1p*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
@@ -353,7 +376,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControll")
 		FVector BaseHandsIk;
 
-	/** How big should the query probe sphere be (in unreal units) */
+	/** How big should the query probe sphere be (in unreal units),queries the weapon collision */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = WeaponCollision, meta = (editcondition = "bDoCollisionTest"))
 		float ProbeSize;
 
@@ -372,6 +395,7 @@ protected:
 	virtual void PostInitializeComponents()override;
 	virtual void PreInitializeComponents()override;
 	virtual void BeginPlay()override;
+	virtual void PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker)override;
 	//~ end actor interface
 
 	/**
@@ -384,11 +408,6 @@ protected:
 	 */
 	virtual void SimulateScanTrace(FHitResult& Hit);
 
-	/**
-	 * @Desc adjust projectile spawn rotation to hit center of the screen
-	 */
-	virtual void AdjustProjectileDir(FVector& OutDir);
-
 	/** check if can enter fire state */
 	virtual bool CheckCanFire();
 
@@ -400,9 +419,6 @@ protected:
 	virtual void UpdateWeaponCollide();
 
 	virtual void OnWeaponCollide(const FHitResult& CollideResult);
-
-	/** adjust projectile make them spread */
-	virtual void AddWeaponSpread(FVector& OutSpreadDir, FVector& BaseDirection);
 
 	/** calculate ammo after each reload finishes */
 	virtual void CalculateAmmoAfterReload();
@@ -426,6 +442,9 @@ protected:
 	/** Fire Rep notify */
 	UFUNCTION()
 		virtual void OnRep_WeaponFireCount();
+
+	UFUNCTION()
+	    virtual void OnRep_ScanTraceHit();
 
 	/** owner Rep notify */
 	UFUNCTION()
@@ -499,6 +518,8 @@ public:
 
 	/**check if can aim  */
 	virtual bool CheckCanAim();
+
+	inline virtual float GetWeaponADSAlpha()const { return ADSAlpha; }
 
 	virtual void SetOwner(AActor* NewOwner)override;
 
@@ -622,6 +643,16 @@ public:
 	inline virtual float GetRecoilHorizontallyFactor()const { return RecoilHorizontallyFactor; }
 
 	/**
+	 * @Desc adjust projectile spawn rotation to hit center of the screen
+	 */
+	virtual void GetFireDir(FVector& OutDir);
+
+	/** adjust projectile make them spread */
+	virtual void AddWeaponSpread(FVector& OutSpreadDir, FVector& BaseDirection);
+
+	virtual void GetFireLoc(FVector& OutFireLoc);
+
+	/**
 	 * returns the base handIK location
 	 * @Param BaseHandsIk FVector
 	 */
@@ -649,10 +680,22 @@ public:
 	 */
 	virtual bool CheckScanTraceRange();
 
-	virtual void FireShot();
+	virtual void FireShot(FVector FireLoc,FRotator ShotRot);
+
+	/** executed when weapon fully zoomed out */
+	virtual void OnZoomedOut();
+
+	/** executed when weapon fully zoomed in */
+	virtual void OnZoomedIn();
+
+	/**
+	 * @Desc Update the ads status for client to execute cosmetic event
+	 * @Param DeltaSeconds World DeltaTime
+	 */
+	virtual void UpdateADSStatus(const float DeltaSeconds);
 
 	UFUNCTION(Server,Unreliable,WithValidation)
-	virtual void ServerFireShot();
+	virtual void ServerFireShot(FVector FireLoc, FRotator ShotRot);
 
 	/**
 	 * check to see if the weapon has a extra sight aligner

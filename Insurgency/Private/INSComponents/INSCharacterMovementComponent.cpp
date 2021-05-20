@@ -4,6 +4,7 @@
 #include "INSComponents/INSCharacterMovementComponent.h"
 #include "INSCharacter/INSPlayerCharacter.h"
 
+DEFINE_LOG_CATEGORY(LogINSCharacterMovementComponent)
 UINSCharacterMovementComponent::UINSCharacterMovementComponent(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
 {
 	BaseWalkSpeed = 300.f;
@@ -15,38 +16,46 @@ UINSCharacterMovementComponent::UINSCharacterMovementComponent(const FObjectInit
 	AimSpeedModifier = 0.3f;
 	MaxAcceleration = 500.f;
 	AccumulatedIdleTime = 0.f;
-	IdleStateTime = 10.f;
+	IdleStateTime = 1.f;
+	BoredStateTime = 10.f;
 	bInIdleState = false;
+	bInBoredState = false;
+	IdleCheckFunction.bCanEverTick = true;
+	IdleCheckFunction.SetTickFunctionEnable(true);
 }
 
 void UINSCharacterMovementComponent::BeginPlay()
 {
 	Super::BeginPlay();
+	if (CharacterOwner)
+	{
+		IdleCheckFunction.AddPrerequisite(CharacterOwner, CharacterOwner->PrimaryActorTick);
+	}
 	//note this will still set OwnerPlayerCharacter to null is class is not compatible
-	INSCharacterOwner = CharacterOwner == nullptr ? nullptr : Cast<AINSPlayerCharacter>(OwnerPlayerCharacter);
+	INSCharacterOwner = CharacterOwner == nullptr ? nullptr : Cast<AINSPlayerCharacter>(CharacterOwner);
 }
 
 void UINSCharacterMovementComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-	{
-		CheckCharacterIdleState(DeltaTime);
-	}
+	CheckCharacterIdleState(DeltaTime);
 }
 
-void UINSCharacterMovementComponent::StartCrouch()
+
+void UINSCharacterMovementComponent::Crouch(bool bClientSimulation /* = false */)
 {
+	Super::Crouch(bClientSimulation);
 	MaxWalkSpeed = BaseWalkSpeed * CrouchSpeedModifier;
 	SpeedBeforeAim = MaxWalkSpeed;
-	bWantsToCrouch = true;
 }
 
-void UINSCharacterMovementComponent::EndCrouch()
+void UINSCharacterMovementComponent::UnCrouch(bool bClientSimulation /* = false */)
 {
-	bWantsToCrouch = false;
+	Super::UnCrouch(bClientSimulation);
 	MaxWalkSpeed = BaseWalkSpeed;
 	SpeedBeforeAim = MaxWalkSpeed;
 }
+
 
 void UINSCharacterMovementComponent::StartSprint()
 {
@@ -84,34 +93,32 @@ void UINSCharacterMovementComponent::EndAim()
 
 void UINSCharacterMovementComponent::CheckCharacterIdleState(const float DeltaTime)
 {
-	if (GetLastUpdateVelocity().Size() <= 0)
+	if (!CharacterOwner)
 	{
-		AccumulatedIdleTime += DeltaTime;
-		if (bInIdleState && INSCharacterOwner)
-		{
-			if (!INSCharacterOwner->GetIsCharacterDead())
-			{
-				if (AccumulatedIdleTime >= IdleStateTime)
-				{
-					bInIdleState = true;
-					INSCharacterOwner->OnEnterIdleState();
-				}
-				if (AccumulatedIdleTime >= BoredStateTime)
-				{
-					bInBoredState = true;
-					INSCharacterOwner->OnEnterBoredState();
-				}
-			}
-		}
+		UE_LOG(LogTemp, Log, TEXT("INScharacterMovementcomp ticking without characterowner"));
 	}
-	else
+	if (INSCharacterOwner && !INSCharacterOwner->GetIsDead())
 	{
-		if (!INSCharacterOwner->GetIsCharacterDead())
+		if (FMath::Abs(GetLastUpdateVelocity().Size()) > 0)
 		{
 			AccumulatedIdleTime = 0.f;
 			bInIdleState = false;
 			bInBoredState = false;
 			INSCharacterOwner->OnOutIdleState();
+		}
+		else
+		{
+			AccumulatedIdleTime += DeltaTime;
+			if (!bInIdleState && AccumulatedIdleTime >= IdleStateTime)
+			{
+				bInIdleState = true;
+				INSCharacterOwner->OnEnterIdleState();
+			}
+			if (!bInBoredState && AccumulatedIdleTime >= BoredStateTime)
+			{
+				bInBoredState = true;
+				INSCharacterOwner->OnEnterBoredState();
+			}
 		}
 	}
 }

@@ -6,7 +6,6 @@
 #include "Engine/World.h"
 #include "Net/UnrealNetwork.h"
 
-// Sets default values for this component's properties
 UINSHealthComponent::UINSHealthComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
@@ -17,8 +16,6 @@ UINSHealthComponent::UINSHealthComponent()
 	TimeBeforeHealthRestore = 5.f;
 }
 
-
-// Called when the game starts
 void UINSHealthComponent::BeginPlay()
 {
 	Super::BeginPlay();
@@ -46,18 +43,20 @@ float UINSHealthComponent::GetCurrentHealth() const
 	return CurrentHealth;
 }
 
-void UINSHealthComponent::OnTakingDamage(float ReduceAmount, class AActor* DamageCauser, class AController* DamageInstigator)
+bool UINSHealthComponent::OnTakingDamage(float ReduceAmount, class AActor* DamageCauser, class AController* DamageInstigator)
 {
-	CurrentHealth -= FMath::CeilToInt(ReduceAmount);
+	GetWorld()->GetTimerManager().ClearTimer(HealthRestoreTimerHandle);
 	CurrentHealth = FMath::CeilToInt(FMath::Clamp<float>(CurrentHealth - ReduceAmount, 0.f, CurrentHealth));
 	if (CurrentHealth <= 0)
 	{
 		OnCharacterShouldDie.Broadcast();
-		GetWorld()->GetTimerManager().ClearTimer(HealthRestoreTimerHandle);
 		DisableComponentTick();
 	}
-	GetWorld()->GetTimerManager().ClearTimer(HealthRestoreTimerHandle);
-	GetWorld()->GetTimerManager().SetTimer(HealthRestoreTimerHandle, this, &UINSHealthComponent::ReGenerateHealth, 0.1f, true, TimeBeforeHealthRestore);
+	else
+	{
+		GetWorld()->GetTimerManager().SetTimer(HealthRestoreTimerHandle, this, &UINSHealthComponent::ReGenerateHealth, 0.1f, true, TimeBeforeHealthRestore);
+	}
+	return CurrentHealth == 0.f;
 }
 
 void UINSHealthComponent::ReGenerateHealth()

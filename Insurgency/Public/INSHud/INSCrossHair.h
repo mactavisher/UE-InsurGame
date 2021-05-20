@@ -7,11 +7,11 @@
 #include "INSCrossHair.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class INSURGENCY_API UINSCrossHair : public UObject
 {
 	GENERATED_BODY()
-	
+
 };

@@ -64,6 +64,11 @@ public:
 	 */
 	virtual void OnLowHeath();
 
+	/**
+	 * called when Owner damages other character
+	 */
+	virtual void OnCauseDamage(bool bTeamDamage,bool bVictimDead);
+
 
 
 	/**
