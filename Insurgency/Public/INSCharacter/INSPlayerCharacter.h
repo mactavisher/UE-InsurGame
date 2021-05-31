@@ -10,6 +10,7 @@ class UCameraComponent;
 class USpringArmComponent;
 class AINSWeaponBase;
 class UINSCharSkeletalMeshComponent;
+class UINSInventoryComponent;
 
 USTRUCT(BlueprintType)
 struct  FDefaultPlayerMesh
@@ -37,6 +38,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "FirstPersonCamera", meta = (AllowPrivateAccess = "true"))
 		UCameraComponent* FirstPersonCamera;
 
+	/** Player camera comp */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "FirstPersonCamera", meta = (AllowPrivateAccess = "true"))
+		UINSInventoryComponent* InventoryComp;
+
 	/* Camera arm comp*/ 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"), Category = "FirstPersonCamera")
 		USpringArmComponent* SpringArm;
@@ -58,7 +63,7 @@ protected:
 		UINSCharSkeletalMeshComponent* CharacterMesh1P;
 
 	/** Player character's 3P mesh comp,only visible to non-owner player */
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "CharacterMesh")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "3PMesh")
 		UINSCharSkeletalMeshComponent* CharacterMesh3P;
 
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Replicated,ReplicatedUsing=OnRep_TeamType, Category = "Team")
@@ -184,6 +189,10 @@ public:
 	virtual void HandleStartSprintRequest()override;
 
 	virtual void HandleCrouchRequest()override;
+
+	virtual void HandleItemEquipRequest(const uint8 SlotIndex)override;
+
+	virtual void PutCurrentWeaponBackToSlot();
 
 	/**
 	 * return if Mesh1p is hidden in game currently

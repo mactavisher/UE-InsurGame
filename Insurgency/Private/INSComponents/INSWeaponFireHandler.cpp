@@ -3,6 +3,7 @@
 
 #include "INSComponents/INSWeaponFireHandler.h"
 #include "INSItems/INSWeapons/INSWeaponBase.h"
+#include "INSCharacter/INSPlayerCharacter.h"
 UINSWeaponFireHandler::UINSWeaponFireHandler(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
 {
 	PrimaryComponentTick.bCanEverTick = true;
@@ -76,7 +77,20 @@ void UINSWeaponFireHandler::FireShot()
 	//add weapon fire spread
 	FVector SpreadDir(ForceInit);
 	OwnerWeapon->AddWeaponSpread(SpreadDir, FireDir);
-	OwnerWeapon->FireShot(FireLoc,SpreadDir.Rotation());
+	if (OwnerWeapon)
+	{
+		if (OwnerWeapon->GetOwnerCharacter()->GetLocalRole() == ROLE_Authority)
+		{
+			OwnerWeapon->FireShot(FireLoc, SpreadDir.Rotation());
+		}
+		else if(OwnerWeapon->GetOwnerCharacter()->GetLocalRole() == ROLE_AutonomousProxy)
+		{
+			OwnerWeapon->ServerFireShot(FireLoc, SpreadDir.Rotation());
+
+		}
+		
+	}
+
 	LastFireTime = GetWorld()->GetTimeSeconds();
 	OwnerWeapon->SetWeaponState(EWeaponState::FIRING);
 	bIsFiring = true;

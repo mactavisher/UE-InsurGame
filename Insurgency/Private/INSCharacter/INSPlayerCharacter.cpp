@@ -17,8 +17,8 @@
 #include "DrawDebugHelpers.h"
 #include "INSHud/INSHUDBase.h"
 #include "Components./CapsuleComponent.h"
-#include "Camera/CameraShake.h"
 #include "INSCharacter/INSPlayerCameraManager.h"
+#include "INSComponents/INSInventoryComponent.h"
 #ifndef GEngine
 #include "Engine/Engine.h"
 #endif
@@ -43,6 +43,7 @@ AINSPlayerCharacter::AINSPlayerCharacter(const FObjectInitializer& ObjectInitial
 	CharacterMesh3P = Cast<UINSCharSkeletalMeshComponent>(GetMesh());
 	CharacterMesh3P->AddRelativeLocation(FVector(0.f, 0.f, -GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight()));
 	CharacterMesh1P = ObjectInitializer.CreateDefaultSubobject<UINSCharSkeletalMeshComponent>(this, TEXT("Character1pMeshComp"));
+	InventoryComp = ObjectInitializer.CreateDefaultSubobject<UINSInventoryComponent>(this, TEXT("InventoryComp"));
 	CharacterMesh1P->SetupAttachment(SpringArm);
 	CharacterMesh1P->bCastDynamicShadow = false;
 	CharacterMesh1P->CastShadow = false;
@@ -93,22 +94,24 @@ void AINSPlayerCharacter::Tick(float DeltaTime)
 void AINSPlayerCharacter::OnCauseDamage(const FTakeHitInfo& HitInfo)
 {
 	Super::OnCauseDamage(HitInfo);
-
 	if (GetCharacterAudioComp())
 	{
 		GetCharacterAudioComp()->OnCauseDamage(HitInfo.bIsTeamDamage, HitInfo.bVictimDead);
 	}
-	// 	if (GetINSPlayerController())
-	// 	{
-	// 		GetINSPlayerController()->ReceiveGameKills(GetPlayerState(), Cast<AINSPlayerStateBase>(LastHitInfo.Victim), KillerScore, bIsTeamDamage);
-	// 	}
 }
 
 void AINSPlayerCharacter::PossessedBy(AController* NewController)
 {
-	Super::PossessedBy(NewController);
-	SetOwner(Cast<AINSPlayerController>(GetOwner()));
 	CurrentPlayerController = Cast<AINSPlayerController>(NewController);
+	if (CurrentPlayerController)
+	{
+		Super::PossessedBy(CurrentPlayerController);
+		SetOwner(Cast<AINSPlayerController>(CurrentPlayerController));
+	}else
+	{
+		Super::PossessedBy(NewController);
+		SetOwner(Cast<AINSPlayerController>(NewController));
+	}
 	SetupMeshVisibility();
 	if (GetNetMode() == ENetMode::NM_Standalone || GetNetMode() == ENetMode::NM_ListenServer)
 	{
@@ -126,14 +129,14 @@ void AINSPlayerCharacter::PossessedBy(AController* NewController)
 	}
 	class AINSWeaponBase* NewWeapon = GetWorld()->SpawnActorDeferred<AINSWeaponBase>(CurrentWeaponClass
 		, GetActorTransform()
-		, GetINSPlayerController()
+		, GetOwner()
 		, this
 		, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 	if (NewWeapon)
 	{
 		NewWeapon->SetAutonomousProxy(true);
 		NewWeapon->SetWeaponState(EWeaponState::NONE);
-		NewWeapon->SetOwner(NewController);
+		NewWeapon->SetOwner(GetOwner());
 		NewWeapon->SetOwnerCharacter(this);
 		UGameplayStatics::FinishSpawningActor(NewWeapon, GetActorTransform());
 
@@ -179,6 +182,7 @@ void AINSPlayerCharacter::OnRep_CurrentWeapon()
 	if (CurrentWeapon)
 	{
 		SetupWeaponAttachment();
+		CurrentWeapon->SetWeaponState(EWeaponState::EQUIPPING);
 		Get1PAnimInstance()->SetCurrentWeaponAndAnimationData(CurrentWeapon);
 		Get1PAnimInstance()->PlayWeaponStartEquipAnim();
 		Get3PAnimInstance()->SetCurrentWeaponAndAnimationData(CurrentWeapon);
@@ -268,39 +272,36 @@ void AINSPlayerCharacter::OnOutIdleState()
 
 void AINSPlayerCharacter::OnDeath()
 {
-	if (!GetIsDead())
+	if (HasAuthority() && !GetIsDead())
 	{
-		SetLifeSpan(3.0f);
 		bIsDead = true;
-		if (GetLocalRole() == ROLE_Authority)
+		SetLifeSpan(3.0f);
+		AINSPlayerStateBase* MyPlayerState = GetPlayerState<AINSPlayerStateBase>();
+		if (MyPlayerState)
 		{
-			AINSPlayerStateBase* MyPlayerState = GetPlayerState<AINSPlayerStateBase>();
-			if (MyPlayerState)
-			{
-				MyPlayerState->ReceivePlayerDeath(GetINSPlayerController());
-			}
-			SpawnWeaponPickup();
+			MyPlayerState->ReceivePlayerDeath(GetINSPlayerController());
 		}
-		if (GetNetMode() == ENetMode::NM_Standalone || GetNetMode() == ENetMode::NM_ListenServer)
-		{
-			OnRep_Dead();
-		}
+		OnRep_Dead();
+		SpawnWeaponPickup();
 	}
 }
 
 void AINSPlayerCharacter::OnRep_Dead()
 {
 	Super::OnRep_Dead();
-	CharacterMesh1P->SetHiddenInGame(true);
-	CharacterMesh3P->SetHiddenInGame(false);
-	CharacterMesh3P->SetSimulatePhysics(true);
-	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
-	CharacterMesh3P->AddImpulseAtLocation(LastHitInfo.Momentum * 0.4f, LastHitInfo.RelHitLocation);
-	if (GetLocalRole() == ROLE_AutonomousProxy || GetLocalRole() == ROLE_Authority)
+	if (!IsNetMode(NM_DedicatedServer))
 	{
-		GetINSPlayerController()->OnCharacterDeath();
+		CharacterMesh1P->SetHiddenInGame(true);
+		CharacterMesh3P->SetHiddenInGame(false);
+		CharacterMesh3P->SetSimulatePhysics(true);
 	}
+	else
+	{
+		CharacterMesh3P->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		CharacterMesh3P->SetCollisionResponseToAllChannels(ECR_Ignore);
+	}
+	CharacterMesh1P->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	CharacterMesh1P->SetCollisionResponseToAllChannels(ECR_Ignore);
 }
 
 void AINSPlayerCharacter::OnRep_Aim()
@@ -310,8 +311,7 @@ void AINSPlayerCharacter::OnRep_Aim()
 	{
 		return;
 	}
-	AINSPlayerCameraManager* CameraManager =
-		Cast<AINSPlayerCameraManager>(GetINSPlayerController()->PlayerCameraManager);
+	AINSPlayerCameraManager* CameraManager = Cast<AINSPlayerCameraManager>(GetINSPlayerController()->PlayerCameraManager);
 	if (!CameraManager)
 	{
 		return;
@@ -361,6 +361,10 @@ void AINSPlayerCharacter::OnRep_PlayerState()
 void AINSPlayerCharacter::OnRep_LastHitInfo()
 {
 	Super::OnRep_LastHitInfo();
+	if (CharacterMesh3P && GetIsDead())
+	{
+		CharacterMesh3P->SetSimulatePhysics(true);
+	}
 	AINSPlayerCharacter* const PlayerCharacter = Cast<AINSPlayerCharacter>(LastHitInfo.InstigatorPawn);
 	if (PlayerCharacter)
 	{
@@ -385,6 +389,55 @@ void AINSPlayerCharacter::UnCrouch(bool bClientSimulation)
 void AINSPlayerCharacter::HandleCrouchRequest()
 {
 	Super::HandleCrouchRequest();
+}
+
+void AINSPlayerCharacter::HandleItemEquipRequest(const uint8 SlotIndex)
+{
+	Super::HandleItemEquipRequest(SlotIndex);
+	if (HasAuthority() && InventoryComp)
+	{
+		if (CurrentWeapon && CurrentWeapon->GetInventorySlotIndex() != SlotIndex)
+		{
+			const bool PutSuccess = InventoryComp->PutItemInSlot(CurrentWeapon);
+			if (PutSuccess)
+			{
+				CurrentWeapon->Destroy();
+				CurrentWeapon = nullptr;
+			}
+		}
+		FInvetorySlot* SelectedSlot = InventoryComp->GetItemSlot(SlotIndex);
+		if (SelectedSlot)
+		{
+			UClass* ItemClass = SelectedSlot->SlotWeaponClass;
+			if (ItemClass)
+			{
+				class AINSWeaponBase* NewWeapon = GetWorld()->SpawnActorDeferred<AINSWeaponBase>(ItemClass
+					, GetActorTransform()
+					, GetOwner()
+					, this
+					, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+				if (NewWeapon)
+				{
+					NewWeapon->SetAutonomousProxy(true);
+					NewWeapon->SetWeaponState(EWeaponState::NONE);
+					NewWeapon->SetOwner(GetOwner());
+					NewWeapon->SetOwnerCharacter(this);
+					NewWeapon->SetInventorySlotIndex(SlotIndex);
+					UGameplayStatics::FinishSpawningActor(NewWeapon, GetActorTransform());
+
+				}
+				SetCurrentWeapon(NewWeapon);
+			}
+		}
+	}
+}
+
+void AINSPlayerCharacter::PutCurrentWeaponBackToSlot()
+{
+	if (CurrentWeapon)
+	{
+		//FInvetorySlot* TargetSlot = InventoryComp->
+	}
 }
 
 void AINSPlayerCharacter::OnRep_TeamType()
@@ -434,6 +487,12 @@ void AINSPlayerCharacter::OnRep_Owner()
 {
 	Super::OnRep_Owner();
 	CurrentPlayerController = Cast<AINSPlayerController>(GetOwner());
+	bool bMyController = CurrentPlayerController == UGameplayStatics::GetPlayerController(GetWorld(), 0);
+	if (bMyController && CharacterAudioComp)
+	{
+		CharacterAudioComp->AttachToComponent(CharacterMesh1P, FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("Bip01_HeadSocket"));
+		CharacterAudioComp->SetOwnerCharacter(this);
+	}
 }
 
 void AINSPlayerCharacter::SetOwner(AActor* NewOwner)
@@ -506,19 +565,8 @@ void AINSPlayerCharacter::SetCurrentWeapon(class AINSWeaponBase* NewWeapon)
 
 void AINSPlayerCharacter::SetupWeaponAttachment()
 {
-	if (GetLocalRole() == ROLE_Authority)
-	{
-		CurrentWeapon->WeaponMesh1PComp->AttachToComponent(CharacterMesh1P, FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("Bip01_Weapon1Socket"));
-		CurrentWeapon->WeaponMesh3PComp->AttachToComponent(CharacterMesh3P, FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("Bip01_Weapon1Socket"));
-	}
-	if (GetLocalRole() == ROLE_AutonomousProxy)
-	{
-		CurrentWeapon->WeaponMesh1PComp->AttachToComponent(CharacterMesh1P, FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("Bip01_Weapon1Socket"));
-	}
-	if (GetLocalRole() == ROLE_SimulatedProxy)
-	{
-		CurrentWeapon->WeaponMesh3PComp->AttachToComponent(CharacterMesh3P, FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("Bip01_Weapon1Socket"));
-	}
+	CurrentWeapon->WeaponMesh1PComp->AttachToComponent(CharacterMesh1P, FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("Bip01_Weapon1Socket"));
+	CurrentWeapon->WeaponMesh3PComp->AttachToComponent(CharacterMesh3P, FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("Bip01_Weapon1Socket"));
 }
 
 void AINSPlayerCharacter::SetINSPlayerController(class AINSPlayerController* NewPlayerController)

@@ -10,7 +10,7 @@ class UINSWidget_CrossHair_Dot;
 class UINSWidgetBase;
 class AINSPlayerController;
 class AINSWeaponBase;
-
+class UINSCrossHair;
 USTRUCT(BlueprintType)
 struct FDrawPlayerKilledInfo
 {
@@ -266,17 +266,10 @@ class INSURGENCY_API AINSHUDBase : public AHUD
 {
 	GENERATED_UCLASS_BODY()
 
-		/** a simple center dot texture drawn on screen as cross hair */
-		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Widgets")
-		TSubclassOf<UINSWidget_CrossHair_Dot> DotCrossHairWidgetClass;
 
 	/** stores all the Widget instances that Managed by this HUD for later access purposes */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Widgets")
 		TArray<UINSWidgetBase*> WidgetInstances;
-
-	/** dot cross hair widget instance */
-	UPROPERTY()
-		UINSWidget_CrossHair_Dot* DotCrossHairWidgetPtr;
 
 	/** each part of cross hair length when drawing cross hair without using widget */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "CrossHair")
@@ -463,6 +456,8 @@ public:
 	virtual void DrawTestInfo();
 
 	virtual void DrawImmuneInfo();
+
+	virtual class UCanvas* GetCanvas()const;
 
 	virtual void DrawPlayerKill(const class APlayerState* Killer, const class APlayerState* Vimtim);
 

@@ -18,6 +18,7 @@ UCLASS()
 class INSURGENCY_API AINSGameModeBase : public AGameMode
 {
 	GENERATED_UCLASS_BODY()
+
 public:
 
 	/** indicate if this game allow Team Damage */

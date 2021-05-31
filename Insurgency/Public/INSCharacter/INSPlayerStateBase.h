@@ -78,7 +78,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = "OnRep_Deaths", Category = PlayerState)
 		int32 Deaths;
 
-	/** k/d ratio,not this is not replicated so client will need to update this  */
+	/** k/d ratio,not this is NOT replicated so client will need to update this it self  */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = PlayerState)
 		float KDRatio;
 

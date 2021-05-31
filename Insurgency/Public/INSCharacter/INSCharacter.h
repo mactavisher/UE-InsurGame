@@ -366,6 +366,9 @@ public:
 	/** handles jump request from player*/
 	virtual void HandleJumpRequest();
 
+	/** Handles Weapon Equip Request */
+	virtual void HandleItemEquipRequest(const uint8 SlotIndex);
+
 	/** callback when character crouched or un-crouched */
 	virtual void OnRep_IsCrouched()override;
 

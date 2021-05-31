@@ -95,7 +95,7 @@ bool UINSCharacterAimInstance::CheckValid()
 	}
 	if (OwnerPlayerCharacter->GetIsDead())
 	{
-		UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("Owner character is dead,can't play animations"));
+		//UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("Owner character is dead,can't play animations"));
 		return false;
 	}
 	if (!CurrentWeapon)

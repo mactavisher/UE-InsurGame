@@ -180,11 +180,15 @@ protected:
 
 	/** is a client fake projectile used for providing visuals for client */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BFProjectile|Explosive")
-		uint8 bClientFakeProjectile : 1;
+		uint8 bVisualProjectile : 1;
 
 	/** when movement replication received, check if need a position sync to match server projecile */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BFProjectile|Explosive")
 		uint8 bNeedPositionSync : 1;
+
+	/** indicates if position sync is in progress */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BFProjectile|Explosive")
+		uint8 bInPositionSync : 1;
 
 	/** is this projectile hit by way of scan trace, if true ,we just need to tell client where it flies and no need movement replication */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "BFProjectile|Explosive")
@@ -200,7 +204,7 @@ protected:
 
 	/** client fake version ,only provide visual*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BFProjectile")
-		AINSProjectile* ClientFakeProjectile;
+		AINSProjectile* VisualFakeProjectile;
 
 	/** weapon that fires me */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_OwnerWeapon, Category = "WeaponOwner")
@@ -307,16 +311,16 @@ public:
 	virtual void SetInstigatedPlayer(class AController* InsigatedPlayer) { InstigatorPlayer = InsigatedPlayer; }
 
 	/** set is fake projectile */
-	virtual void SetIsFakeProjectile(bool bFake) { this->bClientFakeProjectile = bFake; }
+	virtual void SetIsFakeProjectile(bool bFake) { this->bVisualProjectile = bFake; }
 
 	/** get is fake projectile */
-	inline virtual bool GetIsFakeProjectile()const { return bClientFakeProjectile; }
+	inline virtual bool GetIsFakeProjectile()const { return bVisualProjectile; }
 
 	/** get owner weapon */
 	virtual class AINSWeaponBase* GetOwnerWeapon()const { return OwnerWeapon; }
 
 	/** get the client fake projectile */
-	virtual class AINSProjectile* GetClientFakeProjectile()const { return ClientFakeProjectile; }
+	virtual class AINSProjectile* GetVisualFakeProjectile()const { return VisualFakeProjectile; }
 
 	/** get actual damage taken */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "BFProjectile")
@@ -347,6 +351,6 @@ public:
 	 * Set the fake projectile of the net Authority one,Each client will have one of this fake projectile
 	 * @param NewFakeProjectile  New Fake Projectile to set
 	 */
-	virtual void SetClientFakeProjectile(class AINSProjectile* NewFakeProjectile) { ClientFakeProjectile = NewFakeProjectile; };
+	virtual void SetClientFakeProjectile(class AINSProjectile* NewFakeProjectile) { VisualFakeProjectile = NewFakeProjectile; };
 
 };

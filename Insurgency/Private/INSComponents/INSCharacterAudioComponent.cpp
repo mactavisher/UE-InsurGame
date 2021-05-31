@@ -54,13 +54,13 @@ void UINSCharacterAudioComponent::OnLowHeath()
 void UINSCharacterAudioComponent::OnCauseDamage(bool bTeamDamage, bool bVictimDead)
 {
 	USoundCue* SelectedSound = nullptr;
-	if (bTeamDamage)
+	/*if (bTeamDamage)
 	{
 		SelectedSound = GetSoundToPlay(EVoiceType::CAUSE_FRIENDLY_DAMAGE);
-	}
-	else if (bVictimDead)
+	}*/
+	if (bVictimDead)
 	{
-		SelectedSound = GetSoundToPlay(EVoiceType::CAUSE_FFIENDLY_KILL);
+		SelectedSound = GetSoundToPlay(EVoiceType::KILL_PLAYER);
 	}
 	Stop();
 	SetSound(SelectedSound);

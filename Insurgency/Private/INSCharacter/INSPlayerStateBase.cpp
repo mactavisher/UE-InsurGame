@@ -120,7 +120,14 @@ void AINSPlayerStateBase::AddDeath(const int32 DeathToAdd /*= 1*/)
 void AINSPlayerStateBase::UpdateKDRatio()
 {
 	UE_LOG(LogINSPlayerState,Log,TEXT("start update k/d ration for player %s,last k/d ration:%s"), *GetName(), *FString::SanitizeFloat(KDRatio));
-	KDRatio = Kills / Deaths;
+	if (Deaths == 0)
+	{
+		KDRatio = Kills;
+	}
+	else
+	{
+		KDRatio = Kills / Deaths;
+	}
 	UE_LOG(LogINSPlayerState,Log,TEXT("end update k/d ration for player %s,updated k/d ration:%s"), *GetName(), *FString::SanitizeFloat(KDRatio));
 }
 

@@ -173,7 +173,7 @@ float AINSCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, A
 				LastHitInfo.bVictimDead = bfatalDamage;
 				LastHitInfo.DamageType = DamageEvent.DamageTypeClass;
 				LastHitInfo.Momentum = DamageCauser->GetVelocity();
-				LastHitInfo.bVictimAlreadyDead = false;
+				LastHitInfo.bVictimAlreadyDead = !GetIsDead();
 				LastHitInfo.InstigatorPawn = EventInstigator->GetPawn();
 				LastHitInfo.RelHitLocation = PointDamageEventPtr->HitInfo.ImpactPoint;
 				const FVector ShotDir = DamageCauser->GetActorForwardVector();
@@ -633,6 +633,11 @@ void AINSCharacter::HandleJumpRequest()
 	}
 }
 
+void AINSCharacter::HandleItemEquipRequest(const uint8 SlotIndex)
+{
+
+}
+
 void AINSCharacter::SpawnWeaponPickup()
 {
 	if (CurrentWeapon && WeaponPickupClass)
@@ -676,7 +681,7 @@ void AINSCharacter::SetCurrentWeapon(class AINSWeaponBase* NewWeapon)
 	this->CurrentWeapon = NewWeapon;
 	if (CurrentWeapon)
 	{
-		CurrentWeapon->SetOwnerCharacter(this);
+		CurrentWeapon->SetWeaponState(EWeaponState::EQUIPPING);
 	}
 }
 
@@ -704,12 +709,13 @@ bool AINSCharacter::GetIsLowHealth() const
 
 void AINSCharacter::OnDeath()
 {
-
+	SetReplicates(false);
+	TornOff();
 }
 
 bool AINSCharacter::GetIsCharacterMoving() const
 {
-	return GetINSCharacterMovement() != nullptr && GetINSCharacterMovement()->GetLastUpdateVelocity().Size2D() > 0.f;
+	return GetINSCharacterMovement()&& GetINSCharacterMovement()->GetLastUpdateVelocity().Size2D() > 0.f;
 }
 
 void AINSCharacter::OnLowHealth()

@@ -87,6 +87,7 @@ enum class EWeaponType :uint8
 	SMG                                    UMETA(DisplayName = "SMG"),
 	SNIPPER                                UMETA(DisplayName = "Snipper"),
 	BOLTRIFLE                              UMETA(DisplayName = "BoltRifle"),
+	NONE                                   UMETA(DisplayName = "None"),
 };
 
 /** weapon current state enum */

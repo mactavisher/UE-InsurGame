@@ -57,6 +57,12 @@ void AINSPlayerController::SetupInputComponent()
 	InputComponent->BindAction("Sprint", IE_Pressed, this, &AINSPlayerController::Sprint);
 	InputComponent->BindAction("Sprint", IE_Released, this, &AINSPlayerController::StopSprint);
 	InputComponent->BindAction("Jump", IE_Pressed, this, &AINSPlayerController::Jump);
+	InputComponent->BindAction("EquipSlotItem_1", IE_Pressed, this, &AINSPlayerController::EquipSlotItem_1);
+	InputComponent->BindAction("EquipSlotItem_2", IE_Pressed, this, &AINSPlayerController::EquipSlotItem_2);
+	InputComponent->BindAction("EquipSlotItem_3", IE_Pressed, this, &AINSPlayerController::EquipSlotItem_3);
+	InputComponent->BindAction("EquipSlotItem_4", IE_Pressed, this, &AINSPlayerController::EquipSlotItem_4);
+	InputComponent->BindAction("EquipSlotItem_5", IE_Pressed, this, &AINSPlayerController::EquipSlotItem_5);
+	InputComponent->BindAction("EquipSlotItem_6", IE_Pressed, this, &AINSPlayerController::EquipSlotItem_6);
 	UE_LOG(LogAINSPlayerController, Log, TEXT("finish Setting up and bind Player inputs"));
 }
 
@@ -197,6 +203,36 @@ void AINSPlayerController::UnCrouch()
 	}
 }
 
+
+void AINSPlayerController::EquipSlotItem_1()
+{
+	EquipWeapon(1);
+}
+
+void AINSPlayerController::EquipSlotItem_2()
+{
+	EquipWeapon(2);
+}
+
+void AINSPlayerController::EquipSlotItem_3()
+{
+	EquipWeapon(3);
+}
+
+void AINSPlayerController::EquipSlotItem_4()
+{
+	EquipWeapon(4);
+}
+
+void AINSPlayerController::EquipSlotItem_5()
+{
+	EquipWeapon(5);
+}
+
+void AINSPlayerController::EquipSlotItem_6()
+{
+	EquipWeapon(6);
+}
 
 void AINSPlayerController::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
@@ -559,16 +595,10 @@ bool AINSPlayerController::ServerSwitchFireMode_Validate()
 	return true;
 }
 
-void AINSPlayerController::EquipWeapon(class AINSWeaponBase* NewWeaponToEquip)
+
+void AINSPlayerController::EquipWeapon(const uint8 SlotIndex)
 {
-	// 	if (!NewWeaponToEquip)
-	// 	{
-	// 		NewWeaponToEquip = GetGameModeRandomWeapon();
-	// 	}
-	// 	if (NewWeaponToEquip)
-	// 	{
-	// 		GetINSPlayerCharacter()->SetCurrentWeapon(NewWeaponToEquip);
-	// 	}
+
 }
 
 void AINSPlayerController::Tick(float DeltaSeconds)
@@ -576,12 +606,12 @@ void AINSPlayerController::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 }
 
-void AINSPlayerController::ServerEquipWeapon_Implementation(class AINSWeaponBase* NewWeaponToEquip)
+void AINSPlayerController::ServerEquipWeapon_Implementation(const uint8 SlotIndex)
 {
-	EquipWeapon(NewWeaponToEquip);
+	EquipWeapon(SlotIndex);
 }
 
-bool AINSPlayerController::ServerEquipWeapon_Validate(class AINSWeaponBase* NewWeaponToEquip)
+bool AINSPlayerController::ServerEquipWeapon_Validate(const uint8 SlotIndex)
 {
 	return true;
 }
@@ -721,10 +751,6 @@ bool AINSPlayerController::HasSeeEnemy()
 	return IsEnemyFor(GetViewTarget());
 }
 
-void AINSPlayerController::OnCharacterDeath()
-{
-
-}
 
 AINSPlayerStateBase* AINSPlayerController::GetINSPlayerState()
 {

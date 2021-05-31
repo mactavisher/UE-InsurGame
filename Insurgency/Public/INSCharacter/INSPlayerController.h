@@ -83,6 +83,18 @@ protected:
 	/** crouch */
 	virtual void UnCrouch();
 
+	virtual void EquipSlotItem_1();
+
+	virtual void EquipSlotItem_2();
+
+	virtual void EquipSlotItem_3();
+
+	virtual void EquipSlotItem_4();
+
+	virtual void EquipSlotItem_5();
+
+	virtual void EquipSlotItem_6();
+
 	/** Server,perform move right ,negative value will perform move left */
 	UFUNCTION(Server, Unreliable, WithValidation)
 		virtual void ServerMoveRight(float Value);
@@ -96,7 +108,6 @@ public:
 	/** aim */
 	UFUNCTION()
 		virtual void AimWeapon();
-
 	/** server,aim */
 	UFUNCTION(Server, Unreliable, WithValidation)
 		virtual void ServerAimWeapon();
@@ -180,13 +191,13 @@ public:
 	virtual void AddYawInput(float Val)override;
 
 	/** equip a weapon */
-	virtual void EquipWeapon(class AINSWeaponBase* NewWeaponToEquip);
+	virtual void EquipWeapon(const uint8 SlotIndex);
 
 	virtual void Tick(float DeltaSeconds)override;
 
 	/** server,equip a weapon */
 	UFUNCTION(Server, Reliable, WithValidation)
-		virtual void ServerEquipWeapon(class AINSWeaponBase* NewWeaponToEquip);
+		virtual void ServerEquipWeapon(const uint8 SlotIndex);
 
 
 	virtual void SetWeaponState(EWeaponState NewState);
@@ -233,9 +244,6 @@ public:
 
 	/** check to see if we see a enemy,will be ticked for owner client */
 	virtual bool HasSeeEnemy();
-
-	/** handle possessed Character death */
-	virtual void OnCharacterDeath();
 
 	virtual AINSPlayerStateBase* GetINSPlayerState();
 

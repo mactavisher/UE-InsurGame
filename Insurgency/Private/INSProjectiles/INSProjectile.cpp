@@ -55,6 +55,7 @@ AINSProjectile::AINSProjectile(const FObjectInitializer& ObjectInitializer) :Sup
 	LastMovementRepTime = 0.f;
 	bForceMovementReplication = true;
 	bNeedPositionSync = false;
+	bInPositionSync = false;
 	bIsProcessingHit = false;
 	bScanTraceProjectile = false;
 	bDelayedHit = false;
@@ -62,7 +63,7 @@ AINSProjectile::AINSProjectile(const FObjectInitializer& ObjectInitializer) :Sup
 	/** turn this on because projectile's collision should be accurate to detect hit events and it's fast moving  */
 	CollisionComp->SetAllUseCCD(true);
 	CollisionComp->SetSphereRadius(1.f);
-	bClientFakeProjectile = false;
+	bVisualProjectile = true;
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
 	bUsingDebugTrace = true;
 #endif
@@ -70,6 +71,7 @@ AINSProjectile::AINSProjectile(const FObjectInitializer& ObjectInitializer) :Sup
 	InitRepTickFunc.bTickEvenWhenPaused = true;
 	InitRepTickFunc.SetTickFunctionEnable(true);
 	ProjectileMoveComp->PrimaryComponentTick.AddPrerequisite(this, InitRepTickFunc);
+	PrimaryActorTick.AddPrerequisite(ProjectileMoveComp, ProjectileMoveComp->PrimaryComponentTick);
 	MovementQuantizeLevel = EVectorQuantization::RoundTwoDecimals;
 }
 
@@ -82,11 +84,6 @@ void AINSProjectile::OnRep_HitCounter()
 {
 	if (HitCounter > 0)
 	{
-		if (GetClientFakeProjectile())
-		{
-			GetClientFakeProjectile()->GetProjectileMovementComp()->SetComponentTickEnabled(false);
-			GetClientFakeProjectile()->bNeedPositionSync = true;
-		}
 		CheckImpactHit();
 	}
 }
@@ -115,8 +112,8 @@ void AINSProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* 
 		CollisionComp->SetCollisionResponseToAllChannels(ECR_Ignore);
 		bForceMovementReplication = true;
 		//force a transformation update to clients
-		HitCounter++;
 		GatherCurrentMovement();
+		HitCounter++;
 		UE_LOG(LogINSProjectile
 			,Log
 			,TEXT("Projectile hit something,this hit component name:%s,hit other component name:%s,other actor name :%s")
@@ -214,21 +211,21 @@ void AINSProjectile::BeginPlay()
 		RepMovement->RotationQuantizationLevel = ERotatorQuantization::ByteComponents;
 		RepMovement->VelocityQuantizationLevel = MovementQuantizeLevel;
 	}
-	Super::BeginPlay();
-	if (!bClientFakeProjectile)
+	if (!bVisualProjectile)
 	{
-		SetActorHiddenInGame(true);
 		TracerParticle->DestroyComponent(true);
 		ProjectileMesh->DestroyComponent(true);
+		SetActorHiddenInGame(true);
 		if (IsNetMode(NM_ListenServer) || IsNetMode(NM_Standalone))
 		{
 			InitClientFakeProjectile();
 		}
 	}
-	if (GetClientFakeProjectile())
+	Super::BeginPlay();
+	if (GetVisualFakeProjectile())
 	{
 
-		if (GetClientFakeProjectile()->CurrentPenetrateCount > 1)
+		if (GetVisualFakeProjectile()->CurrentPenetrateCount > 1)
 		{
 			GetProjectileMesh()->SetHiddenInGame(true);
 			GetWorldTimerManager().SetTimer(FakeProjVisibilityTimer, this, &AINSProjectile::EnableFakeProjVisual, 1.f, false, 0.5f);
@@ -269,39 +266,28 @@ void AINSProjectile::PostInitializeComponents()
 void AINSProjectile::PostNetReceiveVelocity(const FVector& NewVelocity)
 {
 	Super::PostNetReceiveVelocity(NewVelocity);
-	if (GetClientFakeProjectile())
-	{
-		GetProjectileMovementComp()->Velocity = NewVelocity;
-		GetClientFakeProjectile()->GetProjectileMovementComp()->Velocity = NewVelocity;
-	}
 }
 
 void AINSProjectile::PostNetReceiveLocationAndRotation()
 {
 	Super::PostNetReceiveLocationAndRotation();
-	if (GetClientFakeProjectile())
+	if (!bVisualProjectile)
 	{
 		SetActorLocationAndRotation(GetReplicatedMovement().Location, GetReplicatedMovement().Rotation);
-		//GetClientFakeProjectile()->SetActorLocationAndRotation(GetActorLocation(),GetActorRotation());
-		//GetClientFakeProjectile()->SetActorRotation(GetActorRotation());
-		if (HitCounter > 0)
+	}
+	else
+	{
+		if(GetActorLocation().Equals(GetReplicatedMovement().Location, 10.f))
 		{
-			if (!GetClientFakeProjectile()->GetActorLocation().Equals(GetClientFakeProjectile()->GetReplicatedMovement().Location))
-			{
-				GetClientFakeProjectile()->bNeedPositionSync = true;
-				GetClientFakeProjectile()->SetActorRotation(GetReplicatedMovement().Rotation);
-			}
-		}
-		else
-		{
-			GetClientFakeProjectile()->SetActorLocationAndRotation(GetClientFakeProjectile()->GetReplicatedMovement().Location, GetClientFakeProjectile()->GetReplicatedMovement().Rotation);
+			bNeedPositionSync = true;
+			bInPositionSync = false;
 		}
 	}
 }
 
 void AINSProjectile::GatherCurrentMovement()
 {
-	if (RootComponent != NULL)
+	if (!bVisualProjectile &&RootComponent != NULL)
 	{
 		// If we are attached, don't replicate absolute position
 		if (RootComponent->GetAttachParent() != NULL)
@@ -327,7 +313,7 @@ void AINSProjectile::GatherCurrentMovement()
 
 void AINSProjectile::PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker)
 {
-	if (HasAuthority() && !bIsGatheringMovement)
+	if (HasAuthority() && !bIsGatheringMovement&&!bVisualProjectile)
 	{
 		const bool bRepDeltaTimeAllowed = GetWorld()->GetRealTimeSeconds() - LastMovementRepTime >= MovementRepInterval;
 		if (bRepDeltaTimeAllowed || bForceMovementReplication)
@@ -370,30 +356,31 @@ void AINSProjectile::OnRep_ReplicatedMovement()
 	}
 	SetReplicatedMovement(DecompressedMovementRep);
 	Super::OnRep_ReplicatedMovement();
-	if (GetClientFakeProjectile())
+	if (GetVisualFakeProjectile())
 	{
-		GetClientFakeProjectile()->SetReplicatedMovement(GetReplicatedMovement());
+		GetVisualFakeProjectile()->SetReplicatedMovement(GetReplicatedMovement());
+		GetVisualFakeProjectile()->OnRep_ReplicatedMovement();
 	}
 }
 
 void AINSProjectile::InitClientFakeProjectile()
 {
 	const FTransform SpawnTransform(GetActorRotation(), GetActorLocation(), FVector::OneVector);
-	ClientFakeProjectile = GetWorld()->SpawnActorDeferred<AINSProjectile>(this->GetClass(),SpawnTransform,this,nullptr,ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-	if (ClientFakeProjectile)
+	VisualFakeProjectile = GetWorld()->SpawnActorDeferred<AINSProjectile>(this->GetClass(),SpawnTransform,this,nullptr,ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+	if (VisualFakeProjectile)
 	{
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
-		GetClientFakeProjectile()->bUsingDebugTrace = false;
+		GetVisualFakeProjectile()->bUsingDebugTrace = false;
 #endif
-		GetClientFakeProjectile()->SetIsFakeProjectile(true);
-		GetClientFakeProjectile()->NetAuthrotyProjectile = this;
-		GetClientFakeProjectile()->SetOwnerWeapon(GetOwnerWeapon());
-		GetClientFakeProjectile()->SetCurrentPenetrateCount(GetCurrentPenetrateCount() + 1);
-		GetClientFakeProjectile()->GetCollsioncomp()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		GetClientFakeProjectile()->GetCollsioncomp()->SetUseCCD(false);
-		GetClientFakeProjectile()->GetCollsioncomp()->SetAllUseCCD(false);
-		GetClientFakeProjectile()->GetProjectileMovementComp()->InitialSpeed = GetVelocity().Size();
-		UGameplayStatics::FinishSpawningActor(ClientFakeProjectile, SpawnTransform);
+		GetVisualFakeProjectile()->SetIsFakeProjectile(true);
+		GetVisualFakeProjectile()->NetAuthrotyProjectile = this;
+		GetVisualFakeProjectile()->SetOwnerWeapon(GetOwnerWeapon());
+		GetVisualFakeProjectile()->SetCurrentPenetrateCount(GetCurrentPenetrateCount() + 1);
+		GetVisualFakeProjectile()->GetCollsioncomp()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		GetVisualFakeProjectile()->GetCollsioncomp()->SetUseCCD(false);
+		GetVisualFakeProjectile()->GetCollsioncomp()->SetAllUseCCD(false);
+		GetVisualFakeProjectile()->GetProjectileMovementComp()->InitialSpeed = OwnerWeapon->GetMuzzleSpeedValue();
+		UGameplayStatics::FinishSpawningActor(VisualFakeProjectile, SpawnTransform);
 	}
 }
 
@@ -437,6 +424,7 @@ void AINSProjectile::SendInitialReplication()
 					{
 						if (!Channel->bIsReplicatingActor)
 						{
+							GatherCurrentMovement();
 							Channel->ReplicateActor();
 							UE_LOG(LogINSProjectile, Log, TEXT("send a initial bunch replocation %s manually to  all relavent Clients done"), *GetName());
 						}
@@ -460,9 +448,9 @@ void AINSProjectile::CheckImpactHit()
 	ProjectileDir = GetReplicatedMovement().Rotation.Vector();
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
-	if (ClientFakeProjectile)
+	if (VisualFakeProjectile)
 	{
-		QueryParams.AddIgnoredActor(ClientFakeProjectile);
+		QueryParams.AddIgnoredActor(VisualFakeProjectile);
 	}
 	QueryParams.AddIgnoredActor(GetOwnerWeapon());
 	QueryParams.AddIgnoredActor(GetOwnerWeapon()->GetOwnerCharacter());
@@ -472,19 +460,19 @@ void AINSProjectile::CheckImpactHit()
 	const FVector TraceEnd = TraceStart + ProjectileDir * TraceRange;
 	FHitResult ImpactHit(ForceInit);
 	GetWorld()->LineTraceSingleByChannel(ImpactHit, TraceStart, TraceEnd, ECollisionChannel::ECC_Camera, QueryParams);
-	const AActor* HitActor = ImpactHit.Actor.Get();
+	const AActor* HitActor = ImpactHit.GetHitObjectHandle().FetchActor();
 	UClass* HitActorClass = HitActor == nullptr ? nullptr : HitActor->GetClass();
 	if (ImpactHit.bBlockingHit)
 	{
-		if (ClientFakeProjectile)
+		if (VisualFakeProjectile)
 		{
-			ClientFakeProjectile->bDelayedHit = false;
+			VisualFakeProjectile->bDelayedHit = false;
 		}
 		if (HitActor && HitActorClass && !HitActorClass->IsChildOf(AINSCharacter::StaticClass()) && !HitActorClass->IsChildOf(AINSWeaponBase::StaticClass()))
 		{
-			if (GetClientFakeProjectile())
+			if (GetVisualFakeProjectile())
 			{
-				GetClientFakeProjectile()->GetProjectileMovementComp()->StopMovementImmediately();
+				GetVisualFakeProjectile()->GetProjectileMovementComp()->StopMovementImmediately();
 			}
 			FTransform EffctActorTransform(ImpactHit.ImpactNormal.ToOrientationRotator(), ImpactHit.ImpactPoint, FVector::OneVector);
 			AINSImpactEffect* EffctActor = GetWorld()->SpawnActorDeferred<AINSImpactEffect>(PointImapactEffectsClass, EffctActorTransform, nullptr, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
@@ -494,20 +482,20 @@ void AINSProjectile::CheckImpactHit()
 				UGameplayStatics::FinishSpawningActor(EffctActor, EffctActorTransform);
 			}
 		}
-		if (ClientFakeProjectile)
+		if (VisualFakeProjectile)
 		{
-			ClientFakeProjectile->Destroy();
+			VisualFakeProjectile->Destroy();
 		}
 	}
 	if (bDelayedHit)
 	{
-		GetClientFakeProjectile()->Destroy();
+		GetVisualFakeProjectile()->Destroy();
 	}
 	else 
 	{
-		if (GetClientFakeProjectile())
+		if (GetVisualFakeProjectile())
 		{
-			GetClientFakeProjectile()->bDelayedHit = true;
+			GetVisualFakeProjectile()->bDelayedHit = true;
 		}
 	}
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
@@ -538,19 +526,17 @@ float AINSProjectile::GetDamageTaken()
 void AINSProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (IsNetMode(NM_Client) && GetClientFakeProjectile() && GetClientFakeProjectile()->bNeedPositionSync)
-	{
-		const float InterpSpeed = GetReplicatedMovement().LinearVelocity.Size() * DeltaTime / 100.f;
-		GetClientFakeProjectile()->SetActorLocation(FMath::VInterpTo(GetClientFakeProjectile()->GetActorLocation(), GetClientFakeProjectile()->GetReplicatedMovement().Location, DeltaTime, 10.f));
-		if (GetClientFakeProjectile()->GetReplicatedMovement().Location.Equals(GetClientFakeProjectile()->GetActorLocation()))
+	if (bVisualProjectile)
+
+		if (bNeedPositionSync)
 		{
-			GetClientFakeProjectile()->bNeedPositionSync = false;
-			if (GetClientFakeProjectile()->bDelayedHit)
+			const float Distance = FVector::Distance(GetActorLocation(), GetReplicatedMovement().Location);
+			SetActorLocationAndRotation(FMath::VInterpTo(GetActorLocation(), GetReplicatedMovement().Location, DeltaTime, Distance / 10.f), GetReplicatedMovement().Rotation);
+			if (GetActorLocation().Equals(GetReplicatedMovement().Location, 1.f))
 			{
-				CheckImpactHit();
+				bNeedPositionSync = false;
 			}
 		}
-	}
 }
 
 void AINSProjectile::TickActor(float DeltaTime, enum ELevelTick TickType, FActorTickFunction& ThisTickFunction)
@@ -562,15 +548,15 @@ void AINSProjectile::TickActor(float DeltaTime, enum ELevelTick TickType, FActor
 		InitRepTickFunc.UnRegisterTickFunction();
 	}
 	Super::TickActor(DeltaTime, TickType, ThisTickFunction);
-	if (&ThisTickFunction == &TracerPaticleSizeTickFun&&bClientFakeProjectile)
+	if (&ThisTickFunction == &TracerPaticleSizeTickFun&& bVisualProjectile)
 	{
 		FVector CurrentTracerScale = TracerParticle->GetComponentTransform().GetScale3D();
 		float CurrentScaleX = CurrentTracerScale.X;
 		float CurrentScaleY = CurrentTracerScale.Y;
 		float CurrentScaleZ = CurrentTracerScale.Z;
-		float UpdatedScaleX = FMath::FInterpTo(CurrentScaleX, 10.f, DeltaTime, 0.1f);
-		float UpdateScaeleY = FMath::FInterpTo(CurrentScaleY, 10.f, DeltaTime, 0.1f);
-		float UpdateScaeleZ = FMath::FInterpTo(CurrentScaleZ, 10.f, DeltaTime, 0.1f);
+		float UpdatedScaleX = FMath::FInterpTo(CurrentScaleX, 5.f, DeltaTime, 0.2f);
+		float UpdateScaeleY = FMath::FInterpTo(CurrentScaleY, 5.f, DeltaTime, 0.2f);
+		float UpdateScaeleZ = FMath::FInterpTo(CurrentScaleZ, 5.f, DeltaTime, 0.2f);
 		if (CurrentScaleX <= 10.f)
 		{
 			TracerParticle->SetWorldScale3D(FVector(UpdatedScaleX, UpdateScaeleY, UpdateScaeleZ));
@@ -581,5 +567,4 @@ void AINSProjectile::TickActor(float DeltaTime, enum ELevelTick TickType, FActor
 			TracerPaticleSizeTickFun.UnRegisterTickFunction();
 		}
 	}
-
 }

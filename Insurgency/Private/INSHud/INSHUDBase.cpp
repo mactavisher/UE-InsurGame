@@ -7,7 +7,6 @@
 #include "INSCharacter/INSPlayerStateBase.h"
 #include "INSItems/INSWeapons/INSWeaponBase.h"
 #include "INSCharacter/INSPlayerController.h"
-#include "INSWidgets/INSWidget_CrossHair_Dot.h"
 #include "INSGameModes/INSGameStateBase.h"
 #ifndef GEngine
 #include "Engine/Engine.h"
@@ -44,7 +43,7 @@ void AINSHUDBase::DrawHUD()
 	Super::DrawHUD();
 
 	//HUD cross hair
-	if (bUsingHudCrossHair && CurrentWeapon.Get() && bShowCrossHair && CurrentWeapon.Get()->GetWeaponCurrentState() != EWeaponState::RELOADIND)
+	if (bShowCrossHair&&bUsingHudCrossHair && CurrentWeapon.Get())
 	{
 		DrawHudCrossHair();
 	}
@@ -77,6 +76,7 @@ void AINSHUDBase::DrawHUD()
 	DrawImmuneInfo();
 }
 
+
 void AINSHUDBase::DrawMyTeamInfo()
 {
 	if (!OwningINSPlayerController)
@@ -105,14 +105,14 @@ void AINSHUDBase::DrawMyTeamInfo()
 
 void AINSHUDBase::CreateWidgetInstances()
 {
-	if (DotCrossHairWidgetClass)
+	/*if (DotCrossHairWidgetClass)
 	{
 		DotCrossHairWidgetPtr = CreateWidget<UINSWidget_CrossHair_Dot>(GetOwningPlayerController(), DotCrossHairWidgetClass, FName(TEXT("Dot Cross Hair")));
 		DotCrossHairWidgetPtr->SetOwningPlayer(PlayerOwner);
 		DotCrossHairWidgetPtr->SetOwningLocalPlayer(PlayerOwner->GetLocalPlayer());
 		DotCrossHairWidgetPtr->AddToViewport(0);
 		DotCrossHairWidgetPtr->SetVisibility(ESlateVisibility::Visible);
-	}
+	}*/
 }
 
 
@@ -126,49 +126,7 @@ void AINSHUDBase::RemoveAllDelegate()
 
 void AINSHUDBase::DrawHudCrossHair()
 {
-	if(!OwningINSPlayerController||!OwningINSPlayerController->GetINSPlayerCharacter()||
-		OwningINSPlayerController->GetINSPlayerCharacter()->GetIsAiming())
-	{
-		return;
-	}
-	const float ScaleX = Canvas->SizeX / StandardSizeX;
-	const float ScaleY = Canvas->SizeY / StandardSizeY;
-	const float WeaponSpreadModifier = CurrentWeapon.Get()->GetWeaponCurrentSpread();
-	float BiasX = (CenterRadius + WeaponSpreadModifier) * ScaleX * 2.f;
-	float BiasY = (CenterRadius + WeaponSpreadModifier) * ScaleY * 2.f;
-	if (BiasX >= 400.f * ScaleX)
-	{
-		BiasX = 400.f * ScaleX;
-	}
-	if (BiasY >= 400.f * ScaleY)
-	{
-		BiasY = 400.f * ScaleY;
-	}
-	const float LeftLineCoordX = Canvas->SizeX / 2 - BiasX;
-	const float LeftLineEndCoordX = LeftLineCoordX - CrossHairLineLength * ScaleX;
-	const float LeftLineCoordY = Canvas->SizeY / 2;
-	const float RightLineCoordX = Canvas->SizeX / 2 + BiasX;
-	const float RightLineEndCoordX = RightLineCoordX + CrossHairLineLength * ScaleX;
-	const float RightLineCoordY = Canvas->SizeY / 2;
-	const float UpLineCoordX = Canvas->SizeX / 2;
-	const float UplineCoordY = Canvas->SizeY / 2 - BiasY;
-	const float UplineEndCoordY = UplineCoordY - CrossHairLineLength * ScaleY;
-	const float DownLineCoordX = Canvas->SizeX / 2;
-	const float DownlienCoordY = Canvas->SizeY / 2 + BiasY;
-	const float DownlineEndCoordY = DownlienCoordY + CrossHairLineLength * ScaleY;
-	if (GetINSOwingPlayerController() && GetINSOwingPlayerController()->HasSeeEnemy())
-	{
-		//tint cross red if see enemy
-		CrossHairCurrentTintColor = CrossHairThreatenTintColor;
-	}
-	//draw left CrossHair part
-	DrawLine(LeftLineCoordX, LeftLineCoordY, LeftLineEndCoordX, LeftLineCoordY, CrossHairCurrentTintColor, 1.2f);
-	//Draw right CrossHair part
-	DrawLine(RightLineCoordX, LeftLineCoordY, RightLineEndCoordX, LeftLineCoordY, CrossHairCurrentTintColor, 1.2f);
-	//draw left CrossHair part
-	DrawLine(UpLineCoordX, UplineCoordY, UpLineCoordX, UplineEndCoordY, CrossHairCurrentTintColor, 1.2f);
-	//Draw right CrossHair part
-	DrawLine(DownLineCoordX, DownlienCoordY, DownLineCoordX, DownlineEndCoordY, CrossHairCurrentTintColor, 1.2f);
+	CurrentWeapon->DrawCrossHair(Canvas, FLinearColor::Red);
 }
 
 void AINSHUDBase::DrawHitFeedBackIndicator()
@@ -221,37 +179,21 @@ void AINSHUDBase::DrawPickupItemInfo()
 
 void AINSHUDBase::OnAimWeapon()
 {
-	if (DotCrossHairWidgetPtr)
-	{
-		DotCrossHairWidgetPtr->SetVisibility(ESlateVisibility::Hidden);
-	}
 	bShowCrossHair = false;
 }
 
 void AINSHUDBase::OnStopAimWeapon()
 {
-	if (DotCrossHairWidgetPtr)
-	{
-		DotCrossHairWidgetPtr->SetVisibility(ESlateVisibility::Visible);
-	}
 	bShowCrossHair = true;
 }
 
 void AINSHUDBase::OnReloadWeapon()
 {
-	if (DotCrossHairWidgetPtr)
-	{
-		DotCrossHairWidgetPtr->SetVisibility(ESlateVisibility::Hidden);
-	}
 	bShowCrossHair = false;
 }
 
 void AINSHUDBase::OnFinishReloadWeapon()
 {
-	if (DotCrossHairWidgetPtr)
-	{
-		DotCrossHairWidgetPtr->SetVisibility(ESlateVisibility::Visible);
-	}
 	bShowCrossHair = true;
 }
 
@@ -415,6 +357,11 @@ void AINSHUDBase::DrawImmuneInfo()
 		FLinearColor HealthColor = PlayerCharacter->GetIsLowHealth() ? FLinearColor::Red : FLinearColor::White;
 		DrawText(DamageImmuneMessage, FLinearColor::White, Canvas->SizeX * 0.45f, Canvas->SizeY * 0.9f, GEngine->GetMediumFont(), 1.f, false);
 	}
+}
+
+class UCanvas* AINSHUDBase::GetCanvas() const
+{
+	return Canvas;
 }
 
 void AINSHUDBase::DrawPlayerKill(const class APlayerState* Killer, const class APlayerState* Vimtim)

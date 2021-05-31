@@ -20,6 +20,7 @@ class AINSProjectile;
 class AINSProjectileShell;
 class UINSStaticAnimData;
 class UINSWeaponFireHandler;
+class UINSCrossHairBase;
 
 INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogINSWeapon, Log, All);
 
@@ -69,7 +70,7 @@ public:
 		, ZoomingInTime(0.15f)
 		, ZoomingOutTime(0.1f)
 		, BaseDamage(20.f)
-		, MuzzleSpeed(12000.f)
+		, MuzzleSpeed(42000.f)
 		, ScanTraceRange(25000.f)
 	{
 	}
@@ -92,27 +93,23 @@ struct FWeaponSpreadData
 		float DefaultWeaponSpread;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-		float DefaultWeaponSpreadMax;
+		float WeaponSpreadMax;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-		float DefaultWeaponSpreadMin;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-		float CurrentWeaponSpread;
+		float WeaponSpreadMin;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-		float CurrentWeaponSpreadMax;
+		float SpreadIncrementByShot;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-		float CurrentWeaponSpreadMin;
+		float SpreadDecrement;
 
 	FWeaponSpreadData()
-		: DefaultWeaponSpread(2.f)
-		, DefaultWeaponSpreadMax(6.f)
-		, DefaultWeaponSpreadMin(2.f)
-		, CurrentWeaponSpread(DefaultWeaponSpread)
-		, CurrentWeaponSpreadMax(DefaultWeaponSpreadMax)
-		, CurrentWeaponSpreadMin(DefaultWeaponSpreadMin)
+		: DefaultWeaponSpread(3.f)
+		, WeaponSpreadMax(10.f)
+		, WeaponSpreadMin(3.0)
+		, SpreadIncrementByShot(4.f)
+		, SpreadDecrement(0.5f)
 	{
 	}
 };
@@ -343,7 +340,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 
 	/** camera shaking effect class when fires a shot */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Recoil")
-		TSubclassOf<UCameraShake> FireCameraShakingClass;
+		TSubclassOf<UCameraShakeBase> FireCameraShakingClass;
 
 	/** projectile class that be fired by this weapon */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Projectile")
@@ -380,9 +377,34 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = WeaponCollision, meta = (editcondition = "bDoCollisionTest"))
 		float ProbeSize;
 
+	/**current weapon spread value */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = WeaponSpread)
+		float CurrentWeaponSpread;
+
+	/**current weapon spread value */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = WeaponSpread)
+		float MovementSpreadScalingFactor;
+
+	/** Cross hair class that be used by this weapon */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CrossHair)
+	TSubclassOf<UINSCrossHairBase> CrossHairClass;
+
+	/** Cross hair instance */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = CrossHair)
+	class UINSCrossHairBase* CrossHair;
+
 	/** WeaponAttachment Slots */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponAttachments")
 		TMap<FName, FWeaponAttachmentSlot> WeaponAttachementSlots;
+
+	UPROPERTY()
+	uint8 InventorySlotIndex;
+
+	/** weapon type of this weapon */
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Replicated,ReplicatedUsing=OnRep_WeaponType, Category="WeaponConfig")
+	EWeaponType WeaponType;
+
+	FActorTickFunction WeaponSpreadTickFunction;
 
 #if WITH_EDITORONLY_DATA
 	uint8 bShowDebugTrace : 1;
@@ -395,6 +417,7 @@ protected:
 	virtual void PostInitializeComponents()override;
 	virtual void PreInitializeComponents()override;
 	virtual void BeginPlay()override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
 	virtual void PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker)override;
 	//~ end actor interface
 
@@ -426,9 +449,6 @@ protected:
 	/** server,consumes a bullet on each shot ,default values is  1 */
 	virtual void ConsumeAmmo();
 
-	/** replication support */
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
-
 	/** owner client,play camera shake effect */
 	virtual void OwnerPlayCameraShake();
 
@@ -453,6 +473,9 @@ protected:
 	/** Fire Mode Rep notify */
 	UFUNCTION()
 		virtual void OnRep_CurrentFireMode();
+
+    UFUNCTION()
+	virtual void OnRep_WeaponType();
 
 	UFUNCTION()
 		virtual void OnRep_Equipping();
@@ -501,6 +524,10 @@ public:
 	/** set weapon back to idle state */
 	virtual void SetWeaponReady();
 
+	virtual uint8 GetInventorySlotIndex()const { return InventorySlotIndex; }
+
+	virtual void SetInventorySlotIndex(uint8 TargetSlot) { this->InventorySlotIndex = TargetSlot; }
+
 	/**start equip this weapon  */
 	virtual void StartEquipWeapon();
 
@@ -522,6 +549,12 @@ public:
 	inline virtual float GetWeaponADSAlpha()const { return ADSAlpha; }
 
 	virtual void SetOwner(AActor* NewOwner)override;
+
+	/**
+	 * @Desc Get the owner of INS type
+	 * @Return INSPlayerController
+	 */
+	virtual class AINSPlayerController* GetINSPlayerController();
 
 	/** recoil Vertically when player fires */
 	virtual void UpdateRecoilVertically(float DeltaTimeSeconds, float RecoilAmount);
@@ -630,7 +663,7 @@ public:
 	/** return whether this weapon equip with a fore grip ,this will affect animation poses and recoil*/
 	inline virtual bool GetIsWeaponHasForeGrip()const { return bForeGripEquipt; }
 
-	inline virtual float GetWeaponCurrentSpread()const { return WeaponSpreadData.CurrentWeaponSpread; }
+	inline virtual float GetWeaponCurrentSpread()const { return CurrentWeaponSpread; }
 
 	FORCEINLINE virtual EWeaponFireMode GetCurrentWeaponFireMode()const { return CurrentWeaponFireMode; }
 
@@ -689,6 +722,13 @@ public:
 	virtual void OnZoomedIn();
 
 	/**
+	 * called by HUD to draw to draw weapon crossHair
+	 * @Param InCanvas  Canvas to draw Cross Hair on
+	 * @Param DrawColor Draw color
+	 */
+	virtual void DrawCrossHair(class UCanvas* InCavas, FLinearColor DrawColor);
+
+	/**
 	 * @Desc Update the ads status for client to execute cosmetic event
 	 * @Param DeltaSeconds World DeltaTime
 	 */
@@ -702,6 +742,14 @@ public:
 	 * @return true or false
 	 */
 	virtual bool IsSightAlignerExist()const;
+
+
+	/**
+	 * @Desc create the weapon CrossHair for client
+	 * @return Weapon cross hair
+	 */
+	UFUNCTION(Client,WithValidation,Reliable)
+	virtual void ClientCreateWeaponCrossHair();
 
 	/**
 	 * returns the weapon animation data
