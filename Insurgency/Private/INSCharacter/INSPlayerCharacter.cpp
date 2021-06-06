@@ -215,7 +215,7 @@ void AINSPlayerCharacter::OnEnterIdleState()
 	{
 		UE_LOG(LogINSCharacter
 			, Log
-			, TEXT("Character:%s with no weapon is not moving for too much time ,enter idle state")
+			, TEXT("Character:%s with no weapon is not moving for some time ,enter idle state")
 			, *GetName());
 		Get1PAnimInstance()->SetIdleState(true);
 		Get3PAnimInstance()->SetIdleState(true);
@@ -223,7 +223,7 @@ void AINSPlayerCharacter::OnEnterIdleState()
 	if (GetCurrentWeapon() && GetCurrentWeapon()->GetCurrentWeaponState() == EWeaponState::IDLE)
 	{
 		UE_LOG(LogINSCharacter
-			, Log, TEXT("Character:%s with weapon %s is not moving and not using weapon for too much time ,enter idle state")
+			, Log, TEXT("Character:%s with weapon %s is not moving and not using weapon for some time ,enter idle state")
 			, *GetName()
 			, *(GetCurrentWeapon()->GetName()));
 		Get1PAnimInstance()->SetIdleState(true);
@@ -374,6 +374,13 @@ void AINSPlayerCharacter::OnRep_LastHitInfo()
 			PC->PlayerCauseDamage(LastHitInfo);
 		}
 	}
+#if WITH_EDITOR&&!UE_BUILD_SHIPPING
+	if (GetINSPlayerController()&& GetINSPlayerController()->GetLocalPlayer()) {
+		FString DebugMessage;
+		DebugMessage.Append("you are taking damage, damage token: ").Append(FString::FromInt(LastHitInfo.Damage));
+		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, DebugMessage);
+	}
+#endif
 }
 
 void AINSPlayerCharacter::Crouch(bool bClientSimulation)

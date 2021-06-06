@@ -350,14 +350,6 @@ void AINSCharacter::OnRep_LastHitInfo()
 		}
 
 	}
-#if WITH_EDITOR&&!UE_BUILD_SHIPPING
-	if (LastHitInfo.Victim->GetInstigatorController())
-	{
-		FString DebugMessage;
-		DebugMessage.Append("you are taking damage, damage token: ").Append(FString::FromInt(LastHitInfo.Damage));
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, DebugMessage);
-	}
-#endif
 	CachedTakeHitArray.Add(LastHitInfo);
 }
 
@@ -576,7 +568,7 @@ void AINSCharacter::OnRep_IsCrouched()
 		UE_LOG(LogINSCharacter
 			, Log
 			, TEXT("Character % s crouch state replicated,is in crouch state:")
-			, *GetName()
+			, *GetName() 
 			, *UKismetStringLibrary::Conv_BoolToString(bIsCrouched));
 
 		if (bIsCrouched)

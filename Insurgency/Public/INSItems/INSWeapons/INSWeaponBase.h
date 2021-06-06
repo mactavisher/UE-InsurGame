@@ -15,7 +15,7 @@ class UParticleSystemComponent;
 class UINSWeaponAssets;
 class AINSItems;
 class AINSCharacter;
-//class UCameraShake;
+class UCameraShake;
 class AINSProjectile;
 class AINSProjectileShell;
 class UINSStaticAnimData;
@@ -68,16 +68,16 @@ public:
 		, MaxAmmo(AmmoPerClip * 3)
 		, TimeBetweenShots(0.15f)
 		, ZoomingInTime(0.15f)
-		, ZoomingOutTime(0.1f)
+		, ZoomingOutTime(0.15f)
 		, BaseDamage(20.f)
-		, MuzzleSpeed(42000.f)
+		, MuzzleSpeed(40000.f)
 		, ScanTraceRange(25000.f)
 	{
 	}
 	void InitWeaponConfig()
 	{
 		AmmoPerClip = AmmoPerClip;
-		MaxAmmo = AmmoPerClip * 5;
+		MaxAmmo = AmmoPerClip * 10;
 		TimeBetweenShots = TimeBetweenShots;
 	}
 };
@@ -245,7 +245,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 
 	/** simulate fire muzzle particles effects */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponFireCount, Category = "Effects")
-		UParticleSystemComponent* WeaponParticleComp;
+	UParticleSystemComponent* WeaponParticleComp;
 
 	/** stores weapon config data */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = "WeaponConfig")
@@ -391,7 +391,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 
 	/** Cross hair instance */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = CrossHair)
-	class UINSCrossHairBase* CrossHair;
+	UINSCrossHairBase* CrossHair;
 
 	/** WeaponAttachment Slots */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponAttachments")

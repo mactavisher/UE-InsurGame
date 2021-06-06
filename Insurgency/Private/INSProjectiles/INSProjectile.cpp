@@ -339,8 +339,6 @@ void AINSProjectile::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 
 void AINSProjectile::OnRep_ReplicatedMovement()
 {
-	//GEngine->AddOnScreenDebugMessage(-1, 0.5, FColor::Green, GetReplicatedMovement().Location.ToString());
-	//GEngine->AddOnScreenDebugMessage(-1, 0.5, FColor::Green, FString::FromInt((int)GetReplicatedMovement().LocationQuantizationLevel));
 	FRepMovement DecompressedMovementRep = GetReplicatedMovement();
 	switch (MovementQuantizeLevel)
 	{
@@ -439,11 +437,6 @@ void AINSProjectile::CheckImpactHit()
 {
 	FVector ProjectileLoc(ForceInit);
 	FVector ProjectileDir(ForceInit);
-	/*if (GetClientFakeProjectile())
-	{
-		ProjectileLoc = GetClientFakeProjectile()->GetActorLocation();
-		ProjectileDir = GetClientFakeProjectile()->GetReplicatedMovement().Rotation.Vector();
-	}*/
 	ProjectileLoc = GetReplicatedMovement().Location;
 	ProjectileDir = GetReplicatedMovement().Rotation.Vector();
 	FCollisionQueryParams QueryParams;
@@ -526,8 +519,8 @@ float AINSProjectile::GetDamageTaken()
 void AINSProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (bVisualProjectile)
-
+	if (bVisualProjectile) 
+	{
 		if (bNeedPositionSync)
 		{
 			const float Distance = FVector::Distance(GetActorLocation(), GetReplicatedMovement().Location);
@@ -537,6 +530,7 @@ void AINSProjectile::Tick(float DeltaTime)
 				bNeedPositionSync = false;
 			}
 		}
+	}
 }
 
 void AINSProjectile::TickActor(float DeltaTime, enum ELevelTick TickType, FActorTickFunction& ThisTickFunction)
@@ -554,10 +548,10 @@ void AINSProjectile::TickActor(float DeltaTime, enum ELevelTick TickType, FActor
 		float CurrentScaleX = CurrentTracerScale.X;
 		float CurrentScaleY = CurrentTracerScale.Y;
 		float CurrentScaleZ = CurrentTracerScale.Z;
-		float UpdatedScaleX = FMath::FInterpTo(CurrentScaleX, 5.f, DeltaTime, 0.2f);
-		float UpdateScaeleY = FMath::FInterpTo(CurrentScaleY, 5.f, DeltaTime, 0.2f);
-		float UpdateScaeleZ = FMath::FInterpTo(CurrentScaleZ, 5.f, DeltaTime, 0.2f);
-		if (CurrentScaleX <= 10.f)
+		float UpdatedScaleX = FMath::FInterpTo(CurrentScaleX, 5.f, DeltaTime, 2.f);
+		float UpdateScaeleY = FMath::FInterpTo(CurrentScaleY, 5.f, DeltaTime, 2.f);
+		float UpdateScaeleZ = FMath::FInterpTo(CurrentScaleZ, 5.f, DeltaTime, 2.f);
+		if (CurrentScaleX <= 5.f)
 		{
 			TracerParticle->SetWorldScale3D(FVector(UpdatedScaleX, UpdateScaeleY, UpdateScaeleZ));
 		}
