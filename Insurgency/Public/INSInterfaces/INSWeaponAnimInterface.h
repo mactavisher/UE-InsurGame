@@ -65,15 +65,15 @@ public:
 
 	/** switch fire mode interface function */
 	UFUNCTION()
-	virtual void PlaySwitchFireModeAnim() {};
+	virtual float PlaySwitchFireModeAnim() { return 0.f; };
 
 	/** Reload interface function */
 	UFUNCTION()
-	virtual void PlayReloadAnim( bool bIsDry) {};
+	virtual float PlayReloadAnim( bool bIsDry) {return 0.f;};
 
 	/** equip weapon interface function */
 	UFUNCTION()
-	virtual void PlayWeaponStartEquipAnim() {};
+	virtual float PlayWeaponStartEquipAnim() { return 0.f; };
 
 	/** base weapon pose interface function */
 	UFUNCTION()

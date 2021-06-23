@@ -88,7 +88,6 @@ void UINSWeaponFireHandler::FireShot()
 			OwnerWeapon->ServerFireShot(FireLoc, SpreadDir.Rotation());
 
 		}
-		
 	}
 
 	LastFireTime = GetWorld()->GetTimeSeconds();

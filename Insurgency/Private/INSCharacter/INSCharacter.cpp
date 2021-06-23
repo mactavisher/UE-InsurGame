@@ -387,14 +387,7 @@ void AINSCharacter::OnRep_Aim()
 	{
 		return;
 	}
-	if (bIsAiming)
-	{
-		GetINSCharacterMovement()->StartAim();
-	}
-	if (!bIsAiming)
-	{
-		GetINSCharacterMovement()->EndAim();
-	}
+	bIsAiming? GetINSCharacterMovement()->StartAim(): GetINSCharacterMovement()->EndAim();
 }
 
 void AINSCharacter::OnRep_Prone()
@@ -446,7 +439,7 @@ void AINSCharacter::HandleWeaponRealoadRequest()
 {
 	if (CurrentWeapon)
 	{
-		CurrentWeapon->StartReloadWeapon();
+		CurrentWeapon->HandleWeaponReloadRequest();
 	}
 }
 

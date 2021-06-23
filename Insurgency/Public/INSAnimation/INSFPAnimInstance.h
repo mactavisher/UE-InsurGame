@@ -81,7 +81,7 @@ protected:
 	 */
 	virtual void UpdateSight();
 
-	virtual void PlayWeaponStartEquipAnim()override;
+	virtual float PlayWeaponStartEquipAnim()override;
 
 	/**
 	 * @Desc calculate sight transform when ads to match center of the screen
@@ -98,8 +98,9 @@ protected:
 	/**
 	 * @Desc play weapon reload Animation
 	 * @Param bIsDry is this a dry reload
+	 * @return the animation duration 
 	 */
-	virtual void PlayReloadAnim(bool bIsDry)override;
+	virtual float PlayReloadAnim(bool bIsDry)override;
 
 	/**
 	 * @Desc set is aiming and relative aiming variables

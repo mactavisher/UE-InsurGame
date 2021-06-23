@@ -101,11 +101,11 @@ void UINSTPAnimInstance::UpdateCanEnterSprint()
 	//bCanEnterSprint = bSprintPressed && CharacterMovementComponent->GetLastUpdateVelocity().Size2D() > 0.f;
 }
 
-void UINSTPAnimInstance::PlayReloadAnim(bool bIsDry)
+float UINSTPAnimInstance::PlayReloadAnim(bool bIsDry)
 {
 	if (!CheckValid())
 	{
-		return;
+		return 0.f;
 	}
 	UAnimMontage* SelectedReloadAnim = nullptr;
 	switch (CurrentWeaponBaseType)
@@ -125,7 +125,7 @@ void UINSTPAnimInstance::PlayReloadAnim(bool bIsDry)
 	default:SelectedReloadAnim = nullptr;
 		break;
 	}
-	Montage_Play(SelectedReloadAnim);
+	return Montage_Play(SelectedReloadAnim);
 }
 
 void UINSTPAnimInstance::PlayWeaponBasePose()
@@ -194,11 +194,11 @@ void UINSTPAnimInstance::SetIsAiming(bool IsAiming)
 	Super::SetIsAiming(IsAiming);
 }
 
-void UINSTPAnimInstance::PlayWeaponStartEquipAnim()
+float UINSTPAnimInstance::PlayWeaponStartEquipAnim()
 {
 	if (!CheckValid())
 	{
-		return;
+		return 0.f;
 	}
 	UAnimMontage* SelectedEquipAnim = nullptr;
 	switch (CurrentWeaponBaseType)
@@ -208,7 +208,7 @@ void UINSTPAnimInstance::PlayWeaponStartEquipAnim()
 	case EWeaponBasePoseType::DEFAULT:SelectedEquipAnim = CurrentWeaponAnimData->TPWeaponDefaultPoseAnim.DeployAnim.CharAnim; break;
 	default:SelectedEquipAnim = nullptr; break;
 	}
-	Montage_Play(SelectedEquipAnim);
+	return Montage_Play(SelectedEquipAnim);
 }
 
 void UINSTPAnimInstance::UpdatePredictFallingToLandAlpha()

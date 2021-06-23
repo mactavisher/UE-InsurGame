@@ -334,7 +334,7 @@ void AINSProjectile::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AINSProjectile, OwnerWeapon);
 	DOREPLIFETIME(AINSProjectile, CurrentPenetrateCount);
 	DOREPLIFETIME(AINSProjectile, bScanTraceProjectile);
-	DOREPLIFETIME(AINSProjectile, MovementQuantizeLevel);
+	DOREPLIFETIME_CONDITION(AINSProjectile, MovementQuantizeLevel,COND_InitialOnly);
 }
 
 void AINSProjectile::OnRep_ReplicatedMovement()
@@ -548,9 +548,9 @@ void AINSProjectile::TickActor(float DeltaTime, enum ELevelTick TickType, FActor
 		float CurrentScaleX = CurrentTracerScale.X;
 		float CurrentScaleY = CurrentTracerScale.Y;
 		float CurrentScaleZ = CurrentTracerScale.Z;
-		float UpdatedScaleX = FMath::FInterpTo(CurrentScaleX, 5.f, DeltaTime, 2.f);
-		float UpdateScaeleY = FMath::FInterpTo(CurrentScaleY, 5.f, DeltaTime, 2.f);
-		float UpdateScaeleZ = FMath::FInterpTo(CurrentScaleZ, 5.f, DeltaTime, 2.f);
+		float UpdatedScaleX = FMath::FInterpTo(CurrentScaleX, 5.f, DeltaTime, 3.f);
+		float UpdateScaeleY = FMath::FInterpTo(CurrentScaleY, 5.f, DeltaTime, 3.f);
+		float UpdateScaeleZ = FMath::FInterpTo(CurrentScaleZ, 5.f, DeltaTime, 3.f);
 		if (CurrentScaleX <= 5.f)
 		{
 			TracerParticle->SetWorldScale3D(FVector(UpdatedScaleX, UpdateScaeleY, UpdateScaeleZ));

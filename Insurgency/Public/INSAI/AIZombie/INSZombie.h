@@ -10,6 +10,7 @@ class UBehaviorTree;
 class UINSZombieAnimInstance;
 class AINSZombieController;
 class UINSZombieAnimInstance;
+class USkeletalMeshComponent;
 
 INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogZombiePawn, Log, All);
 
@@ -91,6 +92,30 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rage")
 	float RagePoint;
 
+	/** modular zombie of HeadComp */
+	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	USkeletalMeshComponent* HeadComp;
+
+	/** modular zombie of TorsoComp */
+	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	USkeletalMeshComponent* TorsoComp;
+
+	/** modular zombie of LeftArmComp */
+	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	USkeletalMeshComponent* LeftArmComp;
+
+	/** modular zombie of RightArmComp */
+	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	USkeletalMeshComponent* RightArmComp;
+
+	/** modular zombie of LeftLegComp */
+	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	USkeletalMeshComponent* LeftLegComp;
+
+	/** modular zombie of rightLegComp */
+	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
+	USkeletalMeshComponent* rightLegComp;
+
 protected:
 
 	/**
@@ -109,6 +134,8 @@ protected:
 	 * @param NewController New Controller that possess this zombie
 	 */
 	virtual void PossessedBy(AController* NewController)override;
+
+	virtual void PostInitializeComponents()override;
 
 	/**
 	 * override

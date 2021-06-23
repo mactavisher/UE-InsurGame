@@ -118,7 +118,7 @@ class INSURGENCY_API UINSTPAnimInstance : public UINSCharacterAimInstance
 
 	virtual void UpdateCanEnterSprint();
 
-	virtual void PlayReloadAnim(bool bIsDry)override;
+	virtual float PlayReloadAnim(bool bIsDry)override;
 
 	virtual void PlayWeaponBasePose()override;
 
@@ -130,7 +130,7 @@ class INSURGENCY_API UINSTPAnimInstance : public UINSCharacterAimInstance
 
 	virtual void SetIsAiming(bool IsAiming)override;
 
-	virtual void PlayWeaponStartEquipAnim()override;
+	virtual float PlayWeaponStartEquipAnim()override;
 
 	virtual void UpdatePredictFallingToLandAlpha();
 

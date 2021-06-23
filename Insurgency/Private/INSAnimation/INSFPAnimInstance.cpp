@@ -200,11 +200,11 @@ void UINSFPAnimInstance::UpdateSight()
 	}
 }
 
-void UINSFPAnimInstance::PlayWeaponStartEquipAnim()
+float UINSFPAnimInstance::PlayWeaponStartEquipAnim()
 {
 	if (!CheckValid())
 	{
-		return;
+		return 0.f;
 	}
 	UAnimMontage* SelectedEquipAnim = nullptr;
 	switch (CurrentWeaponBaseType)
@@ -214,7 +214,7 @@ void UINSFPAnimInstance::PlayWeaponStartEquipAnim()
 	case EWeaponBasePoseType::DEFAULT:SelectedEquipAnim = CurrentWeaponAnimData->FPWeaponDefaultPoseAnim.DeployAnim.CharAnim; break;
 	default:SelectedEquipAnim = nullptr; break;
 	}
-	Montage_Play(SelectedEquipAnim);
+	return Montage_Play(SelectedEquipAnim);
 }
 
 void UINSFPAnimInstance::CalculateSight(FTransform& OutRelativeTransform)
@@ -254,11 +254,11 @@ void UINSFPAnimInstance::PlayWeaponBasePose()
 	Montage_Play(SelectedBasePoseAnim);
 }
 
-void UINSFPAnimInstance::PlayReloadAnim(bool bIsDry)
+float UINSFPAnimInstance::PlayReloadAnim(bool bIsDry)
 {
 	if (!CheckValid())
 	{
-		return;
+		return 0.f;
 	}
 	UAnimMontage* SelectedReloadAnim = nullptr;
 	switch (CurrentWeaponBaseType)
@@ -278,7 +278,7 @@ void UINSFPAnimInstance::PlayReloadAnim(bool bIsDry)
 	default:SelectedReloadAnim = nullptr;
 		break;
 	}
-	Montage_Play(SelectedReloadAnim);
+	return Montage_Play(SelectedReloadAnim);
 }
 
 void UINSFPAnimInstance::SetIsAiming(bool IsAiming)

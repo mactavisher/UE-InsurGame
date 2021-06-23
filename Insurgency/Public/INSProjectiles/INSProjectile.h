@@ -194,7 +194,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "BFProjectile|Explosive")
 		uint8 bScanTraceProjectile : 1;
 
-	/** config the velocity and location quantize level when replicating movement,replicated to client for unpack the movement data */
+	/** config the velocity and location quantize level,replicated to clients so they know how to unpack the received data */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Replication")
 		EVectorQuantization MovementQuantizeLevel;
 
@@ -227,6 +227,8 @@ protected:
 
 	UPROPERTY()
 		FActorTickFunction TracerPaticleSizeTickFun;
+	UPROPERTY()
+	    FVector SpawnLocation;
 
 #if WITH_EDITORONLY_DATA
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Projectile|Debug")
@@ -312,6 +314,10 @@ public:
 
 	/** set is fake projectile */
 	virtual void SetIsFakeProjectile(bool bFake) { this->bVisualProjectile = bFake; }
+
+	virtual void SetSpawnLocation(const FVector NewSpawnLocation) { SpawnLocation = NewSpawnLocation; }
+
+	virtual FVector GetSpawnLocation()const { return SpawnLocation; }
 
 	/** get is fake projectile */
 	inline virtual bool GetIsFakeProjectile()const { return bVisualProjectile; }

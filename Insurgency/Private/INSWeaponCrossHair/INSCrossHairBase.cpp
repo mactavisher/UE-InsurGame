@@ -19,9 +19,14 @@ FVector2D UINSCrossHairBase::GetCanvasScale(const class UCanvas* InCanvas)
 	return FVector2D(ScaleX, ScaleY);
 }
 
-void UINSCrossHairBase::SetOwner(APlayerController* NewOwner)
+void UINSCrossHairBase::SetOwnerPlayer(APlayerController* NewOwnerPlayer)
 {
-	Owner = NewOwner;
+	OwnerPlayer = NewOwnerPlayer;
+}
+
+void UINSCrossHairBase::SetOwnerWeapon(AINSWeaponBase* NewWeaponOwner)
+{
+	OwnerWeapon = NewWeaponOwner;
 }
 
 void UINSCrossHairBase::DrawCrossHair(class UCanvas* InCanvas, class AINSWeaponBase* InWeapon, FLinearColor DrawColor)

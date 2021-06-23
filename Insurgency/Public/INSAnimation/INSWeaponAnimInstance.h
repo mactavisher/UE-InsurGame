@@ -48,9 +48,9 @@ public:
 	//~begin INSWeaponAnim Interface
 	virtual void PlayFireAnim()override;
 
-	virtual void PlayReloadAnim(bool bIsDry)override;
+	virtual float PlayReloadAnim(bool bIsDry)override;
 
-	virtual void PlaySwitchFireModeAnim()override;
+	virtual float PlaySwitchFireModeAnim()override;
 
 	virtual void OnWeaponAnimDelegateBindingFinished()override;
 
@@ -67,5 +67,5 @@ public:
 	//~end  INSWeaponAnim Interface
 
 public:
-	virtual void PlayWeaponStartEquipAnim()override;
+	virtual float PlayWeaponStartEquipAnim()override;
 };

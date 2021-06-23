@@ -30,8 +30,8 @@ struct FWeaponConfigData
 {
 	GENERATED_USTRUCT_BODY()
 
-	/** the maximum ammo can be hold in a single clip */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+		/** the maximum ammo can be hold in a single clip */
+		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		int32 AmmoPerClip;
 
 	/**the max ammo can carry with this weapon */
@@ -114,6 +114,65 @@ struct FWeaponSpreadData
 	}
 };
 
+UENUM(BlueprintType)
+enum class EWeaponPendingEventType :uint8
+{
+	Fire,
+	Reload,
+	Equip,
+	SwitchFireMode,
+	Unequip,
+	None,
+};
+
+USTRUCT()
+struct FWeaponPendingEquipEvent
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY()
+		EWeaponPendingEventType EventType;
+
+	UPROPERTY()
+		float EventCreateTime;
+
+	UPROPERTY()
+		float DelayedExecuteTime;
+
+	UPROPERTY()
+		uint8 bIsValid : 1;
+
+	UPROPERTY()
+		float DelayedTimeElapsed;
+
+	UPROPERTY()
+		UClass* NextWeaponClass;
+
+public:
+	FWeaponPendingEquipEvent(EWeaponPendingEventType Type, float EventTime, float DelayedExecuteTime, UClass* NewNextWeaponClass)
+	{
+		EventType = Type;
+		EventCreateTime = EventTime;
+		DelayedExecuteTime = DelayedExecuteTime;
+		NewNextWeaponClass = NewNextWeaponClass;
+	}
+
+	FWeaponPendingEquipEvent() {}
+
+	void Reset()
+	{
+		EventType = EWeaponPendingEventType::None;
+		EventCreateTime = 0.f;
+		bIsValid = false;
+		DelayedTimeElapsed = 0.f;
+	}
+
+	void Disable() { bIsValid = false; }
+
+	void Activate() { bIsValid = true; }
+};
+
+
 namespace WeaponAttachmentSlotName
 {
 	const FName Muzzle(TEXT("Muzzle"));	                    // Muzzle slot name
@@ -129,8 +188,8 @@ struct FWeaponAttachmentSlot {
 
 	GENERATED_USTRUCT_BODY()
 
-	/**attachment class */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+		/**attachment class */
+		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		TSubclassOf<AActor> WeaponAttachementClass;
 
 	/** attachment instance */
@@ -213,7 +272,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 {
 	GENERATED_UCLASS_BODY()
 
-	friend class UINSWeaponFireHandler;
+		friend class UINSWeaponFireHandler;
 
 	/** stores available fire modes to switch between */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FireMode")
@@ -245,7 +304,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 
 	/** simulate fire muzzle particles effects */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponFireCount, Category = "Effects")
-	UParticleSystemComponent* WeaponParticleComp;
+		UParticleSystemComponent* WeaponParticleComp;
 
 	/** stores weapon config data */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = "WeaponConfig")
@@ -279,8 +338,8 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ammo")
 		uint8 bEnableAutoReload : 1;
 
-	/** if enable ,weapon will reload automatically when current clip ammo hit 0 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ammo")
+	/** replicated dry reload state to client for reload animation play purpose */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Ammo")
 		uint8 bDryReload : 1;
 
 	/** if enable ,weapon will reload automatically when current clip ammo hit 0 */
@@ -290,11 +349,11 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_Equipping, Category = "Equipping")
 		uint8 bWantsToEquip : 1;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite,Category = "Equipping")
-	    uint8 ZoomedInEventTriggered :1;
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Equipping")
+		uint8 ZoomedInEventTriggered : 1;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Equipping")
-		uint8 ZoomedOutEventTriggered :1;
+		uint8 ZoomedOutEventTriggered : 1;
 
 	/** mesh 1p */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WeaponMesh1PComp", meta = (AllowPrivateAccess = "true"))
@@ -325,10 +384,10 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 		USoundCue* ADSOutSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
-	    float ADSAlpha;
+		float ADSAlpha;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_ScanTraceHit, Category = "ScanTraceHit")
-	FVector ScanTraceHitLoc;
+		FVector ScanTraceHitLoc;
 
 	/** fire Particle 1p*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
@@ -387,22 +446,26 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 
 	/** Cross hair class that be used by this weapon */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CrossHair)
-	TSubclassOf<UINSCrossHairBase> CrossHairClass;
+		TSubclassOf<UINSCrossHairBase> CrossHairClass;
 
 	/** Cross hair instance */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = CrossHair)
-	UINSCrossHairBase* CrossHair;
+		UINSCrossHairBase* CrossHair;
 
 	/** WeaponAttachment Slots */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponAttachments")
 		TMap<FName, FWeaponAttachmentSlot> WeaponAttachementSlots;
 
+	/** reference from the inventory index */
 	UPROPERTY()
-	uint8 InventorySlotIndex;
+		uint8 InventorySlotIndex;
 
 	/** weapon type of this weapon */
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Replicated,ReplicatedUsing=OnRep_WeaponType, Category="WeaponConfig")
-	EWeaponType WeaponType;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponType, Category = "WeaponConfig")
+		EWeaponType WeaponType;
+
+	UPROPERTY()
+		FWeaponPendingEquipEvent WeaponPendingEvent;
 
 	FActorTickFunction WeaponSpreadTickFunction;
 
@@ -439,6 +502,8 @@ protected:
 	 */
 	virtual bool CheckCanReload();
 
+	virtual void OnWeaponStartReload();
+
 	virtual void UpdateWeaponCollide();
 
 	virtual void OnWeaponCollide(const FHitResult& CollideResult);
@@ -464,7 +529,7 @@ protected:
 		virtual void OnRep_WeaponFireCount();
 
 	UFUNCTION()
-	    virtual void OnRep_ScanTraceHit();
+		virtual void OnRep_ScanTraceHit();
 
 	/** owner Rep notify */
 	UFUNCTION()
@@ -474,8 +539,8 @@ protected:
 	UFUNCTION()
 		virtual void OnRep_CurrentFireMode();
 
-    UFUNCTION()
-	virtual void OnRep_WeaponType();
+	UFUNCTION()
+		virtual void OnRep_WeaponType();
 
 	UFUNCTION()
 		virtual void OnRep_Equipping();
@@ -494,6 +559,7 @@ protected:
 
 	UFUNCTION()
 		virtual void OnRep_WeaponBasePoseType();
+
 	virtual void OnRep_Owner()override;
 
 
@@ -512,11 +578,11 @@ public:
 
 	virtual AINSCharacter* GetOwnerCharacter() { return OwnerCharacter; }
 	/** start reload weapon */
-	virtual void StartReloadWeapon();
+	virtual void HandleWeaponReloadRequest();
 
 	/** server start reload Weapon */
 	UFUNCTION(Server, Unreliable, WithValidation)
-		virtual void ServerStartReloadWeapon();
+		virtual void ServerHandleWeaponReloadRequest();
 
 	/** stop weapon fire ,will clear any fire timers and reset weapon state */
 	virtual void StopWeaponFire();
@@ -598,8 +664,6 @@ public:
 
 	virtual void WeaponGoToIdleState();
 
-	virtual void PlayWeaponReloadAnim();
-
 	/**
 	 * @desc init and create default attachment slot that this weapon will possess by default
 	 */
@@ -647,8 +711,8 @@ public:
 	 */
 	virtual void SetWeaponState(EWeaponState NewWeaponState);
 
-	UFUNCTION(Server,Unreliable,WithValidation)
-	virtual void ServerSetWeaponState(EWeaponState NewWeaponState);
+	UFUNCTION(Server, Unreliable, WithValidation)
+		virtual void ServerSetWeaponState(EWeaponState NewWeaponState);
 
 	/**
 	 * @Desc returns the current weapon state
@@ -713,7 +777,7 @@ public:
 	 */
 	virtual bool CheckScanTraceRange();
 
-	virtual void FireShot(FVector FireLoc,FRotator ShotRot);
+	virtual void FireShot(FVector FireLoc, FRotator ShotRot);
 
 	/** executed when weapon fully zoomed out */
 	virtual void OnZoomedOut();
@@ -734,8 +798,8 @@ public:
 	 */
 	virtual void UpdateADSStatus(const float DeltaSeconds);
 
-	UFUNCTION(Server,Unreliable,WithValidation)
-	virtual void ServerFireShot(FVector FireLoc, FRotator ShotRot);
+	UFUNCTION(Server, Unreliable, WithValidation)
+		virtual void ServerFireShot(FVector FireLoc, FRotator ShotRot);
 
 	/**
 	 * check to see if the weapon has a extra sight aligner
@@ -748,8 +812,8 @@ public:
 	 * @Desc create the weapon CrossHair for client
 	 * @return Weapon cross hair
 	 */
-	UFUNCTION(Client,WithValidation,Reliable)
-	virtual void ClientCreateWeaponCrossHair();
+	UFUNCTION(Client, WithValidation, Reliable)
+		virtual void ClientCreateWeaponCrossHair();
 
 	/**
 	 * returns the weapon animation data

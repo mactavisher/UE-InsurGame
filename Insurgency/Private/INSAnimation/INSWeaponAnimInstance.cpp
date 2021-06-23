@@ -44,11 +44,11 @@ void UINSWeaponAnimInstance::PlayFireAnim()
 	Montage_Play(WeaponAnimData->FPPulltriggerAnim.WeaponAnim);
 }
 
-void UINSWeaponAnimInstance::PlayReloadAnim(bool bIsDry)
+float UINSWeaponAnimInstance::PlayReloadAnim(bool bIsDry)
 {
 	if (!CheckValid())
 	{
-		return;
+		return 0.f;
 	}
 	UAnimMontage* SelectedReloadAnim = nullptr;
 	switch (CurrentWeaponBasePoseType)
@@ -68,15 +68,16 @@ void UINSWeaponAnimInstance::PlayReloadAnim(bool bIsDry)
 	default:SelectedReloadAnim = nullptr;
 		break;
 	}
-	Montage_Play(SelectedReloadAnim);
+	return Montage_Play(SelectedReloadAnim);
 }
 
-void UINSWeaponAnimInstance::PlaySwitchFireModeAnim()
+float UINSWeaponAnimInstance::PlaySwitchFireModeAnim()
 {
 	if (!CheckValid())
 	{
-		return;
+		return 0.f;
 	}
+	return 0.f;
 }
 
 void UINSWeaponAnimInstance::OnWeaponAnimDelegateBindingFinished()
@@ -111,11 +112,11 @@ void UINSWeaponAnimInstance::SetWeaponBasePoseType(EWeaponBasePoseType NewWeapon
 	CurrentWeaponBasePoseType = NewWeaponBasePoseType;
 }
 
-void UINSWeaponAnimInstance::PlayWeaponStartEquipAnim()
+float  UINSWeaponAnimInstance::PlayWeaponStartEquipAnim()
 {
 	if (!CheckValid())
 	{
-		return;
+		return 0.f;
 	}
 	UAnimMontage* SelectedEquipAnim = nullptr;
 	switch (CurrentWeaponBasePoseType)
@@ -132,7 +133,7 @@ void UINSWeaponAnimInstance::PlayWeaponStartEquipAnim()
 	default:SelectedEquipAnim = nullptr;
 		break;
 	}
-	Montage_Play(SelectedEquipAnim);
+	return Montage_Play(SelectedEquipAnim);
 }
 
 bool UINSWeaponAnimInstance::CheckValid()

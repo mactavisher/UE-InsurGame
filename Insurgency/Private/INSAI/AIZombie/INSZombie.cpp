@@ -22,6 +22,12 @@ AINSZombie::AINSZombie(const FObjectInitializer& ObjectInitializer) :Super(Objec
 {
 	AttackDamage = 20.f;
 	RagePoint = 0.f;
+	HeadComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("HeadComp"));
+	TorsoComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("TorsoComp"));
+	LeftArmComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("LeftArmComp"));
+	RightArmComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("RightArmComp"));
+	LeftLegComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("LeftLegComp"));
+	rightLegComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("rightLegComp"));
 }
 
 void AINSZombie::OnRep_Dead()
@@ -42,6 +48,35 @@ void AINSZombie::PossessedBy(AController* NewController)
 	CachedZombieAnimInstance = Cast<UINSZombieAnimInstance>(GetMesh()->AnimScriptInstance);
 }
 
+
+void AINSZombie::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+	if (HeadComp)
+	{
+		HeadComp->SetMasterPoseComponent(GetMesh());
+	}
+	if (TorsoComp)
+	{
+		TorsoComp->SetMasterPoseComponent(GetMesh());
+	}
+	if (LeftArmComp)
+	{
+		LeftArmComp->SetMasterPoseComponent(GetMesh());
+	}
+	if (RightArmComp)
+	{
+		RightArmComp->SetMasterPoseComponent(GetMesh());
+	}
+	if (LeftLegComp)
+	{
+		LeftLegComp->SetMasterPoseComponent(GetMesh());
+	}
+	if (rightLegComp)
+	{
+		rightLegComp->SetMasterPoseComponent(GetMesh());
+	}
+}
 
 float AINSZombie::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
@@ -91,7 +126,7 @@ void AINSZombie::PerfromLineTraceDamage()
 		CollisionQueryParams.AddIgnoredActor(this);
 		CollisionQueryParams.AddIgnoredComponent(GetCapsuleComponent());
 		CollisionQueryParams.AddIgnoredComponent(GetMesh());
-		GetWorld()->LineTraceSingleByChannel(HitResult, ViewPoint, ViewRotation.Vector()*DamageRange+ViewPoint, ECollisionChannel::ECC_Camera, CollisionQueryParams);
+		GetWorld()->LineTraceSingleByChannel(HitResult, ViewPoint, ViewRotation.Vector() * DamageRange + ViewPoint, ECollisionChannel::ECC_Camera, CollisionQueryParams);
 		if (HitResult.bBlockingHit)
 		{
 			ACharacter* const HitCharacter = Cast<ACharacter>(HitResult.GetActor());
@@ -147,7 +182,6 @@ void AINSZombie::OnRep_ZombieAttackMode()
 		case EZombieAttackMode::RightHand:SelectedAttackMontage = ZombieAttackMontages.RighHandAttackMontage; break;
 		case EZombieAttackMode::Hyper:SelectedAttackMontage = ZombieAttackMontages.HyperAttackMontage; break;
 		default:SelectedAttackMontage = ZombieAttackMontages.LeftHandAttackMontage; break;
-				
 		}
 		if (SelectedAttackMontage)
 		{

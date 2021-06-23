@@ -205,16 +205,15 @@ void AINSWeaponBase::WeaponGoToIdleState()
 
 }
 
-void AINSWeaponBase::PlayWeaponReloadAnim()
-{
-	
-}
 
 void AINSWeaponBase::PreInitializeComponents()
 {
 	Super::PreInitializeComponents();
 	InitWeaponAttachmentSlots();
-	WeaponAnimation = NewObject<UINSStaticAnimData>(this, WeaponAnimationClass);
+	if (WeaponAnimationClass)
+	{
+		WeaponAnimation = NewObject<UINSStaticAnimData>(this, WeaponAnimationClass);
+	}
 }
 
 void AINSWeaponBase::InitWeaponAttachmentSlots()
@@ -282,6 +281,7 @@ void AINSWeaponBase::SpawnProjectile(FVector SpawnLoc, FVector SpawnDir)
 			SpawnedProjectile->SetCurrentPenetrateCount(0);
 			SpawnedProjectile->SetInstigatedPlayer(Cast<AController>(GetOwner()));
 			SpawnedProjectile->SetScanTraceProjectile(ScanTraceHitResult.bBlockingHit);
+			SpawnedProjectile->SetSpawnLocation(SpawnLoc);
 			UGameplayStatics::FinishSpawningActor(SpawnedProjectile, ProjectileSpawnTransform);
 			ConsumeAmmo();
 		}
@@ -368,6 +368,7 @@ bool AINSWeaponBase::CheckScanTraceRange()
 	FHitResult TraceHit(ForceInit);
 	FCollisionQueryParams ScanTraceQuery;
 	ScanTraceQuery.AddIgnoredActor(this);
+	ScanTraceQuery.AddIgnoredActor(this->GetOwnerCharacter());
 	ScanTraceQuery.bReturnPhysicalMaterial = false;
 	GetWorld()->LineTraceSingleByChannel(TraceHit, TraceStart, TraceEnd, ECollisionChannel::ECC_Camera, ScanTraceQuery);
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
@@ -404,11 +405,6 @@ void AINSWeaponBase::FireShot(FVector FireLoc, FRotator ShotRot)
 		}
 #endif
 	}
-// 
-// 	else if (GetLocalRole() == ROLE_AutonomousProxy)
-// 	{
-// 		ServerFireShot(FireLoc, ShotRot);
-// 	}
 }
 	
 
@@ -426,6 +422,10 @@ void AINSWeaponBase::OnZoomedOut()
 
 void AINSWeaponBase::OnZoomedIn()
 {
+	if (IsNetMode(NM_DedicatedServer))
+	{
+		return;
+	}
 	if (IsNetMode(NM_ListenServer) || GetLocalRole() == ROLE_AutonomousProxy)
 	{
 		UGameplayStatics::SpawnSoundAttached(ADSInSound, WeaponMesh1PComp);
@@ -501,7 +501,8 @@ void AINSWeaponBase::ClientCreateWeaponCrossHair_Implementation()
 		CrossHair = NewObject<UINSCrossHairBase>(this, CrossHairClass);
 		if (GetOwner())
 		{
-			CrossHair->SetOwner(GetINSPlayerController());
+			CrossHair->SetOwnerPlayer(GetINSPlayerController());
+			CrossHair->SetOwnerWeapon(this);
 		}
 	}
 }
@@ -538,32 +539,7 @@ void AINSWeaponBase::OnRep_CurrentWeaponState()
 	//weapon reloading state replication
 	if (CurrentWeaponState == EWeaponState::RELOADIND)
 	{
-		if (GetLocalRole() == ROLE_AutonomousProxy || GetLocalRole() == ROLE_Authority)
-		{
-			if (PlayerCharacter)
-			{
-				PlayerCharacter->Get1PAnimInstance()->StopFPPlayingWeaponIdleAnim();
-				PlayerCharacter->Get1PAnimInstance()->PlayReloadAnim(bDryReload);
-				GetWeapon1PAnimInstance()->PlayReloadAnim(bDryReload);
-			
-			}
-		}
-		else if (GetLocalRole() == ROLE_SimulatedProxy)
-		{
-			if (PlayerCharacter)
-			{
-				PlayerCharacter->Get3PAnimInstance()->PlayReloadAnim(bDryReload);
-				PlayerCharacter->Get3PAnimInstance()->PlayReloadAnim(bDryReload);
-				GetWeapon3pAnimINstance()->PlayReloadAnim(bDryReload);
-			}
-		}
-		if (IsNetMode(NM_DedicatedServer)) {
-			UINSCharacterAudioComponent* CharacterAudioComp = GetOwnerCharacter()->GetCharacterAudioComp();
-			if (CharacterAudioComp)
-			{
-				CharacterAudioComp->OnWeaponReload();
-			}
-		}
+		OnWeaponStartReload();
 	}
 	//weapon fire mode switching state replication
 	else if (CurrentWeaponState == EWeaponState::FIREMODESWITCHING)
@@ -864,6 +840,37 @@ bool AINSWeaponBase::CheckCanReload()
 	return true;
 }
 
+void AINSWeaponBase::OnWeaponStartReload()
+{
+	AINSPlayerCharacter* OwnerChar = Cast<AINSPlayerCharacter>(GetOwnerCharacter());
+	if (GetLocalRole() == ROLE_AutonomousProxy || GetLocalRole() == ROLE_Authority)
+	{
+		if (OwnerChar)
+		{
+			OwnerChar->Get1PAnimInstance()->StopFPPlayingWeaponIdleAnim();
+			OwnerChar->Get1PAnimInstance()->PlayReloadAnim(bDryReload);
+			GetWeapon1PAnimInstance()->PlayReloadAnim(bDryReload);
+
+		}
+	}
+	else if (GetLocalRole() == ROLE_SimulatedProxy)
+	{
+		if (OwnerChar)
+		{
+			OwnerChar->Get3PAnimInstance()->PlayReloadAnim(bDryReload);
+			OwnerChar->Get3PAnimInstance()->PlayReloadAnim(bDryReload);
+			GetWeapon3pAnimINstance()->PlayReloadAnim(bDryReload);
+		}
+	}
+	if (IsNetMode(NM_DedicatedServer)) {
+		UINSCharacterAudioComponent* CharacterAudioComp = GetOwnerCharacter()->GetCharacterAudioComp();
+		if (CharacterAudioComp)
+		{
+			CharacterAudioComp->OnWeaponReload();
+		}
+	}
+}
+
 void AINSWeaponBase::UpdateWeaponCollide()
 {
 	if (GetOwnerCharacter()&& !GetOwnerCharacter()->GetIsDead()&&GetLocalRole() == ROLE_AutonomousProxy)
@@ -957,7 +964,7 @@ void AINSWeaponBase::ConsumeAmmo()
 		{
 			StopWeaponFire();
 			bDryReload = true;
-			StartReloadWeapon();
+			SetWeaponState(EWeaponState::RELOADIND);
 		}
 	}
 }
@@ -1027,6 +1034,7 @@ void AINSWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME_CONDITION(AINSWeaponBase,WeaponConfigData, COND_InitialOnly);
 	DOREPLIFETIME_CONDITION(AINSWeaponBase, AmmoLeft, COND_OwnerOnly);
 	DOREPLIFETIME_CONDITION(AINSWeaponBase, WeaponType, COND_InitialOnly);
+	DOREPLIFETIME_CONDITION(AINSWeaponBase, bDryReload, COND_SimulatedOnly);
 }
 
 
@@ -1044,11 +1052,11 @@ void AINSWeaponBase::OwnerPlayCameraShake()
 
 void AINSWeaponBase::UpdateWeaponSpread(float DeltaTimeSeconds)
 {
-	if (GetLocalRole() >= ROLE_AutonomousProxy && !IsNetMode(NM_DedicatedServer))
+	if (GetLocalRole() >= ROLE_AutonomousProxy /*&& !IsNetMode(NM_DedicatedServer)*/)
 	{
 		if (bIsAimingWeapon)
 		{
-			CurrentWeaponSpread = FMath::Clamp<float>(CurrentWeaponSpread-WeaponSpreadData.SpreadDecrement*DeltaTimeSeconds,0.f,CurrentWeaponSpread);
+			CurrentWeaponSpread = CurrentWeaponSpread * (1.f - ADSAlpha);
 			if (ADSAlpha == 1.f)
 			{
 				CurrentWeaponSpread = 0.f;
@@ -1089,28 +1097,33 @@ void AINSWeaponBase::OnRep_Equipping()
 
 void AINSWeaponBase::OnRep_CurrentClipAmmo()
 {
-	bDryReload = CurrentClipAmmo == 0;
-}
-
-void AINSWeaponBase::StartReloadWeapon()
-{
-	if (GetLocalRole() == ROLE_Authority && CheckCanReload())
+	if (GetLocalRole() == ROLE_AutonomousProxy)
 	{
-		if (GetOwnerCharacter()->GetIsAiming())
-		{
-			StopWeaponAim();
-		}
-		SetWeaponState(EWeaponState::RELOADIND);
-		PlayWeaponReloadAnim();
+		bDryReload = CurrentClipAmmo == 0;
 	}
 }
 
-void AINSWeaponBase::ServerStartReloadWeapon_Implementation()
+void AINSWeaponBase::HandleWeaponReloadRequest()
 {
-	StartReloadWeapon();
+	if (HasAuthority())
+	{
+		if (CheckCanReload())
+		{
+			if (bIsAimingWeapon)
+			{
+				StopWeaponAim();
+			}
+			SetWeaponState(EWeaponState::RELOADIND);
+		}
+	}
 }
 
-bool AINSWeaponBase::ServerStartReloadWeapon_Validate()
+void AINSWeaponBase::ServerHandleWeaponReloadRequest_Implementation()
+{
+	HandleWeaponReloadRequest();
+}
+
+bool AINSWeaponBase::ServerHandleWeaponReloadRequest_Validate()
 {
 	return true;
 }

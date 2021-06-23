@@ -20,7 +20,10 @@ class INSURGENCY_API UINSCrossHairBase : public UObject
 
 	/** Owner Player */
 	UPROPERTY()
-	    APlayerController* Owner;
+	    APlayerController* OwnerPlayer;
+
+	UPROPERTY()
+	    AINSWeaponBase* OwnerWeapon;
 
 	/** draw color of this CrossHair */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "CrossHair")
@@ -39,9 +42,15 @@ class INSURGENCY_API UINSCrossHairBase : public UObject
 public:
 	/**
 	 * @Desc set the player owner of this cross hair
-	 * @Param NewOwner New owner to set for this cross hair
+	 * @Param NewOwnerPlayer New owner to set for this cross hair
 	 */
-	virtual void SetOwner(APlayerController* NewOwner);
+	virtual void SetOwnerPlayer(APlayerController* NewOwnerPlayer);
+
+	/**
+	 * @Desc set the weapon owner of this cross hair
+	 * @Param NewWeaponOwner New weapon owner to set for this cross hair
+	 */
+	virtual void SetOwnerWeapon(AINSWeaponBase* NewWeaponOwner);
 
 	/**
 	 * @Desc draw canvas based cross hair and called by HUD DrawHud Main loop

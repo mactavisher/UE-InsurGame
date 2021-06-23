@@ -105,7 +105,7 @@ struct FCustomForeGripWeaponAnim
 		FCustomWeaponAnim UnDeployAnim;
 };
 
-UCLASS(abstract,BlueprintType)
+UCLASS(abstract,BlueprintType,Blueprintable)
 class INSURGENCY_API UINSStaticAnimData : public UObject
 {
 	GENERATED_BODY()
