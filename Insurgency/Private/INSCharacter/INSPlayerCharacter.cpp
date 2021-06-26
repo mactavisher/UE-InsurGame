@@ -94,9 +94,25 @@ void AINSPlayerCharacter::Tick(float DeltaTime)
 void AINSPlayerCharacter::OnCauseDamage(const FTakeHitInfo& HitInfo)
 {
 	Super::OnCauseDamage(HitInfo);
-	if (GetCharacterAudioComp())
+	if (IsNetMode(NM_DedicatedServer))
 	{
-		GetCharacterAudioComp()->OnCauseDamage(HitInfo.bIsTeamDamage, HitInfo.bVictimDead);
+		if (GetCharacterAudioComp())
+		{
+			GetCharacterAudioComp()->OnCauseDamage(HitInfo.bIsTeamDamage, HitInfo.bVictimDead);
+		}
+		if (this == LastHitInfo.InstigatorPawn)
+		{
+			return;
+		}
+		AINSPlayerCharacter* const PlayerCharacter = Cast<AINSPlayerCharacter>(LastHitInfo.InstigatorPawn);
+		if (PlayerCharacter && !PlayerCharacter->GetIsDead() && !PlayerCharacter->IsPendingKill())
+		{
+			AINSPlayerController* const PC = PlayerCharacter->GetINSPlayerController();
+			if (PC)
+			{
+				PC->PlayerCauseDamage(LastHitInfo);
+			}
+		}
 	}
 }
 
@@ -365,17 +381,8 @@ void AINSPlayerCharacter::OnRep_LastHitInfo()
 	{
 		CharacterMesh3P->SetSimulatePhysics(true);
 	}
-	AINSPlayerCharacter* const PlayerCharacter = Cast<AINSPlayerCharacter>(LastHitInfo.InstigatorPawn);
-	if (PlayerCharacter)
-	{
-		AINSPlayerController* const PC = PlayerCharacter->GetINSPlayerController();
-		if (PC)
-		{
-			PC->PlayerCauseDamage(LastHitInfo);
-		}
-	}
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
-	if (GetINSPlayerController()&& GetINSPlayerController()->GetLocalPlayer()) {
+	if (LastHitInfo.Victim == this) {
 		FString DebugMessage;
 		DebugMessage.Append("you are taking damage, damage token: ").Append(FString::FromInt(LastHitInfo.Damage));
 		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, DebugMessage);

@@ -189,6 +189,7 @@ float AINSCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, A
 				{
 					OnRep_LastHitInfo();
 				}
+				LastHitBy = EventInstigator;
 			}
 		}
 		return Damage;
@@ -292,7 +293,18 @@ void AINSCharacter::CastBloodDecal(FVector HitLocation, FVector HitDir)
 
 void AINSCharacter::OnCauseDamage(const FTakeHitInfo& HitInfo)
 {
+	if (LastHitInfo.Victim == LastHitInfo.InstigatorPawn)
+	{
+		UE_LOG(LogINSCharacter,Log, TEXT("Character %s is causing damge to himself"), *GetName());
+		return;
+	}
 	// hook but do nothing by default
+}
+
+void AINSCharacter::SetLastHitStateInfo(class AActor* LastHitActor)
+{
+	LastHitState.LastHitActor = LastHitActor;
+	LastHitState.CurrentHitStateLastTime = LastHitState.HitStateTime;
 }
 
 void AINSCharacter::OnRep_Dead()
@@ -311,6 +323,7 @@ void AINSCharacter::OnRep_LastHitInfo()
 	if (!IsNetMode(NM_DedicatedServer))
 	{
 		UE_LOG(LogINSCharacter, Warning, TEXT("received Characters's:%s Hit Info,start handle take hit logic!"), *GetName());
+		SetLastHitStateInfo(LastHitInfo.DamageCauser);
 		//spawn blood hit Impact
 		const FVector BloodSpawnLocation = FVector(LastHitInfo.RelHitLocation);
 		const float ShotDirPitchDecompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirPitch);
@@ -342,11 +355,10 @@ void AINSCharacter::OnRep_LastHitInfo()
 				}
 			}
 		}
-		
 		AINSCharacter* const InstigatorCharacter = Cast<AINSCharacter>(LastHitInfo.InstigatorPawn);
 		if (InstigatorCharacter)
 		{
-			InstigatorCharacter ->OnCauseDamage(LastHitInfo);
+			InstigatorCharacter->OnCauseDamage(LastHitInfo);
 		}
 
 	}
@@ -456,6 +468,17 @@ void AINSCharacter::OnWeaponCollide(const FHitResult& Hit)
 	else
 	{
 		GetController()->SetIgnoreMoveInput(false);
+	}
+}
+
+void AINSCharacter::TickHitStateTime(const float DeltaTime)
+{
+	if (!IsNetMode(NM_DedicatedServer))
+	{
+		if (LastHitState.CurrentHitStateLastTime > 0.f)
+		{
+			LastHitState.CurrentHitStateLastTime = FMath::Clamp<float>(LastHitState.CurrentHitStateLastTime - DeltaTime, 0.f, LastHitState.CurrentHitStateLastTime);
+		}
 	}
 }
 
@@ -725,6 +748,7 @@ void AINSCharacter::Tick(float DeltaTime)
 	{
 		CurrentEyeHeight = FMath::Clamp<float>(CurrentEyeHeight + 10.f, CurrentEyeHeight, BaseEyeHeight);
 	}
+	TickHitStateTime(DeltaTime);
 	//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Green,UKismetStringLibrary::Conv_BoolToString(bIsAiming));
 }
 

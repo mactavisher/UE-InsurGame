@@ -170,7 +170,7 @@ void AINSGameModeBase::ModifyDamage(float& OutDamage, const float& OriginDamage,
 		OutDamage = ModifiedDamage;
 		bIsHeadShot = BoneName.ToString().Contains("Head", ESearchCase::IgnoreCase);
 		UE_LOG(LogINSCharacter
-			, Warning
+			, Log
 			, TEXT("character %s hit with bone:%s,damage modifier values is:%f,Modified damage value is %f")
 			, *GetName()
 			, *BoneName.ToString()

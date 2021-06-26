@@ -287,7 +287,7 @@ void AINSProjectile::PostNetReceiveLocationAndRotation()
 
 void AINSProjectile::GatherCurrentMovement()
 {
-	if (!bVisualProjectile &&RootComponent != NULL)
+	if (!bVisualProjectile && RootComponent != NULL)
 	{
 		// If we are attached, don't replicate absolute position
 		if (RootComponent->GetAttachParent() != NULL)
@@ -310,20 +310,20 @@ void AINSProjectile::GatherCurrentMovement()
 	}
 }
 
-
 void AINSProjectile::PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker)
 {
-	if (HasAuthority() && !bIsGatheringMovement&&!bVisualProjectile)
+	if (!HasAuthority() || bIsGatheringMovement || bVisualProjectile)
 	{
-		const bool bRepDeltaTimeAllowed = GetWorld()->GetRealTimeSeconds() - LastMovementRepTime >= MovementRepInterval;
-		if (bRepDeltaTimeAllowed || bForceMovementReplication)
-		{
-			TGuardValue<bool> HitGuard(bIsGatheringMovement, true);
-			GatherCurrentMovement();
-			bForceMovementReplication = false;
-			bIsGatheringMovement = false;
-			LastMovementRepTime = GetWorld()->GetRealTimeSeconds();
-		}
+		return;
+	}
+	const bool bRepDeltaTimeAllowed = GetWorld()->GetRealTimeSeconds() - LastMovementRepTime >= MovementRepInterval;
+	if (bRepDeltaTimeAllowed || bForceMovementReplication)
+	{
+		TGuardValue<bool> HitGuard(bIsGatheringMovement, true);
+		GatherCurrentMovement();
+		bForceMovementReplication = false;
+		bIsGatheringMovement = false;
+		LastMovementRepTime = GetWorld()->GetRealTimeSeconds();
 	}
 }
 
@@ -340,18 +340,17 @@ void AINSProjectile::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 void AINSProjectile::OnRep_ReplicatedMovement()
 {
 	FRepMovement DecompressedMovementRep = GetReplicatedMovement();
-	switch (MovementQuantizeLevel)
+	float QuantizeDivider = 1.f;
+	if (MovementQuantizeLevel == EVectorQuantization::RoundOneDecimal)
 	{
-	case EVectorQuantization::RoundOneDecimal:
-		DecompressedMovementRep.Location = DecompressedMovementRep.Location / 10.f;
-		DecompressedMovementRep.LinearVelocity = DecompressedMovementRep.LinearVelocity / 10.f;
-		break;
-	case EVectorQuantization::RoundTwoDecimals:
-		DecompressedMovementRep.Location = DecompressedMovementRep.Location / 100.f;
-		DecompressedMovementRep.LinearVelocity = DecompressedMovementRep.LinearVelocity / 100.f;
-		break;
-	case EVectorQuantization::RoundWholeNumber:break;
+		QuantizeDivider = 10.f;
 	}
+	if (MovementQuantizeLevel == EVectorQuantization::RoundTwoDecimals)
+	{
+		QuantizeDivider = 100.f;
+	}
+	DecompressedMovementRep.Location = DecompressedMovementRep.Location / QuantizeDivider;
+	DecompressedMovementRep.LinearVelocity = DecompressedMovementRep.LinearVelocity / QuantizeDivider;
 	SetReplicatedMovement(DecompressedMovementRep);
 	Super::OnRep_ReplicatedMovement();
 	if (GetVisualFakeProjectile())

@@ -14,7 +14,7 @@ void UINSCharacterAudioComponent::SetVoiceType(EVoiceType NewVoiceType)
 
 void UINSCharacterAudioComponent::OnTakeDamage(const bool bIsTeamDamage)
 {
-	if (!GetIsOwnerCharacterDead())
+	if (!GetIsOwnerCharacterDead()&&CurrentPlayingSoundType==EVoiceType::NONE)
 	{
 		USoundCue* SelectedSoundToPlay = bIsTeamDamage ? GetSoundToPlay(EVoiceType::TAKE_TEAM_DAMAGE) : GetSoundToPlay(EVoiceType::TAKE_DAMAGE);
 		SetSound(SelectedSoundToPlay);
@@ -54,10 +54,6 @@ void UINSCharacterAudioComponent::OnLowHeath()
 void UINSCharacterAudioComponent::OnCauseDamage(bool bTeamDamage, bool bVictimDead)
 {
 	USoundCue* SelectedSound = nullptr;
-	/*if (bTeamDamage)
-	{
-		SelectedSound = GetSoundToPlay(EVoiceType::CAUSE_FRIENDLY_DAMAGE);
-	}*/
 	if (bVictimDead)
 	{
 		SelectedSound = GetSoundToPlay(EVoiceType::KILL_PLAYER);
@@ -81,6 +77,11 @@ bool UINSCharacterAudioComponent::GetIsOwnerCharacterDead() const
 	return false;
 }
 
+void UINSCharacterAudioComponent::OnSoundFinnishPlay()
+{
+
+}
+
 class USoundCue* UINSCharacterAudioComponent::GetSoundToPlay(const EVoiceType NewVoiceType)
 {
 	USoundCue* SoundToPlay = nullptr;
@@ -96,7 +97,13 @@ class USoundCue* UINSCharacterAudioComponent::GetSoundToPlay(const EVoiceType Ne
 	}
 	if (SoundToPlay == nullptr)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Trying to play sound with no sound cue"));
+		UE_LOG(LogTemp, Warning, TEXT("Trying to play sound with no sound assets!"));
 	}
 	return SoundToPlay;
+}
+
+void UINSCharacterAudioComponent::BeginPlay()
+{
+	Super::BeginPlay();
+	OnAudioFinished.AddDynamic(this, &UINSCharacterAudioComponent::OnSoundFinnishPlay);
 }

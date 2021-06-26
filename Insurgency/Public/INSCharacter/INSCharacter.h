@@ -24,6 +24,27 @@ class UPawnNoiseEmitterComponent;
 INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogINSCharacter, Log, All);
 
 
+USTRUCT(BlueprintType)
+struct FLastHitStateInfo
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(EditAnywhere,BlueprintReadWrite)
+	float HitStateTime;
+
+	UPROPERTY()
+	float CurrentHitStateLastTime;
+
+	UPROPERTY()
+	TObjectPtr<AActor> LastHitActor;
+
+	FLastHitStateInfo()
+		: HitStateTime(10.f)
+		, CurrentHitStateLastTime(0.f)
+		, LastHitActor(nullptr)
+	{}
+};
+
 /** mapped bone and damage modifier  */
 USTRUCT(BlueprintType)
 struct FBoneDamageModifier {
@@ -166,6 +187,9 @@ protected:
 	/** indicates if character is currently in spawn protection mode */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Damage")
 		uint8 bDamageImmuneState : 1;
+
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="LastHitState")
+	FLastHitStateInfo LastHitState;
 
 public:
 	UPROPERTY(VisibleAnywhere, BlueprintAssignable)
@@ -327,6 +351,12 @@ public:
 
 	virtual void OnWeaponCollide(const FHitResult& Hit);
 
+	/**
+	 * @desc  ticks the last hit state last time
+	 * @param deltaTime world delta time in seconds
+	 */
+	virtual void TickHitStateTime(const float DeltaTime);
+
 	/** handles Aim request from player  */
 	virtual void HandleAimWeaponRequest();
 
@@ -429,4 +459,13 @@ public:
 
 	/** called when this character damages other character */
 	virtual void OnCauseDamage(const FTakeHitInfo& HitInfo);
+
+	/**
+	 * @desc Set the hit state
+	 * @param LastHitActor   the actual actor hit us last time
+	 */
+	virtual void SetLastHitStateInfo(class AActor* LastHitActor);
+
+	/** returns if this character is in hit state */
+	virtual bool GetIsInHitState()const { return LastHitState.CurrentHitStateLastTime > 0.f; };
 };

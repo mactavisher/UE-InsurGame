@@ -159,8 +159,8 @@ void AINSZombie::OnRep_LastHitInfo()
 
 void AINSZombie::FaceRotation(FRotator NewControlRotation, float DeltaTime /* = 0.f */)
 {
-	FRotator LaggedNewRotation(NewControlRotation.Pitch / 20.f, NewControlRotation.Yaw / 20.f, NewControlRotation.Roll / 20.f);
-	Super::FaceRotation(LaggedNewRotation, DeltaTime);
+	FRotator CurrentRotation = FMath::RInterpTo(GetActorRotation(), NewControlRotation, DeltaTime, 8.0f);
+	Super::FaceRotation(CurrentRotation, DeltaTime);
 }
 
 void AINSZombie::OnRep_ZombieMoveMode()

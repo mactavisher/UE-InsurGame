@@ -55,7 +55,7 @@ enum class EZombieAttackMode :uint8
 /**
  *  zombie character class
  */
-UCLASS(notplaceable)
+UCLASS(Blueprintable)
 class INSURGENCY_API AINSZombie : public AINSCharacter
 {
 	GENERATED_UCLASS_BODY()

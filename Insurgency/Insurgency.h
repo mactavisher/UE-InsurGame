@@ -151,6 +151,7 @@ enum class EVoiceType :uint8 {
 	MA_NDOWN                  UMETA(DisplayName = "Man down"),
 	CAUSE_FRIENDLY_DAMAGE     UMETA(DisplayName = "cause friendly damage"),
 	CAUSE_FFIENDLY_KILL       UMETA(DisplayName = "cause friendly kill"),
+    NONE                      UMETA(DisplayName="none"),
 };
 
 UENUM(BlueprintType)

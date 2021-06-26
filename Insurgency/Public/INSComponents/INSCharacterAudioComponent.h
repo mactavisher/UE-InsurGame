@@ -30,8 +30,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character")
 		AINSCharacter* OwnerCharacter;
 
+	UPROPERTY()
+	EVoiceType CurrentPlayingSoundType;
+
 protected:
 	virtual class USoundCue* GetSoundToPlay(const EVoiceType NewVoiceType);
+	virtual void BeginPlay()override;
 
 public:
 	virtual void SetVoiceType(EVoiceType NewVoiceType);
@@ -87,4 +91,7 @@ public:
 	 * @return bool   character's dead condition
 	 */
 	virtual bool GetIsOwnerCharacterDead()const;
+
+	UFUNCTION()
+	virtual void OnSoundFinnishPlay();
 };
