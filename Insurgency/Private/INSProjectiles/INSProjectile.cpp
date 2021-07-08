@@ -31,7 +31,7 @@ AINSProjectile::AINSProjectile(const FObjectInitializer& ObjectInitializer) :Sup
 {
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.SetTickFunctionEnable(true);
-	SetReplicates(true);
+	bReplicates = true;
 	HitCounter = 0;
 	bIsExplosive = false;
 	DamageBase = 20.f;
@@ -92,7 +92,7 @@ void AINSProjectile::OnRep_OwnerWeapon()
 {
 	if (OwnerWeapon)
 	{
-		InitClientFakeProjectile();
+		InitClientFakeProjectile(this);
 	}
 }
 
@@ -103,7 +103,7 @@ void AINSProjectile::EnableFakeProjVisual()
 
 void AINSProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	if (GetLocalRole() == ROLE_Authority&&!bIsProcessingHit)
+	if (GetLocalRole() == ROLE_Authority && !bIsProcessingHit)
 	{
 		TGuardValue<bool> HitGuard(bIsProcessingHit, true);
 		GetProjectileMovementComp()->StopMovementImmediately();
@@ -115,8 +115,8 @@ void AINSProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* 
 		GatherCurrentMovement();
 		HitCounter++;
 		UE_LOG(LogINSProjectile
-			,Log
-			,TEXT("Projectile hit something,this hit component name:%s,hit other component name:%s,other actor name :%s")
+			, Log
+			, TEXT("Projectile hit something,this hit component name:%s,hit other component name:%s,other actor name :%s")
 			, HitComponent == nullptr ? TEXT("NULL") : *HitComponent->GetName()
 			, OtherComp == nullptr ? TEXT("NULL") : *OtherComp->GetName()
 			, OtherActor == nullptr ? TEXT("NULL") : *OtherActor->GetName());
@@ -218,7 +218,7 @@ void AINSProjectile::BeginPlay()
 		SetActorHiddenInGame(true);
 		if (IsNetMode(NM_ListenServer) || IsNetMode(NM_Standalone))
 		{
-			InitClientFakeProjectile();
+			InitClientFakeProjectile(this);
 		}
 	}
 	Super::BeginPlay();
@@ -261,6 +261,11 @@ void AINSProjectile::PostInitializeComponents()
 		TracerPaticleSizeTickFun.RegisterTickFunction(GetLevel());
 		TracerPaticleSizeTickFun.Target = this;
 	}
+	if (HasAuthority() && bScanTraceProjectile)
+	{
+		MovementRepInterval = 10.f;
+	}
+	GetProjectileMovementComp()->SetOwnerProjectile(this);
 }
 
 void AINSProjectile::PostNetReceiveVelocity(const FVector& NewVelocity)
@@ -277,10 +282,10 @@ void AINSProjectile::PostNetReceiveLocationAndRotation()
 	}
 	else
 	{
-		if(GetActorLocation().Equals(GetReplicatedMovement().Location, 10.f))
+		if (GetActorLocation().Equals(GetReplicatedMovement().Location, 10.f))
 		{
-			bNeedPositionSync = true;
-			bInPositionSync = false;
+			bNeedPositionSync = false;
+			bInPositionSync = true;
 		}
 	}
 }
@@ -306,24 +311,24 @@ void AINSProjectile::GatherCurrentMovement()
 			OptRepMovement.RotationQuantizationLevel = ERotatorQuantization::ByteComponents;
 			OptRepMovement.VelocityQuantizationLevel = MovementQuantizeLevel;
 			SetReplicatedMovement(OptRepMovement);
+			bForceMovementReplication = false;
+			bIsGatheringMovement = false;
+			LastMovementRepTime = GetWorld()->GetRealTimeSeconds();
 		}
 	}
 }
 
+
 void AINSProjectile::PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker)
 {
-	if (!HasAuthority() || bIsGatheringMovement || bVisualProjectile)
+	if (HasAuthority() && !bIsGatheringMovement && !bVisualProjectile)
 	{
-		return;
-	}
-	const bool bRepDeltaTimeAllowed = GetWorld()->GetRealTimeSeconds() - LastMovementRepTime >= MovementRepInterval;
-	if (bRepDeltaTimeAllowed || bForceMovementReplication)
-	{
-		TGuardValue<bool> HitGuard(bIsGatheringMovement, true);
-		GatherCurrentMovement();
-		bForceMovementReplication = false;
-		bIsGatheringMovement = false;
-		LastMovementRepTime = GetWorld()->GetRealTimeSeconds();
+		const bool bRepDeltaTimeAllowed = GetWorld()->GetRealTimeSeconds() - LastMovementRepTime >= MovementRepInterval;
+		if (bRepDeltaTimeAllowed || bForceMovementReplication)
+		{
+			TGuardValue<bool> HitGuard(bIsGatheringMovement, true);
+			GatherCurrentMovement();
+		}
 	}
 }
 
@@ -334,23 +339,24 @@ void AINSProjectile::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AINSProjectile, OwnerWeapon);
 	DOREPLIFETIME(AINSProjectile, CurrentPenetrateCount);
 	DOREPLIFETIME(AINSProjectile, bScanTraceProjectile);
-	DOREPLIFETIME_CONDITION(AINSProjectile, MovementQuantizeLevel,COND_InitialOnly);
+	DOREPLIFETIME_CONDITION(AINSProjectile, MovementQuantizeLevel, COND_InitialOnly);
 }
 
 void AINSProjectile::OnRep_ReplicatedMovement()
 {
 	FRepMovement DecompressedMovementRep = GetReplicatedMovement();
-	float QuantizeDivider = 1.f;
-	if (MovementQuantizeLevel == EVectorQuantization::RoundOneDecimal)
+	switch (MovementQuantizeLevel)
 	{
-		QuantizeDivider = 10.f;
+	case EVectorQuantization::RoundOneDecimal:
+		DecompressedMovementRep.Location = DecompressedMovementRep.Location / 10.f;
+		DecompressedMovementRep.LinearVelocity = DecompressedMovementRep.LinearVelocity / 10.f;
+		break;
+	case EVectorQuantization::RoundTwoDecimals:
+		DecompressedMovementRep.Location = DecompressedMovementRep.Location / 100.f;
+		DecompressedMovementRep.LinearVelocity = DecompressedMovementRep.LinearVelocity / 100.f;
+		break;
+	case EVectorQuantization::RoundWholeNumber:break;
 	}
-	if (MovementQuantizeLevel == EVectorQuantization::RoundTwoDecimals)
-	{
-		QuantizeDivider = 100.f;
-	}
-	DecompressedMovementRep.Location = DecompressedMovementRep.Location / QuantizeDivider;
-	DecompressedMovementRep.LinearVelocity = DecompressedMovementRep.LinearVelocity / QuantizeDivider;
 	SetReplicatedMovement(DecompressedMovementRep);
 	Super::OnRep_ReplicatedMovement();
 	if (GetVisualFakeProjectile())
@@ -360,10 +366,10 @@ void AINSProjectile::OnRep_ReplicatedMovement()
 	}
 }
 
-void AINSProjectile::InitClientFakeProjectile()
+void AINSProjectile::InitClientFakeProjectile(const AINSProjectile* const NetAuthorityProjectile)
 {
 	const FTransform SpawnTransform(GetActorRotation(), GetActorLocation(), FVector::OneVector);
-	VisualFakeProjectile = GetWorld()->SpawnActorDeferred<AINSProjectile>(this->GetClass(),SpawnTransform,this,nullptr,ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+	VisualFakeProjectile = GetWorld()->SpawnActorDeferred<AINSProjectile>(this->GetClass(), SpawnTransform, this, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 	if (VisualFakeProjectile)
 	{
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
@@ -372,18 +378,19 @@ void AINSProjectile::InitClientFakeProjectile()
 		GetVisualFakeProjectile()->SetIsFakeProjectile(true);
 		GetVisualFakeProjectile()->NetAuthrotyProjectile = this;
 		GetVisualFakeProjectile()->SetOwnerWeapon(GetOwnerWeapon());
-		GetVisualFakeProjectile()->SetCurrentPenetrateCount(GetCurrentPenetrateCount() + 1);
+		GetVisualFakeProjectile()->SetCurrentPenetrateCount(NetAuthorityProjectile->GetCurrentPenetrateCount() + 1);
 		GetVisualFakeProjectile()->GetCollsioncomp()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		GetVisualFakeProjectile()->GetCollsioncomp()->SetUseCCD(false);
 		GetVisualFakeProjectile()->GetCollsioncomp()->SetAllUseCCD(false);
 		GetVisualFakeProjectile()->GetProjectileMovementComp()->InitialSpeed = OwnerWeapon->GetMuzzleSpeedValue();
+		GetVisualFakeProjectile()->SetScanTraceTime(OwnerWeapon->GetScanTraceRange() / OwnerWeapon->GetMuzzleSpeedValue());
 		UGameplayStatics::FinishSpawningActor(VisualFakeProjectile, SpawnTransform);
 	}
 }
 
 void AINSProjectile::SendInitialReplication()
 {
-	UE_LOG(LogINSProjectile, Log, TEXT("start send a initial bunch replocation %s manually to relavant Clients"),*GetName());
+	UE_LOG(LogINSProjectile, Log, TEXT("start send a initial bunch replocation %s manually to relavant Clients"), *GetName());
 	UNetDriver* const NetDriver = GetNetDriver();
 	if (NetDriver != nullptr && NetDriver->IsServer() && !IsPendingKillPending() && (ProjectileMoveComp->Velocity.Size() >= 7500.0f))
 	{
@@ -413,7 +420,7 @@ void AINSProjectile::SendInitialReplication()
 							Channel = Cast<UActorChannel>(NetDriver->ClientConnections[i]->CreateChannelByName(NAME_Actor, EChannelCreateFlags::OpenedLocally, INDEX_NONE));
 							if (Channel != nullptr)
 							{
-								Channel->SetChannelActor(this,ESetChannelActorFlags::None);
+								Channel->SetChannelActor(this, ESetChannelActorFlags::None);
 							}
 						}
 					}
@@ -421,6 +428,7 @@ void AINSProjectile::SendInitialReplication()
 					{
 						if (!Channel->bIsReplicatingActor)
 						{
+							bForceMovementReplication = true;
 							GatherCurrentMovement();
 							Channel->ReplicateActor();
 							UE_LOG(LogINSProjectile, Log, TEXT("send a initial bunch replocation %s manually to  all relavent Clients done"), *GetName());
@@ -483,7 +491,7 @@ void AINSProjectile::CheckImpactHit()
 	{
 		GetVisualFakeProjectile()->Destroy();
 	}
-	else 
+	else
 	{
 		if (GetVisualFakeProjectile())
 		{
@@ -503,6 +511,12 @@ void AINSProjectile::SetMuzzleSpeed(float NewSpeed)
 	ProjectileMoveComp->InitialSpeed = NewSpeed;
 }
 
+void AINSProjectile::SetScanTraceTime(float NewTime)
+{
+	ScanTraceTime = NewTime;
+	UE_LOG(LogINSProjectile, Log, TEXT("Projectile named %s will travel with a scan trace time %f"), *GetName(), ScanTraceTime);
+}
+
 void AINSProjectile::SetOwnerWeapon(class AINSWeaponBase* NewWeaponOwner)
 {
 	this->OwnerWeapon = NewWeaponOwner;
@@ -518,7 +532,7 @@ float AINSProjectile::GetDamageTaken()
 void AINSProjectile::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (bVisualProjectile) 
+	if (bVisualProjectile)
 	{
 		if (bNeedPositionSync)
 		{
@@ -541,7 +555,7 @@ void AINSProjectile::TickActor(float DeltaTime, enum ELevelTick TickType, FActor
 		InitRepTickFunc.UnRegisterTickFunction();
 	}
 	Super::TickActor(DeltaTime, TickType, ThisTickFunction);
-	if (&ThisTickFunction == &TracerPaticleSizeTickFun&& bVisualProjectile)
+	if (&ThisTickFunction == &TracerPaticleSizeTickFun && bVisualProjectile)
 	{
 		FVector CurrentTracerScale = TracerParticle->GetComponentTransform().GetScale3D();
 		float CurrentScaleX = CurrentTracerScale.X;
@@ -554,7 +568,7 @@ void AINSProjectile::TickActor(float DeltaTime, enum ELevelTick TickType, FActor
 		{
 			TracerParticle->SetWorldScale3D(FVector(UpdatedScaleX, UpdateScaeleY, UpdateScaeleZ));
 		}
-		else 
+		else
 		{
 			TracerPaticleSizeTickFun.SetTickFunctionEnable(false);
 			TracerPaticleSizeTickFun.UnRegisterTickFunction();

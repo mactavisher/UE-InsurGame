@@ -84,6 +84,44 @@ struct FRepINSProjMovement
 	}
 };
 
+USTRUCT(BlueprintType)
+struct FProjectleLiftTimeData
+{
+
+	GENERATED_USTRUCT_BODY()
+
+		/** indicates the initial speed after this projectile fired, usually be the weapon's muzzle speed */
+	UPROPERTY()
+		float StartSpeed;
+
+	/** indicates the impact speed after this projectile fired, usually be the weapon's muzzle speed */
+	UPROPERTY()
+		float ImpactSpeed;
+
+	/** indicates the impact Velocity after this projectile fired, usually be the weapon's muzzle speed */
+	UPROPERTY()
+		FVector ImpactVelocity;
+
+	/** indicates the actor that impact with */
+	UPROPERTY()
+		TWeakObjectPtr<AActor> ImpactActor;
+
+	/** indicates the Player that impact with if exist,could be null */
+	UPROPERTY()
+		TWeakObjectPtr<AController> ImpactPlayer;
+
+	/** indicates the time fires this shot */
+	UPROPERTY()
+		float StartTime;
+
+	/** indicates the time fires this shot */
+	UPROPERTY()
+		float ImpactTime;
+
+	UPROPERTY()
+		int32 DamageCaused;
+};
+
 
 /**
  * master class of weapon projectiles
@@ -119,79 +157,79 @@ protected:
 		UParticleSystemComponent* TracerParticle;
 
 	/** point impact effect class  */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects|Impacts")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactEffects")
 		TSubclassOf<AINSImpactEffect>PointImapactEffectsClass;
 
 	/** radius impact effect class */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects|Impacts")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactEffects")
 		TSubclassOf<AINSImpactEffect>ExplodeImapactEffectsClass;
 
 	/** point damage type class */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Damage|DamageType")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Damage")
 		TSubclassOf<UDamageType> ProjectileDamageTypeClass;
 
 	/** radius damage type class */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Damage|DamageType")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Damage")
 		TSubclassOf<UDamageType> ExplosiveDamageTypeClass;
 
 	/** damage scale by flying distance */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Damage|DamageFalloffCurve")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Damage")
 		UCurveFloat* DamageFalloffCurve;
 
 	/** base damage of this projectile */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Damage|Amount")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Damage")
 		float DamageBase;
 
 	/** indicates that this projectile actually hits something , and replicated to notify any other clients*/
-	UPROPERTY(VisibleAnywhere, Replicated, ReplicatedUsing = OnRep_HitCounter, BlueprintReadOnly, Category = "Repliciation|Hit")
+	UPROPERTY(VisibleAnywhere, Replicated, ReplicatedUsing = OnRep_HitCounter, BlueprintReadOnly, Category = "Repliciation")
 		uint8  HitCounter;
 
 	/** indicates that this projectile actually hits something , and replicated to notify any other clients*/
-	UPROPERTY(VisibleAnywhere, Category = "Repliciation|Hit")
+	UPROPERTY(VisibleAnywhere, Category = "Movement")
 		bool bIsProcessingHit;
 
 	/** how much time to wait before next movement replication happens,used for band width saving purpose*/
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "MovementRepInterval")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Repliciation")
 		float MovementRepInterval;
 
 	/**record last time we replicate this projectile movement  */
-	UPROPERTY(Transient, BlueprintReadOnly, VisibleAnywhere, Category = "MovementRepInterval")
+	UPROPERTY(Transient, BlueprintReadOnly, VisibleAnywhere, Category = "Repliciation")
 		float LastMovementRepTime;
 
 	/** indicates how many times dose the net authority projectile Current penetrates*/
-	UPROPERTY(VisibleAnywhere, Replicated, BlueprintReadOnly, Category = "Repliciation|Hit")
+	UPROPERTY(VisibleAnywhere, Replicated, BlueprintReadOnly, Category = "Penetration")
 		uint8  CurrentPenetrateCount;
 
 	/** indicates maximum times will the first net authority projectile spawned by a weapon penetrates*/
-	UPROPERTY(VisibleAnywhere, Replicated, ReplicatedUsing = OnRep_HitCounter, BlueprintReadOnly, Category = "Repliciation|Hit")
+	UPROPERTY(VisibleAnywhere, Replicated, ReplicatedUsing = OnRep_HitCounter, BlueprintReadOnly, Category = "Penetration")
 		uint8  PenetrateCountThreshold;
 
 	/** is this projectile is explosive such as frag */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BFProjectile|Explosive")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ProjectileType")
 		uint8 bIsExplosive : 1;
 
 	/** due to unavoidable net working delay,we need a little more time for projectile to catch up with net authority version projectile and check impact hit */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BFProjectile|Explosive")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 		uint8 bDelayedHit : 1;
 
 	/** is this projectile exploded last frame */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_Explode, Category = "Repliciation|Hit")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_Explode, Category = "State")
 		uint8 bExploded : 1;
 
 	/** is a client fake projectile used for providing visuals for client */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BFProjectile|Explosive")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
 		uint8 bVisualProjectile : 1;
 
-	/** when movement replication received, check if need a position sync to match server projecile */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BFProjectile|Explosive")
+	/** when movement replication received, check if need a position sync to match server projectile*/
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 		uint8 bNeedPositionSync : 1;
 
 	/** indicates if position sync is in progress */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BFProjectile|Explosive")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
 		uint8 bInPositionSync : 1;
 
-	/** is this projectile hit by way of scan trace, if true ,we just need to tell client where it flies and no need movement replication */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "BFProjectile|Explosive")
+	/** is this projectile hit by way of scan trace, if true ,we just need to tell client where it flies and no need movement replication or scale the the movement rep interval */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Replication")
 		uint8 bScanTraceProjectile : 1;
 
 	/** config the velocity and location quantize level,replicated to clients so they know how to unpack the received data */
@@ -199,11 +237,11 @@ protected:
 		EVectorQuantization MovementQuantizeLevel;
 
 	/** Net authority version */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BFProjectile")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Replication")
 		AINSProjectile* NetAuthrotyProjectile;
 
 	/** client fake version ,only provide visual*/
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "BFProjectile")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Replication")
 		AINSProjectile* VisualFakeProjectile;
 
 	/** weapon that fires me */
@@ -214,12 +252,16 @@ protected:
 	TWeakObjectPtr<AController> InstigatorPlayer;
 
 	/** force a movement info replicate to clients */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MovementReplication")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Replication")
 		uint8 bForceMovementReplication : 1;
 
 	/** indicate that movement replication is in progress*/
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MovementReplication")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Replication")
 		bool bIsGatheringMovement;
+
+	/** indicate if the scan trace projectile has reach the desire location */
+	UPROPERTY()
+	uint8 bReachDesiredLoc;
 
 	/** this used to send a initial replication to relevant client immediately if projectile flies fast */
 	UPROPERTY()
@@ -227,8 +269,15 @@ protected:
 
 	UPROPERTY()
 		FActorTickFunction TracerPaticleSizeTickFun;
+
 	UPROPERTY()
 	    FVector SpawnLocation;
+
+	UPROPERTY(Replicated)
+	    FVector ScanTraceHitLoc;
+
+	UPROPERTY()
+	    float ScanTraceTime;
 
 #if WITH_EDITORONLY_DATA
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Projectile|Debug")
@@ -284,7 +333,7 @@ protected:
 	 *       client fake projectile immediately and still simulate it's physic state,and by
 	 *       each time we received a update ,just update the fake to match the server one
 	 */
-	virtual void InitClientFakeProjectile();
+	virtual void InitClientFakeProjectile(const AINSProjectile* const NetAuthorityProjectile);
 
 	/**
 	 * @Desc send a initial replication to relevant clients for extremely fast moving projectiles
@@ -292,6 +341,7 @@ protected:
 	 */
 	virtual void SendInitialReplication();
 
+	/** Checks the Impact hit result and simulate FX */
 	virtual void CheckImpactHit();
 
 
@@ -299,6 +349,8 @@ public:
 
 	/** return base damage amount */
 	inline virtual float GetBaseDamage()const { return DamageBase; }
+
+	virtual void SetScantraceHitLoc(const FVector NewLoc) { ScanTraceHitLoc = NewLoc; }
 
 	/** get the current penetrate count */
 	inline virtual uint8 GetCurrentPenetrateCount()const { return CurrentPenetrateCount; }
@@ -342,10 +394,21 @@ public:
 	FORCEINLINE UINSProjectileMovementComponent* GetProjectileMovementComp()const { return ProjectileMoveComp; }
 
 	/**
-	 * @desc set the initial speed this projectile will use to travel
+	 * @desc  set the initial speed this projectile will use to travel
 	 * @Param NewSpeed  The New Speed to set
 	 */
 	virtual void SetMuzzleSpeed(float NewSpeed);
+
+	/**
+	 * @desc set the scan trace time that this projectile will travel,during scan trace time ,projectiles will have no
+	 *       physics simulation such as gravity
+	 * 
+	 * @Param NewTime  the scan trace time to set
+	 */
+	virtual void SetScanTraceTime(float NewTime);
+
+	/** returns the projectile scan trace time */
+	virtual float GetScanTraceTime()const { return ScanTraceTime; }
 
 	/**
 	 * @Desc  set if this projectile is spawned by way of scan trace

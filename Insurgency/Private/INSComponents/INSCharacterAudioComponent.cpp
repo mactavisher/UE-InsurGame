@@ -14,7 +14,7 @@ void UINSCharacterAudioComponent::SetVoiceType(EVoiceType NewVoiceType)
 
 void UINSCharacterAudioComponent::OnTakeDamage(const bool bIsTeamDamage)
 {
-	if (!GetIsOwnerCharacterDead()&&CurrentPlayingSoundType==EVoiceType::NONE)
+	if (GetIsPlayValid())
 	{
 		USoundCue* SelectedSoundToPlay = bIsTeamDamage ? GetSoundToPlay(EVoiceType::TAKE_TEAM_DAMAGE) : GetSoundToPlay(EVoiceType::TAKE_DAMAGE);
 		SetSound(SelectedSoundToPlay);
@@ -24,7 +24,7 @@ void UINSCharacterAudioComponent::OnTakeDamage(const bool bIsTeamDamage)
 
 void UINSCharacterAudioComponent::OnWeaponReload()
 {
-	if (!GetIsOwnerCharacterDead())
+	if (GetIsPlayValid())
 	{
 		USoundCue* SelectedSoundToPlay = GetSoundToPlay(EVoiceType::RELOADING);
 		SetSound(SelectedSoundToPlay);
@@ -47,20 +47,21 @@ void UINSCharacterAudioComponent::OnDeath()
 
 void UINSCharacterAudioComponent::OnLowHeath()
 {
-
+	
 }
 
 
 void UINSCharacterAudioComponent::OnCauseDamage(bool bTeamDamage, bool bVictimDead)
 {
-	USoundCue* SelectedSound = nullptr;
-	if (bVictimDead)
+	if (GetIsPlayValid())
 	{
-		SelectedSound = GetSoundToPlay(EVoiceType::KILL_PLAYER);
+		if (bVictimDead)
+		{
+			USoundCue* SelectedSound = GetSoundToPlay(EVoiceType::KILL_PLAYER);
+			SetSound(SelectedSound);
+			Play();
+		}
 	}
-	Stop();
-	SetSound(SelectedSound);
-	Play();
 }
 
 void UINSCharacterAudioComponent::SetOwnerCharacter(class AINSCharacter* NewCharacter)
@@ -68,18 +69,14 @@ void UINSCharacterAudioComponent::SetOwnerCharacter(class AINSCharacter* NewChar
 	OwnerCharacter = NewCharacter;
 }
 
-bool UINSCharacterAudioComponent::GetIsOwnerCharacterDead() const
+bool UINSCharacterAudioComponent::GetIsPlayValid() const
 {
-	if (GetOwnerCharacter())
-	{
-		return GetOwnerCharacter()->GetIsDead();
-	}
-	return false;
+	return GetOwnerCharacter() && GetOwnerCharacter()->GetIsDead() && GetPlayState() == EAudioComponentPlayState::Stopped;
 }
 
-void UINSCharacterAudioComponent::OnSoundFinnishPlay()
+void UINSCharacterAudioComponent::OnSoundFinishPlay()
 {
-
+	CurrentPlayingSoundType = EVoiceType::NONE;
 }
 
 class USoundCue* UINSCharacterAudioComponent::GetSoundToPlay(const EVoiceType NewVoiceType)
@@ -92,7 +89,7 @@ class USoundCue* UINSCharacterAudioComponent::GetSoundToPlay(const EVoiceType Ne
 	case EVoiceType::RELOADING:SoundToPlay = MaleVoiceData->MaleVoiceData.ReloadWeapon; break;
 	case EVoiceType::TAKE_TEAM_DAMAGE:SoundToPlay = MaleVoiceData->MaleVoiceData.TeamDamageVoice; break;
 	case EVoiceType::KILL_PLAYER:SoundToPlay = MaleVoiceData->MaleVoiceData.KillEnemy; break;
-	case EVoiceType::CAUSE_FFIENDLY_KILL:SoundToPlay = MaleVoiceData->MaleVoiceData.FriendlyDamage;break;
+	case EVoiceType::CAUSE_FRIENDLY_KILL:SoundToPlay = MaleVoiceData->MaleVoiceData.FriendlyDamage;break;
 	default:SoundToPlay = nullptr; break;
 	}
 	if (SoundToPlay == nullptr)
@@ -105,5 +102,5 @@ class USoundCue* UINSCharacterAudioComponent::GetSoundToPlay(const EVoiceType Ne
 void UINSCharacterAudioComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	OnAudioFinished.AddDynamic(this, &UINSCharacterAudioComponent::OnSoundFinnishPlay);
+	OnAudioFinished.AddDynamic(this, &UINSCharacterAudioComponent::OnSoundFinishPlay);
 }

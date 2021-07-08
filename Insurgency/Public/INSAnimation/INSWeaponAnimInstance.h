@@ -5,36 +5,35 @@
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
 #include "INSInterfaces/INSWeaponAnimInterface.h"
+#include "Insurgency/Insurgency.h"
 #include "INSWeaponAnimInstance.generated.h"
 
 INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogINSWeaponAimInstance, Log, All);
 
 /**
- * 
+ *
  */
 UCLASS()
-class INSURGENCY_API UINSWeaponAnimInstance : public UAnimInstance,public IINSWeaponAnimInterface
+class INSURGENCY_API UINSWeaponAnimInstance : public UAnimInstance, public IINSWeaponAnimInterface
 {
 	GENERATED_UCLASS_BODY()
 protected:
-	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="WeaponRef")
-	class AINSWeaponBase* OwnerWeapon;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "WeaponRef")
+		class AINSWeaponBase* OwnerWeapon;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "WeaponRef")
-	class UINSWeaponMeshComponent* OwnerWeaponMesh;
+		class UINSWeaponMeshComponent* OwnerWeaponMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "WeaponRef")
-	class UINSStaticAnimData* WeaponAnimData;
+		class UINSStaticAnimData* WeaponAnimData;
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="CurrentWeaponBaseType")
-	EWeaponBasePoseType CurrentWeaponBasePoseType;
-
-
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "CurrentWeaponBaseType")
+		EWeaponBasePoseType CurrentWeaponBasePoseType;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AnimDelegate")
 		uint8 bWeaponAnimDelegateBindingFinished : 1;
-	
+
 protected:
 	/** native update for variables tick */
 	virtual void NativeUpdateAnimation(float DeltaSeconds)override;
@@ -46,24 +45,14 @@ protected:
 
 public:
 	//~begin INSWeaponAnim Interface
-	virtual void PlayFireAnim()override;
-
+	virtual float PlayFireAnim()override;
 	virtual float PlayReloadAnim(bool bIsDry)override;
-
 	virtual float PlaySwitchFireModeAnim()override;
-
 	virtual void OnWeaponAnimDelegateBindingFinished()override;
-
-	virtual void PlayWeaponBasePose()override;
-
+	virtual float PlayWeaponBasePose()override;
 	virtual void SetWeaponBasePoseType(EWeaponBasePoseType NewWeaponBasePoseType);
-
-	/** do nothing by default now */
-	virtual void PlayAimAnim() {};
-
-	/** do nothing by default now */
-	virtual void PlayStopAimAnim() {};
-
+	virtual float PlayAimAnim() { return 0.f; };
+	virtual float PlayStopAimAnim() { return 0.f; };
 	//~end  INSWeaponAnim Interface
 
 public:

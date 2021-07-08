@@ -93,7 +93,7 @@ protected:
 	/**
 	 * play the weapon base pose each frame to correct the weapon pose
 	 */
-	virtual void PlayWeaponBasePose()override;
+	virtual float PlayWeaponBasePose()override;
 
 	/**
 	 * @Desc play weapon reload Animation
@@ -119,7 +119,7 @@ protected:
 	virtual void SetCurrentWeaponAndAnimationData(class AINSWeaponBase* NewWeapon)override;
 
 public:
-	virtual void PlayFireAnim()override;
+	virtual float PlayFireAnim()override;
 
 	/**
 	 * update HandsShift when firing

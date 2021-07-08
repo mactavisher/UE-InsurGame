@@ -12,8 +12,8 @@ void UINSCrossHair_Cross::DrawCrossHair(class UCanvas* InCanvas, class AINSWeapo
 {
 	const FVector2D CanvasScale = GetCanvasScale(InCanvas);
 	const float SpreadModifier = InWeapon->GetWeaponCurrentSpread();
-	float BiasX = (WeaponCrossHairInfo.CenterRadius + SpreadModifier) * CanvasScale.X * 2.f;
-	float BiasY = (WeaponCrossHairInfo.CenterRadius + SpreadModifier) * CanvasScale.Y * 2.f;
+	float BiasX = WeaponCrossHairInfo.CenterRadius * SpreadModifier * CanvasScale.X;
+	float BiasY = WeaponCrossHairInfo.CenterRadius * SpreadModifier * CanvasScale.Y;
 	const float LeftLineCoordX = InCanvas->SizeX / 2.f - BiasX;
 	const float LeftLineEndCoordX = LeftLineCoordX - WeaponCrossHairInfo.LineLength * CanvasScale.X;
 	const float LeftLineCoordY = InCanvas->SizeY / 2.f;

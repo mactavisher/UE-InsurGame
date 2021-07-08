@@ -58,5 +58,5 @@ public:
 	 * @Param InWeapon weapon this cross hair belongs to
 	 * @Param DrawColor cross hair color to draw
 	 */
-	virtual void DrawCrossHair(class UCanvas* InCanvas, class AINSWeaponBase* InWeapon, FLinearColor DrawColor);
+	virtual void DrawCrossHair(class UCanvas* InCanvas,class AINSWeaponBase* InWeapon,FLinearColor DrawColor);
 };

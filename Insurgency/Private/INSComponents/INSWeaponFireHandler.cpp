@@ -4,7 +4,8 @@
 #include "INSComponents/INSWeaponFireHandler.h"
 #include "INSItems/INSWeapons/INSWeaponBase.h"
 #include "INSCharacter/INSPlayerCharacter.h"
-UINSWeaponFireHandler::UINSWeaponFireHandler(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
+
+UINSWeaponFireHandler::UINSWeaponFireHandler(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	bWantsToFire = false;
@@ -12,6 +13,9 @@ UINSWeaponFireHandler::UINSWeaponFireHandler(const FObjectInitializer& ObjectIni
 	ShotTimeRemaining = -0.01f;
 	FireInterval = 0.1f;
 	LastFireTime = 0.f;
+	bIsFiring = false;
+	SemiAutoCount = 0;
+	OwnerWeapon = nullptr;
 }
 
 void UINSWeaponFireHandler::BeginPlay()
@@ -19,7 +23,8 @@ void UINSWeaponFireHandler::BeginPlay()
 	Super::BeginPlay();
 }
 
-void UINSWeaponFireHandler::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UINSWeaponFireHandler::TickComponent(float DeltaTime, ELevelTick TickType,
+                                          FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 	ClearFiring();
@@ -33,19 +38,22 @@ void UINSWeaponFireHandler::SetOwnerWeapon(class AINSWeaponBase* NewWeapon)
 void UINSWeaponFireHandler::BeginWeaponFire(enum EWeaponFireMode NewFireMode)
 {
 	this->CurrentFireMode = NewFireMode;
-	if (CheckCanFireAgian())
+	if (CheckCanFireAgain())
 	{
 		if (CurrentFireMode == EWeaponFireMode::SEMI)
 		{
-			GetWorld()->GetTimerManager().SetTimer(SemiFireTimer, this, &UINSWeaponFireHandler::FireShot, FireInterval, false, 0.f);
+			GetWorld()->GetTimerManager().SetTimer(SemiFireTimer, this, &UINSWeaponFireHandler::FireShot,
+			                                       OwnerWeapon->GetTimeBetweenShots(), false, 0.f);
 		}
 		else if (CurrentFireMode == EWeaponFireMode::SEMIAUTO)
 		{
-			GetWorld()->GetTimerManager().SetTimer(SemiAutoFireTimer, this, &UINSWeaponFireHandler::FireShot, FireInterval * 0.8f, true, 0.f);
+			GetWorld()->GetTimerManager().SetTimer(SemiAutoFireTimer, this, &UINSWeaponFireHandler::FireShot,
+			                                       OwnerWeapon->GetTimeBetweenShots() * 0.8f, true, 0.f);
 		}
 		else if (CurrentFireMode == EWeaponFireMode::FULLAUTO)
 		{
-			GetWorld()->GetTimerManager().SetTimer(FullAutoFireTimer, this, &UINSWeaponFireHandler::FireShot, FireInterval, true, 0.f);
+			GetWorld()->GetTimerManager().SetTimer(FullAutoFireTimer, this, &UINSWeaponFireHandler::FireShot,
+			                                       OwnerWeapon->GetTimeBetweenShots(), true, 0.f);
 		}
 	}
 }
@@ -58,9 +66,11 @@ void UINSWeaponFireHandler::StopWeaponFire()
 	OwnerWeapon->SetWeaponState(EWeaponState::IDLE);
 }
 
-bool UINSWeaponFireHandler::CheckCanFireAgian()
+bool UINSWeaponFireHandler::CheckCanFireAgain()
 {
-	return OwnerWeapon && OwnerWeapon->CheckCanFire()&&GetWorld()->GetTimeSeconds() - LastFireTime >= FireInterval;
+	return OwnerWeapon
+		&& OwnerWeapon->CheckCanFire()
+		&& GetWorld()->GetTimeSeconds() - LastFireTime >= FireInterval;
 }
 
 
@@ -68,7 +78,7 @@ void UINSWeaponFireHandler::FireShot()
 {
 	//get the base fire location
 	FVector FireLoc(ForceInit);
-	OwnerWeapon->GetFireLoc(FireLoc);
+	OwnerWeapon->GetBarrelStartLoc(FireLoc);
 
 	//get the fire shot dir
 	FVector FireDir(ForceInit);
@@ -76,17 +86,16 @@ void UINSWeaponFireHandler::FireShot()
 
 	//add weapon fire spread
 	FVector SpreadDir(ForceInit);
-	OwnerWeapon->AddWeaponSpread(SpreadDir, FireDir);
+	OwnerWeapon->ApplyWeaponSpread(SpreadDir, FireDir);
 	if (OwnerWeapon)
 	{
-		if (OwnerWeapon->GetOwnerCharacter()->GetLocalRole() == ROLE_Authority)
+		if (OwnerWeapon->GetLocalRole() == ROLE_Authority)
 		{
 			OwnerWeapon->FireShot(FireLoc, SpreadDir.Rotation());
 		}
-		else if(OwnerWeapon->GetOwnerCharacter()->GetLocalRole() == ROLE_AutonomousProxy)
+		else if (OwnerWeapon->GetLocalRole() == ROLE_AutonomousProxy)
 		{
 			OwnerWeapon->ServerFireShot(FireLoc, SpreadDir.Rotation());
-
 		}
 	}
 
@@ -95,7 +104,7 @@ void UINSWeaponFireHandler::FireShot()
 	bIsFiring = true;
 	if (CurrentFireMode == EWeaponFireMode::SEMIAUTO)
 	{
-		SemiAutoCount += (uint8)1;
+		SemiAutoCount += static_cast<uint8>(1);
 	}
 	if (OwnerWeapon->CurrentClipAmmo == 0)
 	{
@@ -106,20 +115,27 @@ void UINSWeaponFireHandler::FireShot()
 	{
 		GetWorld()->GetTimerManager().ClearTimer(SemiAutoFireTimer);
 		//reset the semi auto count
-		SemiAutoCount = (uint8)0;
+		SemiAutoCount = static_cast<uint8>(0);
 	}
 	GetWorld()->GetTimerManager().ClearTimer(SemiFireTimer);
 }
 
 void UINSWeaponFireHandler::ClearFiring()
 {
-	if (bIsFiring) 
+	if (bIsFiring)
 	{
 		if (GetWorld()->GetTimeSeconds() - LastFireTime >= FireInterval * 0.6f)
 		{
-			OwnerWeapon->SetWeaponState(EWeaponState::IDLE);
-			bIsFiring = false;
+			if (OwnerWeapon->HasAuthority())
+			{
+				OwnerWeapon->SetWeaponState(EWeaponState::IDLE);
+				bIsFiring = false;
+			}
+			else if (OwnerWeapon->GetLocalRole() == ROLE_AutonomousProxy)
+			{
+				OwnerWeapon->ServerSetWeaponState(EWeaponState::IDLE);
+				bIsFiring = false;
+			}
 		}
 	}
 }
-

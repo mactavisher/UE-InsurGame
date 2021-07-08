@@ -18,16 +18,24 @@
 
 DEFINE_LOG_CATEGORY(LogZombiePawn);
 
-AINSZombie::AINSZombie(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
+AINSZombie::AINSZombie(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	AttackDamage = 20.f;
 	RagePoint = 0.f;
+	bReplicates = true;
+	SetReplicatingMovement(true);
 	HeadComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("HeadComp"));
 	TorsoComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("TorsoComp"));
 	LeftArmComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("LeftArmComp"));
 	RightArmComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("RightArmComp"));
 	LeftLegComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("LeftLegComp"));
-	rightLegComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("rightLegComp"));
+	RightLegComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("rightLegComp"));
+	CachedModularSkeletalMeshes.Add(HeadComp);
+	CachedModularSkeletalMeshes.Add(TorsoComp);
+	CachedModularSkeletalMeshes.Add(LeftArmComp);
+	CachedModularSkeletalMeshes.Add(RightArmComp);
+	CachedModularSkeletalMeshes.Add(LeftLegComp);
+	CachedModularSkeletalMeshes.Add(RightLegComp);
 }
 
 void AINSZombie::OnRep_Dead()
@@ -38,6 +46,7 @@ void AINSZombie::OnRep_Dead()
 
 void AINSZombie::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AINSZombie, CurrentZombieMoveMode);
 }
 
@@ -52,38 +61,26 @@ void AINSZombie::PossessedBy(AController* NewController)
 void AINSZombie::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-	if (HeadComp)
+	GetMesh()->AddRelativeLocation(FVector(0.f, 0.f, -90.f));
+	GetMesh()->AddRelativeRotation(FRotator(0.f, -90.f, 0.f));
+	for (uint8 i = 0; i < CachedModularSkeletalMeshes.Num(); i++)
 	{
-		HeadComp->SetMasterPoseComponent(GetMesh());
-	}
-	if (TorsoComp)
-	{
-		TorsoComp->SetMasterPoseComponent(GetMesh());
-	}
-	if (LeftArmComp)
-	{
-		LeftArmComp->SetMasterPoseComponent(GetMesh());
-	}
-	if (RightArmComp)
-	{
-		RightArmComp->SetMasterPoseComponent(GetMesh());
-	}
-	if (LeftLegComp)
-	{
-		LeftLegComp->SetMasterPoseComponent(GetMesh());
-	}
-	if (rightLegComp)
-	{
-		rightLegComp->SetMasterPoseComponent(GetMesh());
+		if (CachedModularSkeletalMeshes[i])
+		{
+			CachedModularSkeletalMeshes[i]->AttachToComponent(
+				GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale);
+			CachedModularSkeletalMeshes[i]->SetMasterPoseComponent(GetMesh());
+		}
 	}
 }
 
-float AINSZombie::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+float AINSZombie::TakeDamage(const float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator,
+                             AActor* DamageCauser)
 {
 	const float DamageApplied = Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
 	if (ZombieController)
 	{
-		ZombieController->OnZombieTakeDamage(Damage, EventInstigator, DamageCauser);
+		ZombieController->OnZombieTakeDamage(DamageApplied, EventInstigator, DamageCauser);
 	}
 	return DamageApplied;
 }
@@ -92,14 +89,18 @@ void AINSZombie::HandlesAttackRequest(class AINSZombieController* RequestZombieC
 {
 	if (HasAuthority())
 	{
-		uint8 AvailableAttackNum = 3;
-		uint8 SelectedAttackModeIndex = FMath::RandHelper(AvailableAttackNum - 1);
+		const uint8 AvailableAttackNum = 3;
+		const uint8 SelectedAttackModeIndex = FMath::RandHelper(AvailableAttackNum - 1);
 		switch (AvailableAttackNum)
 		{
-		case 0:CurrenAttackMode = EZombieAttackMode::LeftHand; break;
-		case 1:CurrenAttackMode = EZombieAttackMode::RightHand; break;
-		case 2:CurrenAttackMode = EZombieAttackMode::Hyper; break;
-		default:CurrenAttackMode = EZombieAttackMode::LeftHand; break;
+		case 0: CurrenAttackMode = EZombieAttackMode::LeftHand;
+			break;
+		case 1: CurrenAttackMode = EZombieAttackMode::RightHand;
+			break;
+		case 2: CurrenAttackMode = EZombieAttackMode::Hyper;
+			break;
+		default: CurrenAttackMode = EZombieAttackMode::LeftHand;
+			break;
 		}
 		if (IsNetMode(NM_Standalone) || IsNetMode(NM_ListenServer))
 		{
@@ -113,7 +114,7 @@ void AINSZombie::HandlesAttackRequest(class AINSZombieController* RequestZombieC
 	}
 }
 
-void AINSZombie::PerfromLineTraceDamage()
+void AINSZombie::PerformLineTraceDamage()
 {
 	if (HasAuthority())
 	{
@@ -126,7 +127,8 @@ void AINSZombie::PerfromLineTraceDamage()
 		CollisionQueryParams.AddIgnoredActor(this);
 		CollisionQueryParams.AddIgnoredComponent(GetCapsuleComponent());
 		CollisionQueryParams.AddIgnoredComponent(GetMesh());
-		GetWorld()->LineTraceSingleByChannel(HitResult, ViewPoint, ViewRotation.Vector() * DamageRange + ViewPoint, ECollisionChannel::ECC_Camera, CollisionQueryParams);
+		GetWorld()->LineTraceSingleByChannel(HitResult, ViewPoint, ViewRotation.Vector() * DamageRange + ViewPoint,
+		                                     ECollisionChannel::ECC_Camera, CollisionQueryParams);
 		if (HitResult.bBlockingHit)
 		{
 			ACharacter* const HitCharacter = Cast<ACharacter>(HitResult.GetActor());
@@ -159,7 +161,7 @@ void AINSZombie::OnRep_LastHitInfo()
 
 void AINSZombie::FaceRotation(FRotator NewControlRotation, float DeltaTime /* = 0.f */)
 {
-	FRotator CurrentRotation = FMath::RInterpTo(GetActorRotation(), NewControlRotation, DeltaTime, 8.0f);
+	const FRotator CurrentRotation = FMath::RInterpTo(GetActorRotation(), NewControlRotation, DeltaTime, 8.0f);
 	Super::FaceRotation(CurrentRotation, DeltaTime);
 }
 
@@ -178,10 +180,14 @@ void AINSZombie::OnRep_ZombieAttackMode()
 		UAnimMontage* SelectedAttackMontage = nullptr;
 		switch (CurrenAttackMode)
 		{
-		case EZombieAttackMode::LeftHand:SelectedAttackMontage = ZombieAttackMontages.LeftHandAttackMontage; break;
-		case EZombieAttackMode::RightHand:SelectedAttackMontage = ZombieAttackMontages.RighHandAttackMontage; break;
-		case EZombieAttackMode::Hyper:SelectedAttackMontage = ZombieAttackMontages.HyperAttackMontage; break;
-		default:SelectedAttackMontage = ZombieAttackMontages.LeftHandAttackMontage; break;
+		case EZombieAttackMode::LeftHand: SelectedAttackMontage = ZombieAttackMontages.LeftHandAttackMontage;
+			break;
+		case EZombieAttackMode::RightHand: SelectedAttackMontage = ZombieAttackMontages.RighHandAttackMontage;
+			break;
+		case EZombieAttackMode::Hyper: SelectedAttackMontage = ZombieAttackMontages.HyperAttackMontage;
+			break;
+		default: SelectedAttackMontage = ZombieAttackMontages.LeftHandAttackMontage;
+			break;
 		}
 		if (SelectedAttackMontage)
 		{
@@ -189,8 +195,8 @@ void AINSZombie::OnRep_ZombieAttackMode()
 		}
 		if (!SelectedAttackMontage)
 		{
-			UE_LOG(LogZombiePawn, Warning, TEXT("Zombie trying to play attack montage but no attack montage available"));
+			UE_LOG(LogZombiePawn, Warning,
+			       TEXT("Zombie trying to play attack montage but no attack montage available"));
 		}
 	}
 }
-

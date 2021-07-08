@@ -21,13 +21,13 @@ struct FAttackAnimMontages
 	GENERATED_USTRUCT_BODY()
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animations")
-		UAnimMontage* LeftHandAttackMontage;
+	UAnimMontage* LeftHandAttackMontage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animations")
-		UAnimMontage* RighHandAttackMontage;
+	UAnimMontage* RighHandAttackMontage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animations")
-		UAnimMontage* HyperAttackMontage;
+	UAnimMontage* HyperAttackMontage;
 };
 
 /**
@@ -36,9 +36,9 @@ struct FAttackAnimMontages
 UENUM(BlueprintType)
 enum class EZombieMoveMode :uint8
 {
-	Walk                     UMETA(DisplayName = "Walk"),
-	Shamble                  UMETA(DisplayName = "Shamble"),
-	Chase                    UMETA(DisplayName = "Chase"),
+	Walk UMETA(DisplayName = "Walk"),
+	Shamble UMETA(DisplayName = "Shamble"),
+	Chase UMETA(DisplayName = "Chase"),
 };
 
 /**
@@ -47,9 +47,9 @@ enum class EZombieMoveMode :uint8
 UENUM(BlueprintType)
 enum class EZombieAttackMode :uint8
 {
-	LeftHand                 UMETA(DisplayName = "LeftHand"),
-	RightHand                UMETA(DisplayName = "RightHand"),
-	Hyper                    UMETA(DisplayName = "Hyper"),
+	LeftHand UMETA(DisplayName = "LeftHand"),
+	RightHand UMETA(DisplayName = "RightHand"),
+	Hyper UMETA(DisplayName = "Hyper"),
 };
 
 /**
@@ -59,36 +59,36 @@ UCLASS(Blueprintable)
 class INSURGENCY_API AINSZombie : public AINSCharacter
 {
 	GENERATED_UCLASS_BODY()
-
 protected:
-
 	/** zombie behavior tree asset */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ZombieBehavior")
-		UBehaviorTree* ZombiebehaviorTree;
+	UBehaviorTree* ZombieBehaviorTree;
 
 	/** zombie current move mode  */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_ZombieMoveMode, Category = "ZombieMovement")
-		EZombieMoveMode CurrentZombieMoveMode;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_ZombieMoveMode,
+		Category = "ZombieMovement")
+	EZombieMoveMode CurrentZombieMoveMode;
 
 	/** cached zombie controller for this zombie */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Controller")
-		AINSZombieController* ZombieController;
+	AINSZombieController* ZombieController;
 
 	/** indicate the zombie attack mode,replicated */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_ZombieAttackMode, Category = "Attack")
-		EZombieAttackMode CurrenAttackMode;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_ZombieAttackMode,
+		Category = "Attack")
+	EZombieAttackMode CurrenAttackMode;
 
 	/** zombie attack montages */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_ZombieAttackMode, Category = "Attack")
-		FAttackAnimMontages ZombieAttackMontages;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Attack")
+	FAttackAnimMontages ZombieAttackMontages;
 
 	/** cached zombie AnimInstance */
 	UPROPERTY()
-		UINSZombieAnimInstance* CachedZombieAnimInstance;
+	UINSZombieAnimInstance* CachedZombieAnimInstance;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Damage")
 	float AttackDamage;
-	
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rage")
 	float RagePoint;
 
@@ -114,57 +114,59 @@ protected:
 
 	/** modular zombie of rightLegComp */
 	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	USkeletalMeshComponent* rightLegComp;
+	USkeletalMeshComponent* RightLegComp;
+
+	/** cache the modular skeletal meshes for later easy access purpose */
+	UPROPERTY()
+	TArray<USkeletalMeshComponent*> CachedModularSkeletalMeshes;
 
 protected:
-
 	/**
 	 * override
 	 */
-	virtual void OnRep_Dead()override;
+	virtual void OnRep_Dead() override;
 
 	/**
 	 * Get Replicated Properties for net work system
 	 * @param OutLifetimeProps  OutLifetimeProps
 	 */
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/**
 	 * happens when possessed by a zombie controller
 	 * @param NewController New Controller that possess this zombie
 	 */
-	virtual void PossessedBy(AController* NewController)override;
+	virtual void PossessedBy(AController* NewController) override;
 
-	virtual void PostInitializeComponents()override;
+	virtual void PostInitializeComponents() override;
 
 	/**
 	 * override
 	 */
-	virtual void OnRep_LastHitInfo()override;
+	virtual void OnRep_LastHitInfo() override;
 
 	/**
 	 * face this zombie to a given rotation
-	 * @param NewControlRotation Rotation to face to
-	 * @DeltaTime DeltaTime
+	 * @param NewControlRotation Rotation to face to4
+	 * @Param DeltaTime the world delta tme in seconds
 	 */
-	virtual void FaceRotation(FRotator NewControlRotation, float DeltaTime /* = 0.f */)override;
+	virtual void FaceRotation(FRotator NewControlRotation, float DeltaTime /* = 0.f */) override;
 
 	/**
 	 * call back function when zombie has changed it's move mode
 	 * when it replicate to other clients
 	 */
 	UFUNCTION()
-		virtual void OnRep_ZombieMoveMode();
+	virtual void OnRep_ZombieMoveMode();
 
 	UFUNCTION()
-		virtual void OnRep_ZombieAttackMode();
+	virtual void OnRep_ZombieAttackMode();
 
 public:
-
 	/**
 	 * Get the zombie behavior tree asset
 	 */
-	FORCEINLINE class UBehaviorTree* GetZombieBehaviorTree()const { return ZombiebehaviorTree; }
+	FORCEINLINE class UBehaviorTree* GetZombieBehaviorTree() const { return ZombieBehaviorTree; }
 
 	/**
 	 * Set the zombie current move mode
@@ -175,24 +177,25 @@ public:
 	/**
 	 * Get the zombie current move mode
 	 */
-	virtual EZombieMoveMode GetZombieMoveMode()const { return CurrentZombieMoveMode; }
+	virtual EZombieMoveMode GetZombieMoveMode() const { return CurrentZombieMoveMode; }
 
 	/**
 	 * overridden from base character
 	 * zombie will have some behavior to set up when they takes some damage
 	 */
-	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)override;
+	virtual float TakeDamage(const float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator,
+	                         AActor* DamageCauser) override;
 
 	/**
 	 * Handles zombie attack request from zombie controller
-	 * @param ZombieController From which zombie controller that the attack request is passed
+	 * @param RequestZombieController From which zombie controller that the attack request is passed
 	 */
 	virtual void HandlesAttackRequest(class AINSZombieController* RequestZombieController);
 
 	/**
 	 * Get the current zombie attack mode
 	 */
-	inline virtual EZombieAttackMode GetZombieCurrentAttackMode()const { return CurrenAttackMode; };
+	inline virtual EZombieAttackMode GetZombieCurrentAttackMode() const { return CurrenAttackMode; };
 
 	/**
 	 * Set the current zombie attack mode
@@ -203,15 +206,15 @@ public:
 	/**
 	 * performs a line trace damage
 	 */
-	virtual void PerfromLineTraceDamage();
-	
+	virtual void PerformLineTraceDamage();
+
 	/**
-	 * retrieves the zomibe's current rage point
+	 * retrieves the zombie's current rage point
 	 */
-	inline virtual float GetZombieRagePoint(){return RagePoint;};
-	
+	inline virtual float GetZombieRagePoint() { return RagePoint; };
+
 	/**
 	 * add rage point to  zomibe's current rage point
 	 */
-	virtual void AddZomieRagePoint(int32 RageToAdd){RagePoint+=RageToAdd;}
+	virtual void AddZombieRagePoint(int32 RageToAdd) { RagePoint += RageToAdd; }
 };

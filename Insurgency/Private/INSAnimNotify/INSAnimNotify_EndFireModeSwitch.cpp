@@ -24,23 +24,18 @@ void UINSAnimNotify_EndFireModeSwitch::Notify(USkeletalMeshComponent* MeshComp, 
 	if (OwnerClass->IsChildOf(AINSCharacter::StaticClass()))
 	{
 		OwnerCharacter = Cast<AINSCharacter>(Owner);
-		if (OwnerCharacter && OwnerCharacter->IsLocallyControlled())
+		OwnerWeapon = OwnerCharacter->GetCurrentWeapon();
+		if (OwnerWeapon)
 		{
-			OwnerWeapon = OwnerCharacter->GetCurrentWeapon();
-			if (OwnerWeapon)
+			if (OwnerWeapon->HasAuthority())
 			{
 				OwnerWeapon->FinishSwitchFireMode();
-				UE_LOG(LogTemp, Log, TEXT("weapon %s EndFireModeSwitch triggerd and Executed"), *OwnerWeapon->GetName());
 			}
-		}
-	}
-	else if (OwnerClass->IsChildOf(AINSWeaponBase::StaticClass()))
-	{
-		OwnerWeapon = Cast<AINSWeaponBase>(MeshComp->GetOwner());
-		if (OwnerWeapon && OwnerWeapon->GetIsOwnerLocal())
-		{
-			OwnerWeapon->FinishSwitchFireMode();
-			UE_LOG(LogTemp, Log, TEXT("weapon %s EndFireModeSwitch triggerd and Executed"), *OwnerWeapon->GetName());
+			else if (OwnerWeapon->GetLocalRole() == ROLE_AutonomousProxy)
+			{
+				OwnerWeapon->ServerFinisheSwitchFireMode();
+			}
+			UE_LOG(LogTemp, Log, TEXT("weapon %s FinishUnEquipping notify triggerd and Executed"), *OwnerWeapon->GetName());
 		}
 	}
 }

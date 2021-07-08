@@ -30,8 +30,8 @@ struct FWeaponConfigData
 {
 	GENERATED_USTRUCT_BODY()
 
-		/** the maximum ammo can be hold in a single clip */
-		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	/** the maximum ammo can be hold in a single clip */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		int32 AmmoPerClip;
 
 	/**the max ammo can carry with this weapon */
@@ -58,7 +58,7 @@ struct FWeaponConfigData
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		float MuzzleSpeed;
 
-	/** muzzle speed , used to init projectile initial velocity */
+	/** valid shoot range for this weapon */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		float ScanTraceRange;
 
@@ -71,10 +71,10 @@ public:
 		, ZoomingOutTime(0.15f)
 		, BaseDamage(20.f)
 		, MuzzleSpeed(40000.f)
-		, ScanTraceRange(25000.f)
+		, ScanTraceRange(2500.f)
 	{
 	}
-	void InitWeaponConfig()
+	void ForceInitWeaponConfig()
 	{
 		AmmoPerClip = AmmoPerClip;
 		MaxAmmo = AmmoPerClip * 10;
@@ -104,12 +104,22 @@ struct FWeaponSpreadData
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 		float SpreadDecrement;
 
+	/**current weapon spread value */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+		float CurrentWeaponSpread;
+
+	/**current weapon spread value */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+		float MovementSpreadScalingFactor;
+
 	FWeaponSpreadData()
 		: DefaultWeaponSpread(3.f)
 		, WeaponSpreadMax(10.f)
 		, WeaponSpreadMin(3.0)
 		, SpreadIncrementByShot(4.f)
 		, SpreadDecrement(0.5f)
+		, CurrentWeaponSpread(DefaultWeaponSpread)
+		, MovementSpreadScalingFactor(10.f)
 	{
 	}
 };
@@ -126,7 +136,7 @@ enum class EWeaponPendingEventType :uint8
 };
 
 USTRUCT()
-struct FWeaponPendingEquipEvent
+struct FWeaponPendingEvent
 {
 	GENERATED_USTRUCT_BODY()
 
@@ -145,19 +155,15 @@ struct FWeaponPendingEquipEvent
 	UPROPERTY()
 		float DelayedTimeElapsed;
 
-	UPROPERTY()
-		UClass* NextWeaponClass;
-
 public:
-	FWeaponPendingEquipEvent(EWeaponPendingEventType Type, float EventTime, float DelayedExecuteTime, UClass* NewNextWeaponClass)
+	FWeaponPendingEvent(EWeaponPendingEventType Type, float EventTime, float DelayedExecuteTime)
 	{
 		EventType = Type;
 		EventCreateTime = EventTime;
 		DelayedExecuteTime = DelayedExecuteTime;
-		NewNextWeaponClass = NewNextWeaponClass;
 	}
 
-	FWeaponPendingEquipEvent() {}
+	FWeaponPendingEvent() {}
 
 	void Reset()
 	{
@@ -283,28 +289,24 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 		TSubclassOf<UINSStaticAnimData> WeaponAnimationClass;
 
 	/** weapon animation data */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Animation")
-		UINSStaticAnimData* WeaponAnimation;
+	UPROPERTY()
+		TObjectPtr<UINSStaticAnimData> WeaponAnimation;
 
 	/** current selected active fire mode */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_CurrentFireMode, Category = "FireMode")
 		EWeaponFireMode CurrentWeaponFireMode;
 
 	/** current weapon state */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_CurrentWeaponState, Category = "WeaponState")
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_CurrentWeaponState, Category = "WeaponState")
 		EWeaponState CurrentWeaponState;
 
-	/** current weapon state */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponState")
-		EZoomState CurrentWeaponZoomState;
-
 	/** rep counter to tell clients fire just happened and things will happen */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponFireCount, Category = "WeaponFire")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponFireCount, Category = "WeaponState")
 		uint8 RepWeaponFireCount;
 
-	/** simulate fire muzzle particles effects */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponFireCount, Category = "Effects")
-		UParticleSystemComponent* WeaponParticleComp;
+	/** stores last fire time , used for validate if weapon can fire it's next shot */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "WeaponState")
+		float LastFireTime;
 
 	/** stores weapon config data */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = "WeaponConfig")
@@ -318,22 +320,12 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Ammo")
 		int32 AmmoLeft;
 
+#if WITH_EDITORONLY_DATA
 	/** if enabled,fire will not consumes any ammo */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ammo")
 		uint8 bInfinitAmmo : 1;
-
-	/** is this weapon equip a fore grip */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Ammo")
-		uint8 bForeGripEquipt : 1;
-
-	/** stores last fire time , used for validate if weapon can fire it's next shot */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-		float LastFireTime;
-
-	/** how much time it's gonna take to finish aim weapon  */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Aiming")
-		float AimTime;
-
+#endif
+	
 	/** if enable ,weapon will reload automatically when current clip ammo hit 0 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ammo")
 		uint8 bEnableAutoReload : 1;
@@ -342,18 +334,26 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Ammo")
 		uint8 bDryReload : 1;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_Equipping, Category = "Equipping")
+		uint8 bWantsToEquip : 1;
+
+	/** how much time it's gonna take to finish aim weapon  */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Aiming")
+		float AimTime;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Aiming")
+		uint8 ZoomedInEventTriggered : 1;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Aiming")
+		uint8 ZoomedOutEventTriggered : 1;
+
 	/** if enable ,weapon will reload automatically when current clip ammo hit 0 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_AimWeapon, Category = "Aiming")
 		uint8 bIsAimingWeapon : 1;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_Equipping, Category = "Equipping")
-		uint8 bWantsToEquip : 1;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Equipping")
-		uint8 ZoomedInEventTriggered : 1;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Equipping")
-		uint8 ZoomedOutEventTriggered : 1;
+	/** current weapon state */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Aiming")
+		EZoomState CurrentWeaponZoomState;
 
 	/** mesh 1p */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WeaponMesh1PComp", meta = (AllowPrivateAccess = "true"))
@@ -386,9 +386,6 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
 		float ADSAlpha;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_ScanTraceHit, Category = "ScanTraceHit")
-		FVector ScanTraceHitLoc;
-
 	/** fire Particle 1p*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
 		UParticleSystem* FireParticle1P;
@@ -397,59 +394,51 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
 		UParticleSystem* FireParticle3P;
 
-	/** camera shaking effect class when fires a shot */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Recoil")
-		TSubclassOf<UCameraShakeBase> FireCameraShakingClass;
+	/** projectile shell class that be eject by this weapon */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
+		TSubclassOf<AINSProjectileShell> ProjectileShellClass;
+
+	/** simulate fire muzzle particles effects */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponFireCount, Category = "Effects")
+		UParticleSystemComponent* WeaponParticleComp;
 
 	/** projectile class that be fired by this weapon */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Projectile")
 		TSubclassOf<AINSProjectile> ProjectileClass;
 
-	/** projectile shell class that be eject by this weapon */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
-		TSubclassOf<AINSProjectileShell> ProjectileShellClass;
-
 	/** pawn that owns this weapon */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_OwnerCharacter, Category = "OwnerCharacter")
 		AINSCharacter* OwnerCharacter;
-
-	/** Max weapon spread value*/
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSpread")
-		FWeaponSpreadData WeaponSpreadData;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponBasePoseType, Category = "WeaponPose")
 		EWeaponBasePoseType CurrentWeaponBasePoseType;
 
 	/** current used weapon Spread */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSpread")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Recoil")
 		float RecoilVerticallyFactor;
 
 	/** current used weapon Spread */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSpread")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Recoil")
 		float RecoilHorizontallyFactor;
 
-	/** base hand IK position */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControll")
-		FVector BaseHandsIk;
+	/** camera shaking effect class when fires a shot */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Recoil")
+		TSubclassOf<UCameraShakeBase> FireCameraShakingClass;
 
 	/** How big should the query probe sphere be (in unreal units),queries the weapon collision */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = WeaponCollision, meta = (editcondition = "bDoCollisionTest"))
 		float ProbeSize;
 
-	/**current weapon spread value */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = WeaponSpread)
-		float CurrentWeaponSpread;
-
-	/**current weapon spread value */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = WeaponSpread)
-		float MovementSpreadScalingFactor;
+	/** Max weapon spread value*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSpread")
+		FWeaponSpreadData WeaponSpreadData;
 
 	/** Cross hair class that be used by this weapon */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = CrossHair)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CrossHair")
 		TSubclassOf<UINSCrossHairBase> CrossHairClass;
 
 	/** Cross hair instance */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = CrossHair)
+	UPROPERTY()
 		UINSCrossHairBase* CrossHair;
 
 	/** WeaponAttachment Slots */
@@ -463,9 +452,6 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	/** weapon type of this weapon */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponType, Category = "WeaponConfig")
 		EWeaponType WeaponType;
-
-	UPROPERTY()
-		FWeaponPendingEquipEvent WeaponPendingEvent;
 
 	FActorTickFunction WeaponSpreadTickFunction;
 
@@ -490,22 +476,30 @@ protected:
 	virtual void SimulateWeaponFireFX();
 
 	/**
-	 * @Desc perform a trace to detect hit actor and adjust projectile spawn rotation
+	 * @Desc perform a trace from view center to Find what's under cross hair and produce that hit result when fire
+	 *       
+	 * @Return Hit Out the trace hit result
 	 */
-	virtual void SimulateScanTrace(FHitResult& Hit);
+	virtual void FindCrossHairHit(FHitResult& Hit);
 
 	/** check if can enter fire state */
 	virtual bool CheckCanFire();
 
-	/**
-	 * @Desc check if can enter reload  state
-	 */
+	/** check if can enter reload  state  */
 	virtual bool CheckCanReload();
 
+	/** called when weapon starts reload */
 	virtual void OnWeaponStartReload();
 
+	virtual void OnWeaponSwitchFireMode();
+
+	/** called when equip weapon request has been called */
+	virtual void OnWeaponStartEquip();
+
+	/** update weapon collide info */
 	virtual void UpdateWeaponCollide();
 
+	/** called when weapon collide with environment */
 	virtual void OnWeaponCollide(const FHitResult& CollideResult);
 
 	/** calculate ammo after each reload finishes */
@@ -519,6 +513,8 @@ protected:
 
 	/** updates the weapon current spread value */
 	virtual void UpdateWeaponSpread(float DeltaTimeSeconds);
+
+	virtual void UpdateCharAnimationBasePoseType(EWeaponBasePoseType NewType);
 
 	/** simulate logic happens when fires weapon once */
 	UFUNCTION()
@@ -539,6 +535,7 @@ protected:
 	UFUNCTION()
 		virtual void OnRep_CurrentFireMode();
 
+	/** Weapon Type Rep Notify */
 	UFUNCTION()
 		virtual void OnRep_WeaponType();
 
@@ -590,14 +587,17 @@ public:
 	/** set weapon back to idle state */
 	virtual void SetWeaponReady();
 
-	virtual uint8 GetInventorySlotIndex()const { return InventorySlotIndex; }
+	inline virtual float GetScanTraceRange()const { return WeaponConfigData.ScanTraceRange; }
+
+    inline virtual uint8 GetInventorySlotIndex()const { return InventorySlotIndex; }
 
 	virtual void SetInventorySlotIndex(uint8 TargetSlot) { this->InventorySlotIndex = TargetSlot; }
 
 	/**start equip this weapon  */
 	virtual void StartEquipWeapon();
 
-	virtual void SetWeaponMeshVisibility(bool WeaponMesh1pVisible, bool WeaponMesh3pVisible);
+	/** update Weapon mesh visibility according to their local role */
+	virtual void UpdateWeaponVisibility();
 
 	/**server,start equip this weapon  */
 	UFUNCTION(Server, Unreliable, WithValidation)
@@ -645,22 +645,19 @@ public:
 	UFUNCTION(Unreliable, Server, WithValidation)
 		virtual void ServerFinishReloadWeapon();
 
-	/** check if the weapon's owner is a local player controller or the owner pawn is locally controlled */
-	UFUNCTION(BlueprintCallable)
-		virtual bool GetIsOwnerLocal();
-
 	/** switch between available fire mode with this weapon */
 	virtual void StartSwitchFireMode();
 
 	/** things need to set after weapon fire mode switched */
 	virtual void FinishSwitchFireMode();
 
+	UFUNCTION(Server,WithValidation,Unreliable)
+	virtual void ServerFinisheSwitchFireMode();
+
 	/** fires weapon once */
 	virtual void StartWeaponFire();
 
 	virtual void InspectWeapon();
-
-	virtual void SetupWeaponMeshRenderings();
 
 	virtual void WeaponGoToIdleState();
 
@@ -724,20 +721,19 @@ public:
 
 	FORCEINLINE virtual class UINSWeaponAnimInstance* GetWeapon3pAnimINstance();
 
-	/** return whether this weapon equip with a fore grip ,this will affect animation poses and recoil*/
-	inline virtual bool GetIsWeaponHasForeGrip()const { return bForeGripEquipt; }
-
-	inline virtual float GetWeaponCurrentSpread()const { return CurrentWeaponSpread; }
+	inline virtual float GetWeaponCurrentSpread()const { return WeaponSpreadData.CurrentWeaponSpread; }
 
 	FORCEINLINE virtual EWeaponFireMode GetCurrentWeaponFireMode()const { return CurrentWeaponFireMode; }
 
 	virtual void SetWeaponCurrentFireMode(EWeaponFireMode NewFireMode) { this->CurrentWeaponFireMode = NewFireMode; }
 
-	virtual float GetWeaponAimTime()const { return AimTime; }
+	inline virtual float GetWeaponAimTime()const { return AimTime; }
 
 	inline virtual float GetRecoilVerticallyFactor()const { return RecoilVerticallyFactor; }
 
 	inline virtual float GetRecoilHorizontallyFactor()const { return RecoilHorizontallyFactor; }
+
+	inline virtual float GetTimeBetweenShots()const { return WeaponConfigData.TimeBetweenShots; }
 
 	/**
 	 * @Desc adjust projectile spawn rotation to hit center of the screen
@@ -745,44 +741,39 @@ public:
 	virtual void GetFireDir(FVector& OutDir);
 
 	/** adjust projectile make them spread */
-	virtual void AddWeaponSpread(FVector& OutSpreadDir, FVector& BaseDirection);
-
-	virtual void GetFireLoc(FVector& OutFireLoc);
+	virtual void ApplyWeaponSpread(FVector& OutSpreadDir, const FVector& BaseDirection);
 
 	/**
-	 * returns the base handIK location
-	 * @Param BaseHandsIk FVector
+	 * @Desc  Gets the barrel Location
+	 * @Param OutBarrelStartLoc produced Barrel Start Location
 	 */
-	inline virtual FVector GetBaseHandsIk()const { return BaseHandsIk; }
-
-	/**
-	 * set the base handIK location
-	 * @Param NewBaseHandsIk FVector
-	 */
-	virtual void SetBaseHandsIk(FVector NewBaseHandsIk) { BaseHandsIk = NewBaseHandsIk; }
+	virtual void GetBarrelStartLoc(FVector& OutBarrelStartLoc);
 
 	/**
 	 * returns the bullet muzzle velocity speed value
 	 * @return WeaponConfigData.MuzzleSpeed    float
 	 */
-	virtual float GetMuzzleSpeedValue()const { return WeaponConfigData.MuzzleSpeed; }
+	inline virtual float GetMuzzleSpeedValue()const { return WeaponConfigData.MuzzleSpeed; }
 
 	/**
 	 * return the sight socket transform,in world space
 	 */
 	virtual FTransform GetSightsTransform()const;
 
-	/**
-	 * performs a line trace to check as a HitScan
-	 */
+	/** performs a line trace to check as a HitScan */
 	virtual bool CheckScanTraceRange();
 
+	/**
+	 * @Desc Fire a shot by give shot location and rot
+	 * @Param FireLoc target spawn location of this shot
+	 * @param ShotRot target spawn Rotation of this shot
+	 */
 	virtual void FireShot(FVector FireLoc, FRotator ShotRot);
 
-	/** executed when weapon fully zoomed out */
+	/** executed cosmetic event when weapon fully zoomed out,clients only */
 	virtual void OnZoomedOut();
 
-	/** executed when weapon fully zoomed in */
+	/** executed cosmetic event when weapon fully zoomed in,clients only */
 	virtual void OnZoomedIn();
 
 	/**
@@ -790,7 +781,7 @@ public:
 	 * @Param InCanvas  Canvas to draw Cross Hair on
 	 * @Param DrawColor Draw color
 	 */
-	virtual void DrawCrossHair(class UCanvas* InCavas, FLinearColor DrawColor);
+	virtual void DrawCrossHair(class UCanvas* InCavas, const FLinearColor DrawColor);
 
 	/**
 	 * @Desc Update the ads status for client to execute cosmetic event
@@ -819,7 +810,7 @@ public:
 	 * returns the weapon animation data
 	 * @return WeaponAnimation UINSStaticAnimData
 	 */
-	virtual UINSStaticAnimData* GetWeaponAnim()const { return WeaponAnimation; }
+	inline virtual UINSStaticAnimData* GetWeaponAnim()const { return WeaponAnimation; }
 
 	/**
 	 * returns the weapon state
@@ -829,5 +820,6 @@ public:
 		virtual EWeaponState GetCurrentWeaponState()const { return CurrentWeaponState; }
 
 
-	virtual EWeaponBasePoseType GetCurrentWeaponBasePose()const { return CurrentWeaponBasePoseType; }
+	inline virtual EWeaponBasePoseType GetCurrentWeaponBasePose()const { return CurrentWeaponBasePoseType; }
+
 };

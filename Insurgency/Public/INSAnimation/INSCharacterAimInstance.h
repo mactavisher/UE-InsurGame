@@ -240,13 +240,13 @@ protected:
 	//~ begin INSWeaponAnim Interface
 public:
 
-	virtual void PlayAimAnim()override;
+	virtual float PlayAimAnim()override;
 
-	virtual void PlayStopAimAnim()override;
+	virtual float PlayStopAimAnim()override;
 
-	virtual void PlaySprintAnim()override;
+	virtual float PlaySprintAnim()override;
 
-	virtual void StopPlaySprintAnim()override;
+	virtual float StopPlaySprintAnim()override;
 
 	virtual void OnCharacterJustLanded();
 
@@ -266,9 +266,9 @@ public:
 	virtual void OnWeaponAnimDelegateBindingFinished()override;
 
 	UFUNCTION()
-		virtual void FPPlayWeaponIdleAnim();
+		virtual float FPPlayWeaponIdleAnim();
 
-	virtual void PlayWeaponIdleAnim()override;
+	virtual float PlayWeaponIdleAnim()override;
 	//~ end INSWeaponAnim Interface
 
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING

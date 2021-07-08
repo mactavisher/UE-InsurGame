@@ -72,6 +72,8 @@ protected:
 	/** crouched relative location of springArm */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Camera")
 		float SpringArmRelLocCrouched;
+
+	FTimerHandle EquipDefaultWeaponHandle;
 	
 
 protected:
@@ -89,8 +91,6 @@ protected:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
 
 	virtual void OnRep_CurrentWeapon()override;
-
-	virtual void CharacterEquipWeapon();
 
 	virtual void OnDeath()override;
 
@@ -194,6 +194,9 @@ public:
 
 	virtual void PutCurrentWeaponBackToSlot();
 
+	UFUNCTION()
+		virtual void EquipGameModeDefaultWeapon();
+
 	/**
 	 * return if Mesh1p is hidden in game currently
 	 */
@@ -213,4 +216,6 @@ public:
 	virtual void OnEnterBoredState()override;
 
 	virtual void OnLowHealth()override;
+
+	virtual void SetWeaponBasePoseType(const EWeaponBasePoseType NewType)override;
 };

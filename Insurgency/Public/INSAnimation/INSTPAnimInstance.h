@@ -120,9 +120,9 @@ class INSURGENCY_API UINSTPAnimInstance : public UINSCharacterAimInstance
 
 	virtual float PlayReloadAnim(bool bIsDry)override;
 
-	virtual void PlayWeaponBasePose()override;
+	virtual float PlayWeaponBasePose()override;
 
-	virtual void PlayFireAnim()override;
+	virtual float PlayFireAnim()override;
 
 	virtual void UpdateIsAiming();
 

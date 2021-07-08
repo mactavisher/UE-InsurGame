@@ -11,31 +11,18 @@
 // Sets default values
 AINSItems::AINSItems(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
 {
-	DisableTick();
 	bIsActive = true;
 	bIsWeapon = false;
 	ItemType = EItemType::NONE;
 	InteractTime = 2.f;
-	SetReplicates(true);
-	SetReplicateMovement(true);
+	bReplicates = true;
+	SetReplicatingMovement(true);
 }
 
 // Called when the game starts or when spawned
 void AINSItems::BeginPlay()
 {
-	Super::BeginPlay();
-	/*
-	if (GetLocalRole() == ROLE_Authority)
-	{
-		
-	}
-	else
-	{
-		//clients no need to enable collision
-		InteractCollisionComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	}
-	*/
-	
+	Super::BeginPlay();	
 }
 
 // Called every frame

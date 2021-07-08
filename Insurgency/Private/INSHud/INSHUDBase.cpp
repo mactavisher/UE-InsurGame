@@ -43,7 +43,7 @@ void AINSHUDBase::DrawHUD()
 	Super::DrawHUD();
 
 	//HUD cross hair
-	if (bShowCrossHair&&bUsingHudCrossHair && CurrentWeapon.Get())
+	if (bShowCrossHair && bUsingHudCrossHair && CurrentWeapon.Get())
 	{
 		DrawHudCrossHair();
 	}

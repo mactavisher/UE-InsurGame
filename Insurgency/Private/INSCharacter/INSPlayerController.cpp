@@ -296,7 +296,7 @@ void AINSPlayerController::ReloadWeapon()
 	{
 		if (HasAuthority())
 		{
-			GetINSPlayerCharacter()->HandleWeaponRealoadRequest();
+			GetINSPlayerCharacter()->HandleWeaponReloadRequest();
 		}
 		else if (GetLocalRole() == ROLE_AutonomousProxy)
 		{

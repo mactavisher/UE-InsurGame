@@ -36,13 +36,4 @@ void UINSAnimNotify_FinishReloading::Notify(USkeletalMeshComponent* MeshComp, UA
 			}
 		}
 	}
-	else if (OwnerClass->IsChildOf(AINSWeaponBase::StaticClass()))
-	{
-		OwnerWeapon = Cast<AINSWeaponBase>(MeshComp->GetOwner());
-		if (OwnerWeapon&&OwnerWeapon->GetIsOwnerLocal())
-		{
-			OwnerWeapon->FinishReloadWeapon();
-			UE_LOG(LogTemp, Log, TEXT("weapon %s Finish Reloading notify triggerd and Executed"), *OwnerWeapon->GetName());
-		}
-	}
 }

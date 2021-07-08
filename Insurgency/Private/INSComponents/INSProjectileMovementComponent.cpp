@@ -12,16 +12,16 @@ UINSProjectileMovementComponent::UINSProjectileMovementComponent(const FObjectIn
 
 void UINSProjectileMovementComponent::TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
-	if (GetOwner() && GetOwner()->GetLocalRole() == ROLE_Authority)
+	if (OwnerProjectile&&OwnerProjectile->GetLocalRole()==ROLE_Authority)
 	{
 		Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 		if (!bScanTraceProjectile)
 		{
 			ScanHitTime += DeltaTime;
-			if (ScanHitTime > 1.5f)
+			if (ScanHitTime > OwnerProjectile->GetScanTraceTime())
 			{
-				ProjectileGravityScale = FMath::Clamp<float>(DeltaTime * 10.f, ProjectileGravityScale, 15.f);
 				Velocity *= 0.99f;
+				ProjectileGravityScale = FMath::Clamp<float>(DeltaTime * 10.f, ProjectileGravityScale, 20.f);
 			}
 		}
 	}
@@ -31,3 +31,4 @@ void UINSProjectileMovementComponent::BeginPlay()
 {
 	Super::BeginPlay();
 }
+

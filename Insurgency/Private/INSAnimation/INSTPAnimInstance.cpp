@@ -128,11 +128,11 @@ float UINSTPAnimInstance::PlayReloadAnim(bool bIsDry)
 	return Montage_Play(SelectedReloadAnim);
 }
 
-void UINSTPAnimInstance::PlayWeaponBasePose()
+float  UINSTPAnimInstance::PlayWeaponBasePose()
 {
 	if (!CheckValid())
 	{
-		return;
+		return 0.f;
 	}
 	UAnimMontage* SelectedBasePoseAnim = nullptr;
 	switch (CurrentWeaponBaseType)
@@ -146,19 +146,19 @@ void UINSTPAnimInstance::PlayWeaponBasePose()
 	default:SelectedBasePoseAnim = nullptr;
 		break;
 	}
-	Montage_Play(SelectedBasePoseAnim);
+	return Montage_Play(SelectedBasePoseAnim);
 }
 
-void UINSTPAnimInstance::PlayFireAnim()
+float UINSTPAnimInstance::PlayFireAnim()
 {
 	if (!CheckValid())
 	{
-		return;
+		return 0.f;
 	}
 	const uint8 RecoilAnimNum = CurrentWeaponAnimData->TPFireRecoilAnims.Num();
 	const uint8 RandomIndex = FMath::RandHelper(RecoilAnimNum - 1);
 	Montage_Play(CurrentWeaponAnimData->TPFireRecoilAnims[RandomIndex]);
-	Montage_Play(CurrentWeaponAnimData->TPPulltriggerAnim.CharAnim);
+	return Montage_Play(CurrentWeaponAnimData->TPPulltriggerAnim.CharAnim);
 }
 
 void UINSTPAnimInstance::UpdateIsAiming()

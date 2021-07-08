@@ -36,7 +36,7 @@ AINSZombieController::AINSZombieController(const FObjectInitializer& ObjectIniti
 	AttackRangeComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	StimulateLevel = 0.f;
 	StimulateLocation = FVector(ForceInit);
-	LostEnemyTime = 10.f;
+	LostEnemyTime = 5.f;
 //#if WITH_EDITOR&&!UE_BUILD_SHIPPING
 //	bDrawDebugLineOfSightLine = true;
 //	AttackRangeComp->bHiddenInGame = false;

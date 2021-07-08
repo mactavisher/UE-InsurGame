@@ -237,11 +237,11 @@ void UINSFPAnimInstance::CalculateSight(FTransform& OutRelativeTransform)
 	}
 }
 
-void UINSFPAnimInstance::PlayWeaponBasePose()
+float UINSFPAnimInstance::PlayWeaponBasePose()
 {
 	if (!CheckValid())
 	{
-		return;
+		return 0.f;
 	}
 	UAnimMontage* SelectedBasePoseAnim = nullptr;
 	switch (CurrentWeaponBaseType)
@@ -251,7 +251,7 @@ void UINSFPAnimInstance::PlayWeaponBasePose()
 	case EWeaponBasePoseType::DEFAULT:SelectedBasePoseAnim = CurrentWeaponAnimData->FPDefaultBasePose.CharAnim;break;
 	default:SelectedBasePoseAnim = nullptr;break;
 	}
-	Montage_Play(SelectedBasePoseAnim);
+	return Montage_Play(SelectedBasePoseAnim);
 }
 
 float UINSFPAnimInstance::PlayReloadAnim(bool bIsDry)
@@ -356,11 +356,11 @@ void UINSFPAnimInstance::SetCurrentWeaponAndAnimationData(class AINSWeaponBase* 
 	ADSTime = NewWeapon->AimTime;
 }
 
-void UINSFPAnimInstance::PlayFireAnim()
+float  UINSFPAnimInstance::PlayFireAnim()
 {
 	if (!CheckValid())
 	{
-		return;
+		return 0.f;
 	}
 	if (!bIsAiming)
 	{
@@ -374,7 +374,7 @@ void UINSFPAnimInstance::PlayFireAnim()
 		const uint8 RandomIndex = FMath::RandHelper(HandsRecoilAnimNum - 1);
 		Montage_Play(CurrentWeaponAnimData->FPAdsFireHandsMediumCalibers[RandomIndex]);
 	}
-	Montage_Play(CurrentWeaponAnimData->FPPulltriggerAnim.CharAnim);
+	return Montage_Play(CurrentWeaponAnimData->FPPulltriggerAnim.CharAnim);
 }
 
 void UINSFPAnimInstance::UpdateFiringHandsShift(float DeltaSeconds)

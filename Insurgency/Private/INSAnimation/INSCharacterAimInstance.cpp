@@ -242,34 +242,40 @@ void UINSCharacterAimInstance::UpdateIsFalling()
 }
 
 
-void UINSCharacterAimInstance::PlayAimAnim()
+float UINSCharacterAimInstance::PlayAimAnim()
 {
 	bIsAiming = true;
+	return 0.f;
 }
 
-void UINSCharacterAimInstance::PlayStopAimAnim()
+float UINSCharacterAimInstance::PlayStopAimAnim()
 {
 	bIsAiming = false;
+	return 0.f;
 }
 
-void UINSCharacterAimInstance::PlaySprintAnim()
+float UINSCharacterAimInstance::PlaySprintAnim()
 {
 	bIsSprinting = true;
+	float Duration = 0.f;
 	UAnimMontage* const SelectedSprintMontage = CurrentWeaponAnimData->FPSprintAnim;
 	if (!Montage_IsPlaying(SelectedSprintMontage))
 	{
-		Montage_Play(SelectedSprintMontage);
+		Duration = Montage_Play(SelectedSprintMontage);
 	}
+	return Duration;
 }
 
-void UINSCharacterAimInstance::StopPlaySprintAnim()
+float UINSCharacterAimInstance::StopPlaySprintAnim()
 {
 	bIsSprinting = false;
+	float blendTime = 0.3f;
 	UAnimMontage* const SelectedSprintMontage = CurrentWeaponAnimData->FPSprintAnim;
 	if (Montage_IsPlaying(SelectedSprintMontage))
 	{
-		Montage_Stop(0.3f, SelectedSprintMontage);
+		Montage_Stop(blendTime, SelectedSprintMontage);
 	}
+	return blendTime;
 }
 
 void UINSCharacterAimInstance::OnCharacterJustLanded()
@@ -293,25 +299,27 @@ void UINSCharacterAimInstance::OnWeaponAnimDelegateBindingFinished()
 	PlayWeaponStartEquipAnim();
 }
 
-void UINSCharacterAimInstance::FPPlayWeaponIdleAnim()
+float UINSCharacterAimInstance::FPPlayWeaponIdleAnim()
 {
 	if (!CheckValid())
 	{
-		return;
+		return 0.f;
 	}
-
+	float Duration = 0.f;
 	if (!IsFPPlayingWeaponIdleAnim())
 	{
-		Montage_Play(CurrentWeaponAnimData->FPIdleAnim);
+		Duration = Montage_Play(CurrentWeaponAnimData->FPIdleAnim);
 	}
+	return Duration;
 }
 
-void UINSCharacterAimInstance::PlayWeaponIdleAnim()
+float UINSCharacterAimInstance::PlayWeaponIdleAnim()
 {
 	if (CurrentViewMode == EViewMode::FPS)
 	{
-		FPPlayWeaponIdleAnim();
+		return FPPlayWeaponIdleAnim();
 	}
+	return 0.f;
 }
 
 void UINSCharacterAimInstance::SetSprintPressed(bool NewSprintPressed)

@@ -12,7 +12,6 @@
 AINSTeamInfo::AINSTeamInfo(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	bReplicates = true;
-	SetReplicates(true);
 	bAlwaysRelevant = true;
 	SetReplicatingMovement(false);
 	NetUpdateFrequency = 1;

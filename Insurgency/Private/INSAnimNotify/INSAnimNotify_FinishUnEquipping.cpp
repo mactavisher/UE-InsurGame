@@ -26,22 +26,17 @@ void UINSAnimNotify_FinishUnEquipping::Notify(USkeletalMeshComponent* MeshComp, 
 	if (OwnerClass->IsChildOf(AINSCharacter::StaticClass()))
 	{
 		OwnerCharacter = Cast<AINSCharacter>(Owner);
-		if (OwnerCharacter && OwnerCharacter->IsLocallyControlled())
+		OwnerWeapon = OwnerCharacter->GetCurrentWeapon();
+		if (OwnerWeapon)
 		{
-			OwnerWeapon = OwnerCharacter->GetCurrentWeapon();
-			if (OwnerWeapon)
+			if (OwnerWeapon->HasAuthority())
 			{
 				OwnerWeapon->FinishEquippingWeapon();
-				UE_LOG(LogTemp, Log, TEXT("weapon %s FinishUnEquipping notify triggerd and Executed"), *OwnerWeapon->GetName());
 			}
-		}
-	}
-	else if (OwnerClass->IsChildOf(AINSWeaponBase::StaticClass()))
-	{
-		OwnerWeapon = Cast<AINSWeaponBase>(MeshComp->GetOwner());
-		if (OwnerWeapon && OwnerWeapon->GetIsOwnerLocal())
-		{
-			OwnerWeapon->FinishEquippingWeapon();
+			else if(OwnerWeapon->GetLocalRole()==ROLE_AutonomousProxy)
+			{
+				OwnerWeapon->ServerFinishEquippingWeapon();
+			}
 			UE_LOG(LogTemp, Log, TEXT("weapon %s FinishUnEquipping notify triggerd and Executed"), *OwnerWeapon->GetName());
 		}
 	}

@@ -16,6 +16,7 @@ AINSProjectileShell::AINSProjectileShell(const FObjectInitializer& Objectinitial
 	ParticleComp = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("ShellParticleComp"));
 	RootComponent = ParticleComp;
 	bCollided = false;
+	bReplicates = false;
 }
 
 // Called when the game starts or when spawned
@@ -28,17 +29,17 @@ void AINSProjectileShell::BeginPlay()
 void AINSProjectileShell::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-	/*if (GetNetMode() != ENetMode::NM_DedicatedServer)
+	if (GetNetMode() != ENetMode::NM_DedicatedServer)
 	{
 		ParticleCollideDelegate.BindUFunction(this, TEXT("OnShellCollide"));
 		ParticleComp->OnParticleCollide.AddUnique(ParticleCollideDelegate);
 	}
-	SetLifeSpan(10.f);*/
+	SetLifeSpan(10.f);
 }
 
-/*void AINSProjectileShell::OnCollide(FName EventName, float EmitterTime, int32 ParticleTime, FVector Location, FVector Velocity, FVector Direction, FVector Normal, FName BoneName, UPhysicalMaterial* PhysMat)
+void AINSProjectileShell::OnCollide(FName EventName, float EmitterTime, int32 ParticleTime, FVector Location, FVector Velocity, FVector Direction, FVector Normal, FName BoneName, UPhysicalMaterial* PhysMat)
 {
-	/*if (bCollided)
+	if (bCollided)
 	{
 		UE_LOG(INSProjectileShell, Warning, TEXT("this projectile shell has finished it's collide events,abort!"));
 		return;
@@ -86,5 +87,5 @@ void AINSProjectileShell::PostInitializeComponents()
 				, *ImpactSpawnTrans.ToString());
 		}
 	}
-}*/
+}
 

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
+#include "Insurgency/Insurgency.h"
 #include "INSWeaponAnimInterface.generated.h"
 
 // This class does not need to be modified.
@@ -61,7 +62,7 @@ public:
 
 	/** fire interface function*/
 	UFUNCTION()
-	virtual void PlayFireAnim() {};
+	virtual float PlayFireAnim() {return 0.f;};
 
 	/** switch fire mode interface function */
 	UFUNCTION()
@@ -77,26 +78,26 @@ public:
 
 	/** base weapon pose interface function */
 	UFUNCTION()
-	virtual void PlayWeaponBasePose() {};
+	virtual float PlayWeaponBasePose() {return 0.f;};
 
 	/** base weapon pose interface function */
 	UFUNCTION()
-	virtual void PlayWeaponIdleAnim() {};
+	virtual float PlayWeaponIdleAnim() {return 0.f;};
 
 	UFUNCTION()
-	virtual void PlayAimAnim() {};
+	virtual float PlayAimAnim() {return 0.f;};
 
 	UFUNCTION()
-	virtual void PlayStopAimAnim() {};
+	virtual float PlayStopAimAnim() {return 0.f;};
 
 	UFUNCTION()
-		virtual void PlaySprintAnim() {};
+		virtual float PlaySprintAnim() {return 0.f;};
 
 	UFUNCTION()
 		virtual void OnWeaponAnimDelegateBindingFinished() {}
 
 	UFUNCTION()
-		virtual void StopPlaySprintAnim() {};
+		virtual float StopPlaySprintAnim() {return 0.f;};
 
 	/** bind interface functions to events */
 	virtual void BindWeaponAnimDelegate() {};
@@ -104,5 +105,5 @@ public:
 	/** unbind interface functions from events */
 	virtual void UnbindWeaponAnimDelegate() {};
 
-	virtual void SetWeaponBasePoseType(EWeaponBasePoseType NewWeaponBasePoseType) {}
+	virtual void SetWeaponBasePoseType(enum EWeaponBasePoseType NewWeaponBasePoseType) {}
 };

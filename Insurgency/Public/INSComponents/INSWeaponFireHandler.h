@@ -69,6 +69,6 @@ public:
 
 	virtual void StopWeaponFire();
 
-	virtual bool CheckCanFireAgian();
+	virtual bool CheckCanFireAgain();
 
 };

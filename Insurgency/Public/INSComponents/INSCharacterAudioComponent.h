@@ -90,8 +90,8 @@ public:
 	 * @desc returns the owner character is Dead or not
 	 * @return bool   character's dead condition
 	 */
-	virtual bool GetIsOwnerCharacterDead()const;
+	virtual bool GetIsPlayValid()const;
 
 	UFUNCTION()
-	virtual void OnSoundFinnishPlay();
+	virtual void OnSoundFinishPlay();
 };

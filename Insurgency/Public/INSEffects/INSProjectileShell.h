@@ -58,4 +58,6 @@ protected:
 	 * @param BoneName collide bone name if any
 	 * @param PhysMat Collide surface material type
 	 */
+	UFUNCTION()
+	virtual void OnCollide(FName EventName, float EmitterTime, int32 ParticleTime, FVector Location, FVector Velocity, FVector Direction, FVector Normal, FName BoneName, UPhysicalMaterial* PhysMat);
 };

@@ -15,7 +15,7 @@ AINSImpactEffect::AINSImpactEffect(const FObjectInitializer& ObjectInitializer) 
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 	PrimaryActorTick.SetTickFunctionEnable(false);
-	SetReplicates(false);
+	bReplicates = false;
 }
 
 void AINSImpactEffect::PostInitializeComponents()
@@ -78,7 +78,6 @@ UParticleSystem* AINSImpactEffect::GetImpactParticlesBySurfaceType(EPhysicalSurf
 	case SurfaceTYpe_TreeLog: ImpactParticle = ImpactParticles.TreeLogParticle; break;
 	case SurfaceType_TreeLeaves:ImpactParticle = ImpactParticles.TreeLeavesParticle; break;
 	case SurfaceType_Armor:ImpactParticle = ImpactParticles.ArmorParticle; break;
-
 	}
 	return ImpactParticle;
 }

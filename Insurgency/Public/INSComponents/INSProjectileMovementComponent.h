@@ -22,7 +22,10 @@ protected:
 	FVector SpawnLocation;
 
 	UPROPERTY()
-	uint8 bScanTraceProjectile:1;
+	uint8 bScanTraceProjectile : 1;
+
+	UPROPERTY()
+	TObjectPtr<AINSProjectile> OwnerProjectile;
 
 protected:
 	//~Begin UProjectileMovementComponent Interface
@@ -32,4 +35,8 @@ protected:
 
 public:
 	virtual void SetScanTraceProjectile(bool bFromScanTrace) { bScanTraceProjectile = bFromScanTrace; }
+
+	virtual void SetOwnerProjectile(AINSProjectile* NewProjectile) { OwnerProjectile = NewProjectile; }
+
+	virtual class AINSProjectile* GetOWnerProjectile()const { return OwnerProjectile; }
 };

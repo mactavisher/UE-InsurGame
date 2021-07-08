@@ -42,7 +42,7 @@ AINSCharacter::AINSCharacter(const FObjectInitializer& ObjectInitializer) :
 	Super(ObjectInitializer.SetDefaultSubobjectClass<UINSCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
 	PrimaryActorTick.bCanEverTick = true;
-	SetReplicates(true);
+	bReplicates = true;
 	SetReplicateMovement(true);
 	bIsDead = false;
 	bIsAiming = false;
@@ -54,9 +54,8 @@ AINSCharacter::AINSCharacter(const FObjectInitializer& ObjectInitializer) :
 	InitDamageImmuneTime = 5;
 	DamageImmuneLeft = InitDamageImmuneTime;
 	CharacterCurrentStance = ECharacterStance::STAND;
-	FatalFallingSpeed = 2016.f;
-	bEnableFallingDamage = true;
-	NoiseEmmiterComp = ObjectInitializer.CreateDefaultSubobject<UPawnNoiseEmitterComponent>(this, TEXT("NoiseEmmiterComp"));
+	FatalFallingSpeed = 2000.f;
+	NoiseEmitterComp = ObjectInitializer.CreateDefaultSubobject<UPawnNoiseEmitterComponent>(this, TEXT("NoiseEmmiterComp"));
 	CharacterHealthComp = ObjectInitializer.CreateDefaultSubobject<UINSHealthComponent>(this, TEXT("HealthComp"));
 	if (CharacterHealthComp)
 	{
@@ -66,6 +65,7 @@ AINSCharacter::AINSCharacter(const FObjectInitializer& ObjectInitializer) :
 	CharacterAudioComp = ObjectInitializer.CreateDefaultSubobject<UINSCharacterAudioComponent>(this, TEXT("AudioComp"));
 	CharacterAudioComp->SetupAttachment(RootComponent);
 	CachedTakeHitArray.SetNum(10);
+	GetMesh()->SetReceivesDecals(false);
 #if WITH_EDITORONLY_DATA
 	bShowDebugTrace = true;
 #endif
@@ -110,10 +110,6 @@ void AINSCharacter::OnRep_ReplicatedMovement()
 	Super::OnRep_ReplicatedMovement();
 }
 
-void AINSCharacter::GatherTakeHitInfo(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
-{
-
-}
 
 void AINSCharacter::PostInitializeComponents()
 {
@@ -176,6 +172,7 @@ float AINSCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, A
 				LastHitInfo.bVictimAlreadyDead = !GetIsDead();
 				LastHitInfo.InstigatorPawn = EventInstigator->GetPawn();
 				LastHitInfo.RelHitLocation = PointDamageEventPtr->HitInfo.ImpactPoint;
+				LastHitInfo.DamageType = DamageEvent.DamageTypeClass;
 				const FVector ShotDir = DamageCauser->GetActorForwardVector();
 				FRotator ShotRot = ShotDir.Rotation();
 				LastHitInfo.ShotDirPitch = FRotator::CompressAxisToByte(ShotRot.Pitch);
@@ -240,7 +237,12 @@ void AINSCharacter::Landed(const FHitResult& Hit)
 			{
 				Damage = 90.f;
 			}
-			UE_LOG(LogINSCharacter, Log, TEXT("Character %s is taking land damage falling from high,initial damage taken:%f"), *GetName(), *UKismetStringLibrary::Conv_FloatToString(Damage));
+			UE_LOG(LogINSCharacter
+				, Log
+				, TEXT("Character %s is taking land damage falling from high,initial damage taken:%f,landing speed %f")
+				, *GetName()
+				, *UKismetStringLibrary::Conv_FloatToString(Damage)
+				, LandVelocity);
 			FPointDamageEvent FallingDamageEvent;
 			FallingDamageEvent.DamageTypeClass = UINSDamageType_Falling::StaticClass();
 			FallingDamageEvent.ShotDirection = Hit.ImpactNormal;
@@ -324,34 +326,40 @@ void AINSCharacter::OnRep_LastHitInfo()
 	{
 		UE_LOG(LogINSCharacter, Warning, TEXT("received Characters's:%s Hit Info,start handle take hit logic!"), *GetName());
 		SetLastHitStateInfo(LastHitInfo.DamageCauser);
-		//spawn blood hit Impact
-		const FVector BloodSpawnLocation = FVector(LastHitInfo.RelHitLocation);
-		const float ShotDirPitchDecompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirPitch);
-		const float ShotDirYawDeCompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirYaw);
-		const FRotator BloodSpawenRotation = FRotator(ShotDirPitchDecompressed, ShotDirYawDeCompressed, 0.f);
-		const FTransform BloodSpawnTrans = FTransform(BloodSpawenRotation, BloodSpawnLocation, FVector::OneVector);
-		const int32 BloodParticlesSize = BloodParticles.Num();
-		const int32 randomIndex = FMath::RandHelper(BloodParticlesSize - 1);
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BloodParticles[randomIndex], BloodSpawnTrans);
-		UGameplayStatics::SpawnSoundAtLocation(this, BodyHitSound, LastHitInfo.RelHitLocation);
-		if (GetIsDead())
+		if (LastHitInfo.DamageType && !LastHitInfo.DamageType->IsChildOf(UINSDamageType_Falling::StaticClass()))
 		{
-			GetMesh()->AddImpulseToAllBodiesBelow(BloodSpawenRotation.Vector() * 2000.f, LastHitInfo.HitBoneName);
-			GetMesh()->AddAngularImpulseInRadians(BloodSpawenRotation.Vector() * 2000.f, LastHitInfo.HitBoneName);
-		}
-		const uint8 RandInt = FMath::RandHelper(10);
-		if (RandInt % 3 == 0)
-		{
-			CastBloodDecal(BloodSpawnLocation, LastHitInfo.Momentum);
-		}
-		if (LastHitInfo.Damage > 0.f && !GetIsDead())
-		{
-			const uint8 RamdonNum = FMath::RandHelper(7);
-			if (RamdonNum % 3 == 0)
+			//spawn blood hit Impact
+			const FVector BloodSpawnLocation = FVector(LastHitInfo.RelHitLocation);
+			const float ShotDirPitchDecompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirPitch);
+			const float ShotDirYawDeCompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirYaw);
+			const FRotator BloodSpawenRotation = FRotator(ShotDirPitchDecompressed, ShotDirYawDeCompressed, 0.f);
+			const FTransform BloodSpawnTrans = FTransform(BloodSpawenRotation, BloodSpawnLocation, FVector::OneVector);
+			const int32 BloodParticlesSize = BloodParticles.Num();
+			if (BloodParticlesSize > 1)
 			{
-				if (GetCharacterAudioComp())
+				const int32 randomIndex = FMath::RandHelper(BloodParticlesSize - 1);
+				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BloodParticles[randomIndex], BloodSpawnTrans);
+			}
+			UGameplayStatics::SpawnSoundAtLocation(this, BodyHitSound, LastHitInfo.RelHitLocation);
+			if (GetIsDead())
+			{
+				GetMesh()->AddImpulseToAllBodiesBelow(BloodSpawenRotation.Vector() * 2000.f, LastHitInfo.HitBoneName);
+				GetMesh()->AddAngularImpulseInRadians(BloodSpawenRotation.Vector() * 2000.f, LastHitInfo.HitBoneName);
+			}
+			const uint8 RandInt = FMath::RandHelper(10);
+			if (RandInt % 3 == 0)
+			{
+				CastBloodDecal(BloodSpawnLocation, LastHitInfo.Momentum);
+			}
+			if (LastHitInfo.Damage > 0.f && !GetIsDead())
+			{
+				const uint8 RamdonNum = FMath::RandHelper(7);
+				if (RamdonNum % 3 == 0)
 				{
-					GetCharacterAudioComp()->OnTakeDamage(LastHitInfo.bIsTeamDamage);
+					if (GetCharacterAudioComp())
+					{
+						GetCharacterAudioComp()->OnTakeDamage(LastHitInfo.bIsTeamDamage);
+					}
 				}
 			}
 		}
@@ -447,7 +455,7 @@ float AINSCharacter::GetCharacterCurrentHealth() const
 	return GetCharacterHealthComp()->GetCurrentHealth();
 }
 
-void AINSCharacter::HandleWeaponRealoadRequest()
+void AINSCharacter::HandleWeaponReloadRequest()
 {
 	if (CurrentWeapon)
 	{
@@ -675,6 +683,11 @@ void AINSCharacter::SpawnWeaponPickup()
 	CurrentWeapon->Destroy(true);
 }
 
+void AINSCharacter::SetWeaponBasePoseType(const EWeaponBasePoseType NewType)
+{
+
+}
+
 void AINSCharacter::SetCharacterAiming(bool NewAimState)
 {
 	if (HasAuthority())
@@ -687,9 +700,13 @@ void AINSCharacter::SetCharacterAiming(bool NewAimState)
 void AINSCharacter::SetCurrentWeapon(class AINSWeaponBase* NewWeapon)
 {
 	this->CurrentWeapon = NewWeapon;
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		OnRep_CurrentWeapon();
+	}
 	if (CurrentWeapon)
 	{
-		CurrentWeapon->SetWeaponState(EWeaponState::EQUIPPING);
+		CurrentWeapon->StartEquipWeapon();
 	}
 }
 

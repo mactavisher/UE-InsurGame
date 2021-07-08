@@ -126,8 +126,8 @@ enum class EWeaponBasePoseType :uint8
 
 UENUM(BlueprintType)
 enum class ETeamType :uint8 {
-	REBEL           UMETA(DisplayName = "terrorist"),
-	ALLIE           UMETA(DisplayName = "counter terrorist"),
+	REBEL           UMETA(DisplayName = "Rebel"),
+	ALLIE           UMETA(DisplayName = "Allie"),
 	CORP            UMETA(DisplayName = "coorperation"),
 	NONE            UMETA(DisplayName = "None"),
 };
@@ -150,7 +150,7 @@ enum class EVoiceType :uint8 {
 	THROW_SMOKING             UMETA(DisplayName = "Throw Smoking"),
 	MA_NDOWN                  UMETA(DisplayName = "Man down"),
 	CAUSE_FRIENDLY_DAMAGE     UMETA(DisplayName = "cause friendly damage"),
-	CAUSE_FFIENDLY_KILL       UMETA(DisplayName = "cause friendly kill"),
+	CAUSE_FRIENDLY_KILL       UMETA(DisplayName = "cause friendly kill"),
     NONE                      UMETA(DisplayName="none"),
 };
 

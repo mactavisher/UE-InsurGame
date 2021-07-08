@@ -35,13 +35,13 @@ void UINSWeaponAnimInstance::NativeInitializeAnimation()
 	
 }
 
-void UINSWeaponAnimInstance::PlayFireAnim()
+float  UINSWeaponAnimInstance::PlayFireAnim()
 {
 	if (!CheckValid())
 	{
-		return;
+		return 0.f;
 	}
-	Montage_Play(WeaponAnimData->FPPulltriggerAnim.WeaponAnim);
+	return Montage_Play(WeaponAnimData->FPPulltriggerAnim.WeaponAnim);
 }
 
 float UINSWeaponAnimInstance::PlayReloadAnim(bool bIsDry)
@@ -86,11 +86,11 @@ void UINSWeaponAnimInstance::OnWeaponAnimDelegateBindingFinished()
 	PlayWeaponStartEquipAnim();
 }
 
-void UINSWeaponAnimInstance::PlayWeaponBasePose()
+float UINSWeaponAnimInstance::PlayWeaponBasePose()
 {
 	if (!CheckValid())
 	{
-		return;
+		return 0.f;
 	}
 	UAnimMontage* SelectedBasePoseAnim = nullptr;
 	switch (CurrentWeaponBasePoseType)
@@ -104,7 +104,7 @@ void UINSWeaponAnimInstance::PlayWeaponBasePose()
 	default:SelectedBasePoseAnim = nullptr;
 		break;
 	}
-	Montage_Play(SelectedBasePoseAnim);
+	return Montage_Play(SelectedBasePoseAnim);
 }
 
 void UINSWeaponAnimInstance::SetWeaponBasePoseType(EWeaponBasePoseType NewWeaponBasePoseType)
