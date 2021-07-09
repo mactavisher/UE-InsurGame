@@ -145,6 +145,44 @@ void AINSWeaponBase::InspectWeapon()
 {
 }
 
+bool AINSWeaponBase::CheckCanSwitchFireMode()
+{
+	AINSPlayerController* PlayerController = Cast<AINSPlayerController>(GetOwner());
+	AINSPlayerCharacter* PlayerCharacter = PlayerController == nullptr
+		                                       ? nullptr
+		                                       : PlayerController->GetINSPlayerCharacter();
+	if (!PlayerController)
+	{
+		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s has no owner player , can't Switch Fire Mode"), *GetName());
+		return false;
+	}
+	if (!PlayerCharacter)
+	{
+		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s has no owner player character ,  can't Switch Fire Mode"),
+		       *GetName());
+		return false;
+	}
+	if (PlayerCharacter->GetIsDead())
+	{
+		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s and it's owner charcter is dead,  can't Switch Fire Mode "),
+		       *GetName());
+		return false;
+	}
+	if (CurrentWeaponState != EWeaponState::IDLE)
+	{
+		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s is busy,  can't Switch Fire Mode "),
+		       *GetName());
+		return false;
+	}
+	if (AvailableFireModes.Num() == 1)
+	{
+		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s has only one fire mode,can't Switch Fire Mode "),
+		       *GetName());
+		return false;
+	}
+	return true;
+}
+
 void AINSWeaponBase::WeaponGoToIdleState()
 {
 }
@@ -534,7 +572,7 @@ void AINSWeaponBase::OnRep_Owner()
 void AINSWeaponBase::SimulateWeaponFireFX()
 {
 	//spawn shooting sound
-	USoundCue* SelectdFireSound = nullptr;
+	USoundCue* SelectedFireSound = nullptr;
 	UParticleSystem* SelectFireParticleTemplate = nullptr;
 	UINSWeaponMeshComponent* SelectedFXAttachParent = nullptr;
 	if (IsNetMode(NM_DedicatedServer))
@@ -544,14 +582,14 @@ void AINSWeaponBase::SimulateWeaponFireFX()
 	}
 	if (GetLocalRole() >= ROLE_AutonomousProxy)
 	{
-		SelectdFireSound = FireSound1P;
+		SelectedFireSound = FireSound1P;
 		SelectFireParticleTemplate = FireParticle1P;
 		SelectedFXAttachParent = WeaponMesh1PComp;
 		const AINSPlayerController* PlayerController = CastChecked<AINSPlayerController>(GetOwner());
 	}
 	else
 	{
-		SelectdFireSound = FireSound3P;
+		SelectedFireSound = FireSound3P;
 		SelectFireParticleTemplate = FireParticle3P;
 		SelectedFXAttachParent = WeaponMesh3PComp;
 	}
@@ -564,9 +602,9 @@ void AINSWeaponBase::SimulateWeaponFireFX()
 		                                                            SelectedFXAttachParent->GetWeaponSockets().
 		                                                            MuzzleFlashSocket);
 	}
-	if (SelectdFireSound)
+	if (SelectedFireSound)
 	{
-		UGameplayStatics::SpawnSoundAtLocation(GetWorld(), SelectdFireSound,
+		UGameplayStatics::SpawnSoundAtLocation(GetWorld(), SelectedFireSound,
 		                                       SelectedFXAttachParent->GetMuzzleLocation(),
 		                                       SelectedFXAttachParent->GetMuzzleRotation());
 	}
@@ -579,7 +617,7 @@ void AINSWeaponBase::SimulateWeaponFireFX()
 	const UINSWeaponMeshComponent* SelectedMesh = GetLocalRole() >= ROLE_AutonomousProxy
 		                                              ? WeaponMesh1PComp
 		                                              : WeaponMesh3PComp;
-	FTransform ShellSpawnTran = SelectedMesh->GetShellSpawnTransform();
+	const FTransform ShellSpawnTran = SelectedMesh->GetShellSpawnTransform();
 	AINSProjectileShell* ShellActor = GetWorld()->SpawnActorDeferred<AINSProjectileShell>(
 		ProjectileShellClass, ShellSpawnTran, this, GetOwnerCharacter());
 	if (ShellActor)
@@ -603,9 +641,9 @@ void AINSWeaponBase::FindCrossHairHit(FHitResult& Hit)
 		FVector ViewLoc(ForceInit);
 		FRotator ViewRot(ForceInit);
 		OwnerPlayer->GetPlayerViewPoint(ViewLoc, ViewRot);
-		FVector TraceDir = ViewRot.Vector();
+		const FVector TraceDir = ViewRot.Vector();
 		//sightly move forward  the trace start location to avoid hit selves
-		FVector TraceStart = ViewLoc + TraceDir * 100.f;
+		const FVector TraceStart = ViewLoc + TraceDir * 100.f;
 		const float TraceRange = 30000.f;
 		const FVector TraceEnd = TraceStart + TraceDir * TraceRange;
 		FCollisionQueryParams queryParams;
@@ -863,7 +901,7 @@ void AINSWeaponBase::UpdateWeaponCollide()
 		QueryParams.bDebugQuery = true;
 #endif
 		FHitResult Result;
-		bool bCollide = GetWorld()->SweepSingleByChannel(Result, WeaponMesh1PComp->GetMuzzleLocation(),
+		const bool bCollide = GetWorld()->SweepSingleByChannel(Result, WeaponMesh1PComp->GetMuzzleLocation(),
 		                                                 WeaponMesh1PComp->GetMuzzleLocation() + FVector::OneVector,
 		                                                 WeaponMesh1PComp->GetMuzzleRotation().Quaternion(),
 		                                                 ECollisionChannel::ECC_Camera,
@@ -1268,7 +1306,7 @@ FString AINSWeaponBase::GetWeaponReadableCurrentState()
 		break;
 	case EWeaponState::RELOADIND: ReadableCurrentWeaponState.Append("reloading");
 		break;
-	case EWeaponState::UNEQUIPED: ReadableCurrentWeaponState.Append("unEquiped");
+	case EWeaponState::UNEQUIPED: ReadableCurrentWeaponState.Append("unEquipped");
 		break;
 	case EWeaponState::EQUIPPING: ReadableCurrentWeaponState.Append("Equipping");
 		break;
@@ -1322,27 +1360,9 @@ bool AINSWeaponBase::ServerFinishReloadWeapon_Validate()
 
 void AINSWeaponBase::StartSwitchFireMode()
 {
-	const uint8 AvailableFireModesNum = AvailableFireModes.Num();
-	uint8 CurrentFireModeIndex = 0;
-	uint8 NextFireModeIndex = 0;
-	for (uint8 FireModeIndex = 0; FireModeIndex < AvailableFireModesNum; FireModeIndex++)
+	if(CheckCanSwitchFireMode())
 	{
-		if (CurrentWeaponFireMode == AvailableFireModes[FireModeIndex])
-		{
-			CurrentFireModeIndex = FireModeIndex;
-			NextFireModeIndex = CurrentFireModeIndex + 1;
-			if (NextFireModeIndex > AvailableFireModesNum - 1)
-			{
-				NextFireModeIndex = 0;
-			}
-			CurrentWeaponFireMode = AvailableFireModes[NextFireModeIndex];
-			SetWeaponState(EWeaponState::FIREMODESWITCHING);
-			if (GetNetMode() == ENetMode::NM_Standalone || GetNetMode() == ENetMode::NM_ListenServer)
-			{
-				OnRep_CurrentFireMode();
-			}
-			break;
-		}
+		SetWeaponState(EWeaponState::FIREMODESWITCHING);
 	}
 }
 
@@ -1350,7 +1370,27 @@ void AINSWeaponBase::FinishSwitchFireMode()
 {
 	if (HasAuthority())
 	{
-		ServerSetWeaponState(EWeaponState::IDLE);
+		const uint8 AvailableFireModesNum = AvailableFireModes.Num();
+		uint8 CurrentFireModeIndex = 0;
+		uint8 NextFireModeIndex = 0;
+		for (uint8 FireModeIndex = 0; FireModeIndex < AvailableFireModesNum; FireModeIndex++)
+		{
+			if (CurrentWeaponFireMode == AvailableFireModes[FireModeIndex])
+			{
+				CurrentFireModeIndex = FireModeIndex;
+				NextFireModeIndex = CurrentFireModeIndex + 1;
+				if (NextFireModeIndex > AvailableFireModesNum - 1)
+				{
+					NextFireModeIndex = 0;
+				}
+				CurrentWeaponFireMode = AvailableFireModes[NextFireModeIndex];
+				if (GetNetMode() == ENetMode::NM_Standalone || GetNetMode() == ENetMode::NM_ListenServer)
+				{
+					OnRep_CurrentFireMode();
+				}
+				break;
+			}
+		}
 	}
 	else
 	{

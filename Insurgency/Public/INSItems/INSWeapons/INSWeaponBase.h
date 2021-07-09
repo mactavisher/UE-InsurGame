@@ -654,10 +654,13 @@ public:
 	UFUNCTION(Server,WithValidation,Unreliable)
 	virtual void ServerFinishSwitchFireMode();
 
-	/** fires weapon once */
+	/** being weapon fire */
 	virtual void StartWeaponFire();
 
 	virtual void InspectWeapon();
+
+	/** check to see if we can switch fire mode*/
+	virtual bool CheckCanSwitchFireMode();
 
 	virtual void WeaponGoToIdleState();
 

@@ -26,6 +26,7 @@ UINSFPAnimInstance::UINSFPAnimInstance(const FObjectInitializer& ObjectInitializ
 	MaxWeaponSwayPitch = 5.f;
 	bSighLocReCalculated = false;
 	ADSAlpha = 0.f;
+	ADSTime = 0.f;
 }
 
 void UINSFPAnimInstance::UpdateAdsAlpha(float DeltaSeconds)
