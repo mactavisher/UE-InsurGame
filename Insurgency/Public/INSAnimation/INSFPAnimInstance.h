@@ -116,6 +116,8 @@ protected:
 
 	virtual void SetBoredState(bool NewBoredState)override;
 
+	virtual float PlaySwitchFireModeAnim() override;
+
 	virtual void SetCurrentWeaponAndAnimationData(class AINSWeaponBase* NewWeapon)override;
 
 public:

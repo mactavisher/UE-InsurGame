@@ -48,6 +48,7 @@ void AINSZombie::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AINSZombie, CurrentZombieMoveMode);
+	DOREPLIFETIME(AINSZombie,CurrenAttackMode);
 }
 
 void AINSZombie::PossessedBy(AController* NewController)

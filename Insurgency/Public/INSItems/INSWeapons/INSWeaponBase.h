@@ -652,7 +652,7 @@ public:
 	virtual void FinishSwitchFireMode();
 
 	UFUNCTION(Server,WithValidation,Unreliable)
-	virtual void ServerFinisheSwitchFireMode();
+	virtual void ServerFinishSwitchFireMode();
 
 	/** fires weapon once */
 	virtual void StartWeaponFire();

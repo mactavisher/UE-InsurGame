@@ -234,17 +234,17 @@ protected:
 	virtual void Tick(float DeltaTime) override;
 	virtual void FellOutOfWorld(const class UDamageType& dmgType) override;
 	virtual void TickActor(float DeltaTime, enum ELevelTick TickType, FActorTickFunction& ThisTickFunction) override;
-	virtual bool ShouldTakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator,
+	virtual bool ShouldTakeDamage(float Damage, const FDamageEvent& DamageEvent, AController* EventInstigator,
 	                              AActor* DamageCauser) const override;
 public:
-	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator,
+	virtual float TakeDamage(float Damage, const struct FDamageEvent& DamageEvent, AController* EventInstigator,
 	                         AActor* DamageCauser) override;
 	//~ end AActor interface
 
 protected:
 	//~ begin ACharacter interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	virtual void ApplyDamageMomentum(float DamageTaken, FDamageEvent const& DamageEvent, APawn* PawnInstigator,
+	virtual void ApplyDamageMomentum(float DamageTaken, const FDamageEvent& DamageEvent, APawn* PawnInstigator,
 	                                 AActor* DamageCauser) override;
 	virtual void Landed(const FHitResult& Hit) override;
 	virtual void BecomeViewTarget(APlayerController* PC) override;
@@ -361,10 +361,10 @@ public:
 	FORCEINLINE virtual class UINSCharacterAudioComponent* GetCharacterAudioComp() const { return CharacterAudioComp; }
 
 	/** returns if this character is currently sprinting */
-	inline virtual bool GetIsSprint() const { return bIsSprint; }
+	virtual bool GetIsSprint() const { return bIsSprint; }
 
 	/** returns if this character is currently crouched */
-	inline virtual bool GetIsCrouched() const { return bIsCrouched; }
+	virtual bool GetIsCrouched() const { return bIsCrouched; }
 
 	/** return the character's current health value */
 	inline virtual float GetCharacterCurrentHealth() const;
@@ -402,7 +402,7 @@ public:
 	virtual void HandleSwitchFireModeRequest();
 
 	/** return this character is dead or not */
-	inline virtual bool GetIsDead() const { return bIsDead; };
+	virtual bool GetIsDead() const { return bIsDead; };
 
 	/** handles move forward request from player,negative value means move backwards*/
 	virtual void HandleMoveForwardRequest(float Value);
@@ -465,7 +465,7 @@ public:
 	virtual uint8 GetDamageImmuneTimeLeft() const { return DamageImmuneLeft; }
 
 	/** return is this character is in aiming state */
-	inline virtual bool GetIsAiming() const { return bIsAiming; }
+	virtual bool GetIsAiming() const { return bIsAiming; }
 
 	/** return is this character is in aiming state */
 	inline bool GetIsCharacterMoving() const;

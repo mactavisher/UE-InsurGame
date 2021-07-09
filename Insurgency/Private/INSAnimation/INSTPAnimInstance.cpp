@@ -158,7 +158,32 @@ float UINSTPAnimInstance::PlayFireAnim()
 	const uint8 RecoilAnimNum = CurrentWeaponAnimData->TPFireRecoilAnims.Num();
 	const uint8 RandomIndex = FMath::RandHelper(RecoilAnimNum - 1);
 	Montage_Play(CurrentWeaponAnimData->TPFireRecoilAnims[RandomIndex]);
-	return Montage_Play(CurrentWeaponAnimData->TPPulltriggerAnim.CharAnim);
+	return Montage_Play(CurrentWeaponAnimData->TPPullTriggerAnim.CharAnim);
+}
+
+float UINSTPAnimInstance::PlaySwitchFireModeAnim()
+{
+	if (!CheckValid())
+	{
+		return 0.f;
+	}
+	UAnimMontage* SelectedSwitchFireModeAnim = nullptr;
+	switch (CurrentWeaponBaseType)
+	{
+	case EWeaponBasePoseType::ALTGRIP:SelectedSwitchFireModeAnim = CurrentWeaponAnimData->TPWeaponAltGripAnim.SwitchFireModeAnim.CharAnim;
+		break;
+	case EWeaponBasePoseType::FOREGRIP:SelectedSwitchFireModeAnim = CurrentWeaponAnimData->TPWeaponForeGripAnim.SwitchFireModeAnim.CharAnim;
+		break;
+	case EWeaponBasePoseType::DEFAULT:SelectedSwitchFireModeAnim = CurrentWeaponAnimData->TPWeaponDefaultPoseAnim.SwitchFireModeAnim.CharAnim;
+		break;
+	default:SelectedSwitchFireModeAnim = nullptr;
+		break;
+	}
+	if(!SelectedSwitchFireModeAnim)
+	{
+		return 0.f;
+	}
+	return Montage_Play(SelectedSwitchFireModeAnim);
 }
 
 void UINSTPAnimInstance::UpdateIsAiming()

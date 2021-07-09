@@ -35,7 +35,7 @@ struct FWeaponCrossHairInfo
 	FWeaponCrossHairInfo()
 		: CrossHairDefaultTintColor(FLinearColor::White)
 		, CrossHairThreatenTintColor(FLinearColor::Red)
-		, CenterRadius(4.f)
+		, CenterRadius(5.f)
 		, LineScale(1.f)
 		, LineLength(6.f)
 	{

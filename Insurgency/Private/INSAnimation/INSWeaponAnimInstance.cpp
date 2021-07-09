@@ -41,7 +41,7 @@ float  UINSWeaponAnimInstance::PlayFireAnim()
 	{
 		return 0.f;
 	}
-	return Montage_Play(WeaponAnimData->FPPulltriggerAnim.WeaponAnim);
+	return Montage_Play(WeaponAnimData->FPPullTriggerAnim.WeaponAnim);
 }
 
 float UINSWeaponAnimInstance::PlayReloadAnim(bool bIsDry)

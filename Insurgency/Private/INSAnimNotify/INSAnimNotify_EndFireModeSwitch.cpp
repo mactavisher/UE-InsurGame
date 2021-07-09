@@ -5,10 +5,11 @@
 #include "INSCharacter/INSPlayerCharacter.h"
 #include "INSItems/INSWeapons/INSWeaponBase.h"
 #include "INSComponents/INSCharSkeletalMeshComponent.h"
+
 UINSAnimNotify_EndFireModeSwitch::UINSAnimNotify_EndFireModeSwitch()
 {
-
 }
+
 void UINSAnimNotify_EndFireModeSwitch::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
 {
 	AActor* Owner = MeshComp->GetOwner();
@@ -19,12 +20,10 @@ void UINSAnimNotify_EndFireModeSwitch::Notify(USkeletalMeshComponent* MeshComp, 
 	}
 	const UClass* const OwnerClass = Owner->GetClass();
 	UE_LOG(LogTemp, Log, TEXT("notify mesh comp's owner class name %s"), *OwnerClass->GetName());
-	const AINSCharacter* OwnerCharacter = nullptr;
-	AINSWeaponBase* OwnerWeapon = nullptr;
 	if (OwnerClass->IsChildOf(AINSCharacter::StaticClass()))
 	{
-		OwnerCharacter = Cast<AINSCharacter>(Owner);
-		OwnerWeapon = OwnerCharacter->GetCurrentWeapon();
+		const AINSCharacter* OwnerCharacter = Cast<AINSCharacter>(Owner);
+		AINSWeaponBase* OwnerWeapon = OwnerCharacter->GetCurrentWeapon();
 		if (OwnerWeapon)
 		{
 			if (OwnerWeapon->HasAuthority())
@@ -33,9 +32,10 @@ void UINSAnimNotify_EndFireModeSwitch::Notify(USkeletalMeshComponent* MeshComp, 
 			}
 			else if (OwnerWeapon->GetLocalRole() == ROLE_AutonomousProxy)
 			{
-				OwnerWeapon->ServerFinisheSwitchFireMode();
+				OwnerWeapon->ServerFinishSwitchFireMode();
 			}
-			UE_LOG(LogTemp, Log, TEXT("weapon %s FinishUnEquipping notify triggerd and Executed"), *OwnerWeapon->GetName());
+			UE_LOG(LogTemp, Log, TEXT("weapon %s FinishUnEquipping notify triggerd and Executed"),
+			       *OwnerWeapon->GetName());
 		}
 	}
 }

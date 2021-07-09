@@ -3,6 +3,8 @@
 
 #include "INSWeaponCrossHair/INSCrossHair_Cross.h"
 
+#include "CanvasItem.h"
+
 UINSCrossHair_Cross::UINSCrossHair_Cross(const FObjectInitializer& ObjectInitalizer) :Super(ObjectInitalizer)
 {
 	CrossHairCurrentTintColor = WeaponCrossHairInfo.CrossHairDefaultTintColor;
@@ -12,8 +14,8 @@ void UINSCrossHair_Cross::DrawCrossHair(class UCanvas* InCanvas, class AINSWeapo
 {
 	const FVector2D CanvasScale = GetCanvasScale(InCanvas);
 	const float SpreadModifier = InWeapon->GetWeaponCurrentSpread();
-	float BiasX = WeaponCrossHairInfo.CenterRadius * SpreadModifier * CanvasScale.X;
-	float BiasY = WeaponCrossHairInfo.CenterRadius * SpreadModifier * CanvasScale.Y;
+	const float BiasX = WeaponCrossHairInfo.CenterRadius * SpreadModifier * CanvasScale.X;
+	const float BiasY = WeaponCrossHairInfo.CenterRadius * SpreadModifier * CanvasScale.Y;
 	const float LeftLineCoordX = InCanvas->SizeX / 2.f - BiasX;
 	const float LeftLineEndCoordX = LeftLineCoordX - WeaponCrossHairInfo.LineLength * CanvasScale.X;
 	const float LeftLineCoordY = InCanvas->SizeY / 2.f;

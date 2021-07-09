@@ -83,16 +83,22 @@ protected:
 	/** crouch */
 	virtual void UnCrouch();
 
+	/** equips the slot 1 item*/
 	virtual void EquipSlotItem_1();
 
+	/** equips the slot 1 item*/
 	virtual void EquipSlotItem_2();
-
+	
+	/** equips the slot 1 item*/
 	virtual void EquipSlotItem_3();
-
+	
+	/** equips the slot 1 item*/
 	virtual void EquipSlotItem_4();
-
+	
+	/** equips the slot 1 item*/
 	virtual void EquipSlotItem_5();
-
+	
+	/** equips the slot 1 item*/
 	virtual void EquipSlotItem_6();
 
 	/** Server,perform move right ,negative value will perform move left */
