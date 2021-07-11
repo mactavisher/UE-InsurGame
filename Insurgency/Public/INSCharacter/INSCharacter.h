@@ -36,7 +36,7 @@ struct FLastHitStateInfo
 	float CurrentHitStateLastTime;
 
 	UPROPERTY()
-	TObjectPtr<AActor> LastHitActor;
+	AActor* LastHitActor;
 
 	FLastHitStateInfo()
 		: HitStateTime(10.f)

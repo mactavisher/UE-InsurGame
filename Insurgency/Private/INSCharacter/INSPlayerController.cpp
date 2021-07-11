@@ -788,6 +788,10 @@ void AINSPlayerController::OnPlayerMeshSetupFinished()
 
 void AINSPlayerController::OnPossess(APawn* InPawn)
 {
-	GetINSPlayerCharacter()->SetTeamType(PlayerTeam->GetTeamType());
+	PossessedINSCharacter = Cast<AINSPlayerCharacter>(InPawn);
+	if(PossessedINSCharacter)
+	{
+		GetINSPlayerCharacter()->SetTeamType(PlayerTeam->GetTeamType());
+	}
 	Super::OnPossess(InPawn);
 }

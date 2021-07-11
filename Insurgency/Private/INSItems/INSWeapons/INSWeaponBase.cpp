@@ -425,7 +425,7 @@ void AINSWeaponBase::OnZoomedIn()
 
 void AINSWeaponBase::DrawCrossHair(class UCanvas* InCavas, const FLinearColor DrawColor)
 {
-	if (CrossHair && ADSAlpha < 0.7f && CurrentWeaponState != EWeaponState::RELOADIND)
+	if (CrossHair && ADSAlpha<0.4f && CurrentWeaponState != EWeaponState::RELOADIND)
 	{
 		CrossHair->DrawCrossHair(InCavas, this, FLinearColor::Red);
 	}
@@ -1269,7 +1269,7 @@ void AINSWeaponBase::SetOwner(AActor* NewOwner)
 
 class AINSPlayerController* AINSWeaponBase::GetINSPlayerController()
 {
-	if (Owner)
+	if (GetOwner())
 	{
 		UE_LOG(LogINSWeapon, Warning, TEXT("Weapon :%s has No Owner Player"));
 		return nullptr;

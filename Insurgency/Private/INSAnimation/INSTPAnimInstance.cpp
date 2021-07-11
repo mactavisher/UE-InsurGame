@@ -158,7 +158,22 @@ float UINSTPAnimInstance::PlayFireAnim()
 	const uint8 RecoilAnimNum = CurrentWeaponAnimData->TPFireRecoilAnims.Num();
 	const uint8 RandomIndex = FMath::RandHelper(RecoilAnimNum - 1);
 	Montage_Play(CurrentWeaponAnimData->TPFireRecoilAnims[RandomIndex]);
-	return Montage_Play(CurrentWeaponAnimData->TPPullTriggerAnim.CharAnim);
+	UAnimMontage* SelectedPullTriggerAnim = nullptr;
+	switch (CurrentWeaponBaseType)
+	{
+	case EWeaponBasePoseType::ALTGRIP: SelectedPullTriggerAnim =
+			CurrentWeaponAnimData->TPWeaponAltGripAnim.PullTriggerAnim.CharAnim;
+		break;
+	case EWeaponBasePoseType::FOREGRIP: SelectedPullTriggerAnim =
+			CurrentWeaponAnimData->TPWeaponAltGripAnim.PullTriggerAnim.CharAnim;
+		break;
+	case EWeaponBasePoseType::DEFAULT: SelectedPullTriggerAnim = CurrentWeaponAnimData->TPWeaponAltGripAnim.
+			PullTriggerAnim.CharAnim;
+		break;
+	default: SelectedPullTriggerAnim = nullptr;
+		break;
+	}
+	return Montage_Play(SelectedPullTriggerAnim);
 }
 
 float UINSTPAnimInstance::PlaySwitchFireModeAnim()

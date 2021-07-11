@@ -264,11 +264,11 @@ float UINSFPAnimInstance::PlayWeaponBasePose()
 	UAnimMontage* SelectedBasePoseAnim = nullptr;
 	switch (CurrentWeaponBaseType)
 	{
-	case EWeaponBasePoseType::ALTGRIP: SelectedBasePoseAnim = CurrentWeaponAnimData->FPAltGripBasePose.CharAnim;
+	case EWeaponBasePoseType::ALTGRIP: SelectedBasePoseAnim = CurrentWeaponAnimData->FPWeaponAltGripAnim.BasePoseAnim.CharAnim;
 		break;
-	case EWeaponBasePoseType::FOREGRIP: SelectedBasePoseAnim = CurrentWeaponAnimData->FPForeGripBasePose.CharAnim;
+	case EWeaponBasePoseType::FOREGRIP: SelectedBasePoseAnim = CurrentWeaponAnimData->FPWeaponForeGripAnim.BasePoseAnim.CharAnim;
 		break;
-	case EWeaponBasePoseType::DEFAULT: SelectedBasePoseAnim = CurrentWeaponAnimData->FPDefaultBasePose.CharAnim;
+	case EWeaponBasePoseType::DEFAULT: SelectedBasePoseAnim = CurrentWeaponAnimData->FPWeaponDefaultPoseAnim.BasePoseAnim.CharAnim;
 		break;
 	default: SelectedBasePoseAnim = nullptr;
 		break;
@@ -425,7 +425,22 @@ float UINSFPAnimInstance::PlayFireAnim()
 		const uint8 RandomIndex = FMath::RandHelper(HandsRecoilAnimNum - 1);
 		Montage_Play(CurrentWeaponAnimData->FPAdsFireHandsMediumCalibers[RandomIndex]);
 	}
-	return Montage_Play(CurrentWeaponAnimData->FPPullTriggerAnim.CharAnim);
+	UAnimMontage* SelectedPullTriggerAnim = nullptr;
+	switch (CurrentWeaponBaseType)
+	{
+	case EWeaponBasePoseType::ALTGRIP: SelectedPullTriggerAnim =
+			CurrentWeaponAnimData->FPWeaponAltGripAnim.PullTriggerAnim.CharAnim;
+		break;
+	case EWeaponBasePoseType::FOREGRIP: SelectedPullTriggerAnim =
+			CurrentWeaponAnimData->FPWeaponForeGripAnim.PullTriggerAnim.CharAnim;
+		break;
+	case EWeaponBasePoseType::DEFAULT: SelectedPullTriggerAnim = CurrentWeaponAnimData->FPWeaponDefaultPoseAnim.
+			PullTriggerAnim.CharAnim;
+		break;
+	default: SelectedPullTriggerAnim = nullptr;
+		break;
+	}
+	return Montage_Play(SelectedPullTriggerAnim);
 }
 
 void UINSFPAnimInstance::UpdateFiringHandsShift(float DeltaSeconds)

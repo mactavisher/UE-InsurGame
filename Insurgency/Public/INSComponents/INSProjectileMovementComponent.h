@@ -6,6 +6,7 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "INSProjectileMovementComponent.generated.h"
 
+class AINSProjectile;
 /**
  * 
  */
@@ -25,7 +26,7 @@ protected:
 	uint8 bScanTraceProjectile : 1;
 
 	UPROPERTY()
-	TObjectPtr<AINSProjectile> OwnerProjectile;
+	AINSProjectile* OwnerProjectile;
 
 protected:
 	//~Begin UProjectileMovementComponent Interface

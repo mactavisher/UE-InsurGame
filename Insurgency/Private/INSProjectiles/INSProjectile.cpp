@@ -460,7 +460,7 @@ void AINSProjectile::CheckImpactHit()
 	const FVector TraceEnd = TraceStart + ProjectileDir * TraceRange;
 	FHitResult ImpactHit(ForceInit);
 	GetWorld()->LineTraceSingleByChannel(ImpactHit, TraceStart, TraceEnd, ECollisionChannel::ECC_Camera, QueryParams);
-	const AActor* HitActor = ImpactHit.GetHitObjectHandle().FetchActor();
+	const AActor* HitActor = ImpactHit.Actor.Get();
 	UClass* HitActorClass = HitActor == nullptr ? nullptr : HitActor->GetClass();
 	if (ImpactHit.bBlockingHit)
 	{

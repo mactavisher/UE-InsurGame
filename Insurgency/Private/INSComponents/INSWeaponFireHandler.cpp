@@ -42,8 +42,7 @@ void UINSWeaponFireHandler::BeginWeaponFire(enum EWeaponFireMode NewFireMode)
 	{
 		if (CurrentFireMode == EWeaponFireMode::SEMI)
 		{
-			GetWorld()->GetTimerManager().SetTimer(SemiFireTimer, this, &UINSWeaponFireHandler::FireShot,
-			                                       OwnerWeapon->GetTimeBetweenShots(), false, 0.f);
+			FireShot();
 		}
 		else if (CurrentFireMode == EWeaponFireMode::SEMIAUTO)
 		{
@@ -70,7 +69,7 @@ bool UINSWeaponFireHandler::CheckCanFireAgain()
 {
 	return OwnerWeapon
 		&& OwnerWeapon->CheckCanFire()
-		&& GetWorld()->GetTimeSeconds() - LastFireTime >= FireInterval;
+		&& GetWorld()->GetTimeSeconds() - LastFireTime >= OwnerWeapon->GetTimeBetweenShots();
 }
 
 
@@ -124,18 +123,17 @@ void UINSWeaponFireHandler::ClearFiring()
 {
 	if (bIsFiring)
 	{
-		if (GetWorld()->GetTimeSeconds() - LastFireTime >= FireInterval * 0.6f)
+		if (GetWorld()->GetTimeSeconds() - LastFireTime >= OwnerWeapon->GetTimeBetweenShots() * 0.5f)
 		{
 			if (OwnerWeapon->HasAuthority())
 			{
 				OwnerWeapon->SetWeaponState(EWeaponState::IDLE);
-				bIsFiring = false;
 			}
 			else if (OwnerWeapon->GetLocalRole() == ROLE_AutonomousProxy)
 			{
 				OwnerWeapon->ServerSetWeaponState(EWeaponState::IDLE);
-				bIsFiring = false;
 			}
+			bIsFiring = false;
 		}
 	}
 }

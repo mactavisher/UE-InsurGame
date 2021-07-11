@@ -38,6 +38,11 @@ USTRUCT(BlueprintType)
 struct FCustomDefaultPoseWeaponAnim
 {
 	GENERATED_USTRUCT_BODY()
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	FWeaponAnimDataPair BasePoseAnim;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	FWeaponAnimDataPair PullTriggerAnim;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	FWeaponAnimDataPair DeployAnim;
@@ -53,6 +58,12 @@ struct FCustomDefaultPoseWeaponAnim
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	FWeaponAnimDataPair SwitchFireModeAnim;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite,Category="BoltRifles")
+	FWeaponAnimDataPair BoltReload;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite,Category="BoltRifles")
+	FWeaponAnimDataPair BoltQuickReload;
 };
 
 /**
@@ -61,6 +72,13 @@ struct FCustomDefaultPoseWeaponAnim
 USTRUCT(BlueprintType)
 struct FCustomAltGripWeaponAnim
 {
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	FWeaponAnimDataPair BasePoseAnim;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	FWeaponAnimDataPair PullTriggerAnim;
+	
 	GENERATED_USTRUCT_BODY()
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	FWeaponAnimDataPair DeployAnim;
@@ -76,6 +94,12 @@ struct FCustomAltGripWeaponAnim
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	FWeaponAnimDataPair SwitchFireModeAnim;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite,Category="BoltRifles")
+	FWeaponAnimDataPair BoltReload;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite,Category="BoltRifles")
+	FWeaponAnimDataPair BoltQuickReload;
 };
 
 /**
@@ -87,6 +111,12 @@ struct FCustomForeGripWeaponAnim
 	GENERATED_USTRUCT_BODY()
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	FWeaponAnimDataPair BasePoseAnim;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	FWeaponAnimDataPair PullTriggerAnim;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	FWeaponAnimDataPair DeployAnim;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
@@ -100,6 +130,12 @@ struct FCustomForeGripWeaponAnim
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	FWeaponAnimDataPair SwitchFireModeAnim;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite,Category="BoltRifles")
+	FWeaponAnimDataPair BoltReload;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite,Category="BoltRifles")
+	FWeaponAnimDataPair BoltQuickReload;
 };
 
 UCLASS(abstract, BlueprintType, Blueprintable)
@@ -145,19 +181,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim|SharedAddtive")
 	TArray<UAnimMontage*> FPAdsFireHandsHighCalibers;
 
-	//shared additive animation between different weapons
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim")
-	FWeaponAnimDataPair FPDefaultBasePose;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim")
-	FWeaponAnimDataPair FPAltGripBasePose;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim")
-	FWeaponAnimDataPair FPForeGripBasePose;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim")
-	FWeaponAnimDataPair FPPullTriggerAnim;
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim|Ads")
 	UAnimSequence* AdjustableAdsRefPose;
 
@@ -185,9 +208,6 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TPAnim")
 	FWeaponAnimDataPair TPForeGripBasePose;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TPAnim")
-	FWeaponAnimDataPair TPPullTriggerAnim;
 
 	//TP default pose CustomAnim
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TPAnim|CustomWeaponAnim")

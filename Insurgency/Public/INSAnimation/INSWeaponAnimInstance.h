@@ -34,6 +34,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AnimDelegate")
 		uint8 bWeaponAnimDelegateBindingFinished : 1;
 
+
 protected:
 	/** native update for variables tick */
 	virtual void NativeUpdateAnimation(float DeltaSeconds)override;
