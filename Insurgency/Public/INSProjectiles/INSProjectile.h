@@ -22,7 +22,7 @@ class AINSWeaponBase;
 
 INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogINSProjectile, Log, All);
 
-//no need to override engine's replicate movement system,since it has be optimized
+/*
 USTRUCT()
 struct FRepINSProjMovement
 {
@@ -82,44 +82,77 @@ struct FRepINSProjMovement
 	{
 		return !(*this == Other);
 	}
-};
+};*/
 
 USTRUCT(BlueprintType)
-struct FProjectleLiftTimeData
+struct FProjectileLiftTimeData
 {
-
 	GENERATED_USTRUCT_BODY()
 
-		/** indicates the initial speed after this projectile fired, usually be the weapon's muzzle speed */
+	/** indicates the initial speed after this projectile fired, usually be the weapon's muzzle speed */
 	UPROPERTY()
-		float StartSpeed;
+	float InitialSpeed;
 
 	/** indicates the impact speed after this projectile fired, usually be the weapon's muzzle speed */
 	UPROPERTY()
-		float ImpactSpeed;
+	float ImpactSpeed;
 
 	/** indicates the impact Velocity after this projectile fired, usually be the weapon's muzzle speed */
 	UPROPERTY()
-		FVector ImpactVelocity;
+	FVector ImpactVelocity;
 
 	/** indicates the actor that impact with */
 	UPROPERTY()
-		TWeakObjectPtr<AActor> ImpactActor;
+	TWeakObjectPtr<AActor> ImpactActor;
 
 	/** indicates the Player that impact with if exist,could be null */
 	UPROPERTY()
-		TWeakObjectPtr<AController> ImpactPlayer;
+	TWeakObjectPtr<AController> ImpactPlayer;
 
 	/** indicates the time fires this shot */
 	UPROPERTY()
-		float StartTime;
+	float StartTime;
 
 	/** indicates the time fires this shot */
 	UPROPERTY()
-		float ImpactTime;
+	float ImpactTime;
 
 	UPROPERTY()
-		int32 DamageCaused;
+	int32 DamageCaused;
+
+	UPROPERTY()
+	FVector StartLoc;
+
+	UPROPERTY()
+	FVector EndLoc;
+
+	FProjectileLiftTimeData()
+		: InitialSpeed(0.f)
+		  , ImpactSpeed(0.f)
+		  , ImpactVelocity(FVector::ZeroVector)
+		  , ImpactActor(nullptr)
+		  , ImpactPlayer(nullptr)
+		  , StartTime(0.f)
+		  , ImpactTime(0.f)
+		  , DamageCaused(0)
+		  , StartLoc(FVector::ZeroVector)
+		  , EndLoc(FVector::ZeroVector)
+	{
+	}
+
+	FString ToString() const
+	{
+		return FString::Printf(TEXT("InitialSpeed:%f, ImpactSpeed:%f, ImpactVelocity:%s ,ImpactActor:%s ,ImpactPlayer:%s ,StartTime:%f, StartTime:%f,DamageCaused:%d,FlyDistance:%f(m)"),
+		                       InitialSpeed,
+		                       ImpactSpeed,
+		                       *ImpactVelocity.ToString(),
+		                       IsValid(ImpactActor.Get()) ? *ImpactActor->GetName() : TEXT("None"),
+		                       IsValid(ImpactPlayer.Get()) ? *ImpactPlayer->GetName() : TEXT("None"),
+		                       StartTime,
+		                       ImpactTime,
+		                       DamageCaused,
+		                       (EndLoc - StartLoc).Size()/100.f);
+	}
 };
 
 
@@ -238,7 +271,7 @@ protected:
 
 	/** Net authority version */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Replication")
-		AINSProjectile* NetAuthrotyProjectile;
+		AINSProjectile* NetAuthorityProjectile;
 
 	/** client fake version ,only provide visual*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Replication")
@@ -261,7 +294,7 @@ protected:
 
 	/** indicate if the scan trace projectile has reach the desire location */
 	UPROPERTY()
-	uint8 bReachDesiredLoc;
+		uint8 bReachDesiredLoc;
 
 	/** this used to send a initial replication to relevant client immediately if projectile flies fast */
 	UPROPERTY()
@@ -271,13 +304,16 @@ protected:
 		FActorTickFunction TracerPaticleSizeTickFun;
 
 	UPROPERTY()
-	    FVector SpawnLocation;
+		FVector SpawnLocation;
 
 	UPROPERTY(Replicated)
-	    FVector ScanTraceHitLoc;
+		FVector ScanTraceHitLoc;
 
 	UPROPERTY()
-	    float ScanTraceTime;
+		float ScanTraceTime;
+
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="LiftTimeInfo")
+	FProjectileLiftTimeData ProjectileLiftTimeData;
 
 #if WITH_EDITORONLY_DATA
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Projectile|Debug")
@@ -314,6 +350,7 @@ protected:
 
 	// ~Begin AActor interface
 	virtual void BeginPlay() override;
+	virtual void LifeSpanExpired()override;
 	virtual void Tick(float DeltaSeconds)override;
 	virtual void TickActor(float DeltaTime, enum ELevelTick TickType, FActorTickFunction& ThisTickFunction)override;
 	virtual void PostInitializeComponents()override;
@@ -333,7 +370,7 @@ protected:
 	 *       client fake projectile immediately and still simulate it's physic state,and by
 	 *       each time we received a update ,just update the fake to match the server one
 	 */
-	virtual void InitClientFakeProjectile(const AINSProjectile* const NetAuthorityProjectile);
+	virtual void InitClientFakeProjectile(const AINSProjectile* const ServerNetProjectile);
 
 	/**
 	 * @Desc send a initial replication to relevant clients for extremely fast moving projectiles
@@ -350,7 +387,7 @@ public:
 	/** return base damage amount */
 	inline virtual float GetBaseDamage()const { return DamageBase; }
 
-	virtual void SetScantraceHitLoc(const FVector NewLoc) { ScanTraceHitLoc = NewLoc; }
+	virtual void SetScanTraceHitLoc(const FVector NewLoc) { ScanTraceHitLoc = NewLoc; }
 
 	/** get the current penetrate count */
 	inline virtual uint8 GetCurrentPenetrateCount()const { return CurrentPenetrateCount; }
@@ -402,7 +439,7 @@ public:
 	/**
 	 * @desc set the scan trace time that this projectile will travel,during scan trace time ,projectiles will have no
 	 *       physics simulation such as gravity
-	 * 
+	 *
 	 * @Param NewTime  the scan trace time to set
 	 */
 	virtual void SetScanTraceTime(float NewTime);

@@ -39,5 +39,7 @@ public:
 
 	virtual void SetOwnerProjectile(AINSProjectile* NewProjectile) { OwnerProjectile = NewProjectile; }
 
-	virtual class AINSProjectile* GetOWnerProjectile()const { return OwnerProjectile; }
+	FORCEINLINE virtual class AINSProjectile* GetOwnerProjectile()const { return OwnerProjectile; }
+
+	FORCEINLINE virtual bool GetIsScanTraceProjectile()const{return bScanTraceProjectile;}
 };

@@ -21,7 +21,7 @@ void UINSWeaponAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	if (OwnerWeaponMesh)
 	{
 		OwnerWeapon = Cast<AINSWeaponBase>(OwnerWeaponMesh->GetOwner());
-		WeaponAnimData = OwnerWeapon->GetWeaponAnim();
+		WeaponAnimData = OwnerWeapon->GetWeaponAnimDataPtr();
 	}
 	if (OwnerWeapon)
 	{
@@ -44,13 +44,13 @@ float UINSWeaponAnimInstance::PlayFireAnim()
 	switch (CurrentWeaponBasePoseType)
 	{
 	case EWeaponBasePoseType::ALTGRIP: SelectedPullTriggerAnim =
-			WeaponAnimData->FPWeaponAltGripAnim.PullTriggerAnim.WeaponAnim;
+		WeaponAnimData->FPWeaponAltGripAnim.PullTriggerAnim.WeaponAnim;
 		break;
 	case EWeaponBasePoseType::FOREGRIP: SelectedPullTriggerAnim =
-			WeaponAnimData->FPWeaponForeGripAnim.PullTriggerAnim.WeaponAnim;
+		WeaponAnimData->FPWeaponForeGripAnim.PullTriggerAnim.WeaponAnim;
 		break;
 	case EWeaponBasePoseType::DEFAULT: SelectedPullTriggerAnim = WeaponAnimData->FPWeaponDefaultPoseAnim.
-			PullTriggerAnim.WeaponAnim;
+		PullTriggerAnim.WeaponAnim;
 		break;
 	default: SelectedPullTriggerAnim = nullptr;
 		break;
@@ -68,22 +68,22 @@ float UINSWeaponAnimInstance::PlayReloadAnim(bool bIsDry)
 	switch (CurrentWeaponBasePoseType)
 	{
 	case EWeaponBasePoseType::ALTGRIP: SelectedReloadAnim = bIsDry
-		                                                        ? WeaponAnimData->FPWeaponAltGripAnim.ReloadDryAnim.
-		                                                        WeaponAnim
-		                                                        : WeaponAnimData->FPWeaponAltGripAnim.ReloadAnim.
-		                                                        WeaponAnim;
+		? WeaponAnimData->FPWeaponAltGripAnim.ReloadDryAnim.
+		WeaponAnim
+		: WeaponAnimData->FPWeaponAltGripAnim.ReloadAnim.
+		WeaponAnim;
 		break;
 	case EWeaponBasePoseType::FOREGRIP: SelectedReloadAnim = bIsDry
-		                                                         ? WeaponAnimData->FPWeaponForeGripAnim.ReloadDryAnim.
-		                                                         WeaponAnim
-		                                                         : WeaponAnimData->FPWeaponForeGripAnim.ReloadAnim.
-		                                                         WeaponAnim;
+		? WeaponAnimData->FPWeaponForeGripAnim.ReloadDryAnim.
+		WeaponAnim
+		: WeaponAnimData->FPWeaponForeGripAnim.ReloadAnim.
+		WeaponAnim;
 		break;
 	case EWeaponBasePoseType::DEFAULT: SelectedReloadAnim = bIsDry
-		                                                        ? WeaponAnimData->FPWeaponDefaultPoseAnim.ReloadDryAnim.
-		                                                        WeaponAnim
-		                                                        : WeaponAnimData->FPWeaponDefaultPoseAnim.ReloadAnim.
-		                                                        WeaponAnim;
+		? WeaponAnimData->FPWeaponDefaultPoseAnim.ReloadDryAnim.
+		WeaponAnim
+		: WeaponAnimData->FPWeaponDefaultPoseAnim.ReloadAnim.
+		WeaponAnim;
 		break;
 	default: SelectedReloadAnim = nullptr;
 		break;

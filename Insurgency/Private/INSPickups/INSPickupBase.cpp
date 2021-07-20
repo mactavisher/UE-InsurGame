@@ -23,16 +23,19 @@ AINSPickupBase::AINSPickupBase(const FObjectInitializer& ObjectInitializer) :Sup
 	InteractionComp->SetCollisionResponseToAllChannels(ECR_Ignore);
 	InteractionComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	InteractionComp->SetupAttachment(RootComponent);
-	SetReplicates(true);
-	SetReplicateMovement(true);
-	DisableTick();
+	bReplicates = true;
+    SetReplicatingMovement(true);
 	bAutoPickup = false;
-	bAutoDestory = true;
+	bAutoDestroy = true;
 }
 
 void AINSPickupBase::BeginPlay()
 {
 	Super::BeginPlay();
+	if(bAutoDestroy)
+	{
+		SetLifeSpan(10.f);
+	}
 }
 
 void AINSPickupBase::Tick(float DeltaTime)
@@ -58,6 +61,7 @@ void AINSPickupBase::SetOwner(AActor* NewOwner)
 void AINSPickupBase::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
+	DisableTick();
 	if (HasAuthority())
 	{
 		FRepMovement* const RepedMovement = (FRepMovement*)&GetReplicatedMovement();

@@ -125,6 +125,7 @@ void AINSWeaponBase::BeginPlay()
 	{
 		ClientCreateWeaponCrossHair();
 		OnRep_WeaponBasePoseType();
+		CheckAndEquipWeaponAttachment();
 	}
 }
 
@@ -266,13 +267,12 @@ void AINSWeaponBase::SpawnProjectile(FVector SpawnLoc, FVector SpawnDir)
 			SpawnedProjectile->SetCurrentPenetrateCount(0);
 			SpawnedProjectile->SetInstigatedPlayer(Cast<AController>(GetOwner()));
 			SpawnedProjectile->SetScanTraceProjectile(ScanTraceHitResult.bBlockingHit);
-			SpawnedProjectile->SetScantraceHitLoc(ScanTraceHitResult.bBlockingHit
+			SpawnedProjectile->SetScanTraceHitLoc(ScanTraceHitResult.bBlockingHit
 				                                      ? FVector::ZeroVector
 				                                      : ScanTraceHitResult.ImpactPoint);
 			SpawnedProjectile->SetScanTraceTime(WeaponConfigData.ScanTraceRange / WeaponConfigData.MuzzleSpeed);
 			SpawnedProjectile->SetSpawnLocation(SpawnLoc);
 			UGameplayStatics::FinishSpawningActor(SpawnedProjectile, ProjectileSpawnTransform);
-			ConsumeAmmo();
 		}
 	}
 }
@@ -380,6 +380,7 @@ void AINSWeaponBase::FireShot(FVector FireLoc, FRotator ShotRot)
 	if (HasAuthority())
 	{
 		SpawnProjectile(FireLoc, ShotRot.Vector());
+		ConsumeAmmo();
 		RepWeaponFireCount++;
 		OnRep_WeaponFireCount();
 #if WITH_EDITORONLY_DATA&&!UE_BUILD_SHIPPING
@@ -523,7 +524,7 @@ void AINSWeaponBase::OnRep_CurrentWeaponState()
 		break;
 	}
 	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green,
-	                                 TEXT("Weapon state replicated," + GetWeaponReadableCurrentState()));
+		TEXT("Weapon state replicated," + GetWeaponReadableCurrentState()));
 }
 
 void AINSWeaponBase::OnRep_AimWeapon()
@@ -661,6 +662,25 @@ void AINSWeaponBase::FindCrossHairHit(FHitResult& Hit)
 			DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 3.0f);
 		}
 #endif
+	}
+}
+
+void AINSWeaponBase::CheckAndEquipWeaponAttachment()
+{
+	if (HasAuthority())
+	{
+		for (const TPair<FName, FWeaponAttachmentSlot>& pair : WeaponAttachementSlots)
+		{
+			FWeaponAttachmentSlot& CurrentSlot = (FWeaponAttachmentSlot&)pair.Value;
+			if (CurrentSlot.bIsAvailable&&CurrentSlot.WeaponAttachementClass)
+			{
+				CurrentSlot.WeaponAttachmentInstance = GetWorld()->SpawnActorDeferred<AINSWeaponAttachment>(CurrentSlot.GetWeaponAttachmentClass()
+					, GetActorTransform()
+					,this
+					,GetOwnerCharacter()
+					,ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
+			}
+		}
 	}
 }
 
@@ -980,6 +1000,12 @@ void AINSWeaponBase::CalculateAmmoAfterReload()
 
 void AINSWeaponBase::ConsumeAmmo()
 {
+#if WITH_EDITORONLY_DATA
+	if (bInfinitAmmo)
+	{
+		return;
+	}
+#endif
 	if (HasAuthority() && CurrentClipAmmo > 0)
 	{
 		CurrentClipAmmo = FMath::Clamp<int32>(CurrentClipAmmo - 1, 0, CurrentClipAmmo);

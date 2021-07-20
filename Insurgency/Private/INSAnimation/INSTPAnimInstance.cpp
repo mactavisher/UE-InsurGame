@@ -137,11 +137,11 @@ float  UINSTPAnimInstance::PlayWeaponBasePose()
 	UAnimMontage* SelectedBasePoseAnim = nullptr;
 	switch (CurrentWeaponBaseType)
 	{
-	case EWeaponBasePoseType::ALTGRIP:SelectedBasePoseAnim = CurrentWeaponAnimData->TPAltGripBasePose.CharAnim;
+	case EWeaponBasePoseType::ALTGRIP:SelectedBasePoseAnim = CurrentWeaponAnimData->TPWeaponAltGripAnim.BasePoseAnim.CharAnim;
 		break;
-	case EWeaponBasePoseType::FOREGRIP:SelectedBasePoseAnim = CurrentWeaponAnimData->TPForeGripBasePose.CharAnim;
+	case EWeaponBasePoseType::FOREGRIP:SelectedBasePoseAnim = CurrentWeaponAnimData->TPWeaponForeGripAnim.BasePoseAnim.CharAnim;
 		break;
-	case EWeaponBasePoseType::DEFAULT:SelectedBasePoseAnim = CurrentWeaponAnimData->TPDefaultBasePose.CharAnim;
+	case EWeaponBasePoseType::DEFAULT:SelectedBasePoseAnim = CurrentWeaponAnimData->TPWeaponDefaultPoseAnim.BasePoseAnim.CharAnim;
 		break;
 	default:SelectedBasePoseAnim = nullptr;
 		break;

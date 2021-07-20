@@ -52,12 +52,7 @@ protected:
 
 	/** indicate this pick up will be auto picked up by player who get overlapped with this  */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
-		uint8 bAutoDestory : 1;
-
-	/** timer for destroy this pick up for a certain period of time after spawn */
-	UPROPERTY()
-		FTimerHandle DestoryTimer;
-
+		uint8 bAutoDestroy : 1;
 protected:
 	// ~begin AActor interface
 	virtual void BeginPlay() override;

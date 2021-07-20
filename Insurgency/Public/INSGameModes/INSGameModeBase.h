@@ -99,7 +99,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GameModeConfig")
 		EGameType CurrentGameType;
 
-	/** default respawn time for a dead player */
+	/** default re_spawn time for a dead player */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "GameModeConfig")
 		float DefaultRestartTime;
 

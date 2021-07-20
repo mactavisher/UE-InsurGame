@@ -58,7 +58,7 @@ protected:
 	TMap<FName, float> BoneMappedDamageModifier;
 public:
 	/**
-	 * @Desc   convenient bone mapped damage modifier quierier
+	 * @Desc   convenient bone mapped damage modifier querier
 	 *
 	 * @params BoneName the bone name to query the modifier
 	 *         if not found , will return 1.f,which means apply original damage,
@@ -104,7 +104,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_Sprint, Category = "Stances")
 	uint8 bIsSprint : 1;
 
-	/** is this character prone ? */
+	/** is this charActer prone ? */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_Prone, Category = "Stances")
 	uint8 bIsProne : 1;
 

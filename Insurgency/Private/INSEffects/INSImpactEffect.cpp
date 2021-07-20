@@ -16,6 +16,7 @@ AINSImpactEffect::AINSImpactEffect(const FObjectInitializer& ObjectInitializer) 
 	PrimaryActorTick.bCanEverTick = false;
 	PrimaryActorTick.SetTickFunctionEnable(false);
 	bReplicates = false;
+	InitialLifeSpan = 3.f;
 }
 
 void AINSImpactEffect::PostInitializeComponents()

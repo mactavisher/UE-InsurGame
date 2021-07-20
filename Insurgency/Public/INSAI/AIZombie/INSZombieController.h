@@ -100,7 +100,7 @@ protected:
 
 	/**
 	 * @desc   set the current target enemy,whether this will set is not sure
-	 * @param  NewTargetEnemy the new enemy target to set
+	 * @param  NewEnemyTarget the new enemy target to set
 	 * @return returns true if the Target enemy Set successfully,false otherwise
 	 */
 	virtual bool TrySetTargetEnemy(class AController* NewEnemyTarget);

@@ -34,8 +34,7 @@ void UINSAnimNotify_EndFireModeSwitch::Notify(USkeletalMeshComponent* MeshComp, 
 			{
 				OwnerWeapon->ServerFinishSwitchFireMode();
 			}
-			UE_LOG(LogTemp, Log, TEXT("weapon %s FinishUnEquipping notify triggerd and Executed"),
-			       *OwnerWeapon->GetName());
+			UE_LOG(LogTemp, Log, TEXT("weapon %s FinishUnEquipping notify triggerd and Executed"), *OwnerWeapon->GetName());
 		}
 	}
 }

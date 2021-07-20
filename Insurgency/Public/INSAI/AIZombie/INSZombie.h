@@ -214,7 +214,7 @@ public:
 	inline virtual float GetZombieRagePoint() { return RagePoint; };
 
 	/**
-	 * add rage point to  zomibe's current rage point
+	 * add rage point to  zombie's current rage point
 	 */
 	virtual void AddZombieRagePoint(int32 RageToAdd) { RagePoint += RageToAdd; }
 };

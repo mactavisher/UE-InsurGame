@@ -17,6 +17,7 @@ AINSProjectileShell::AINSProjectileShell(const FObjectInitializer& Objectinitial
 	RootComponent = ParticleComp;
 	bCollided = false;
 	bReplicates = false;
+	InitialLifeSpan = 5.f;
 }
 
 // Called when the game starts or when spawned
@@ -31,10 +32,9 @@ void AINSProjectileShell::PostInitializeComponents()
 	Super::PostInitializeComponents();
 	if (GetNetMode() != ENetMode::NM_DedicatedServer)
 	{
-		ParticleCollideDelegate.BindUFunction(this, TEXT("OnShellCollide"));
+		ParticleCollideDelegate.BindUFunction(this, TEXT("OnCollide"));
 		ParticleComp->OnParticleCollide.AddUnique(ParticleCollideDelegate);
 	}
-	SetLifeSpan(10.f);
 }
 
 void AINSProjectileShell::OnCollide(FName EventName, float EmitterTime, int32 ParticleTime, FVector Location, FVector Velocity, FVector Direction, FVector Normal, FName BoneName, UPhysicalMaterial* PhysMat)

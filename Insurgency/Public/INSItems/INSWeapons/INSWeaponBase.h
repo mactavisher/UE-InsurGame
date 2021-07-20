@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Insurgency/Insurgency.h"
 #include "INSItems/INSItems.h"
+#include "INSItems/INSWeaponAttachments/INSWeaponAttachment.h"
 #include "INSWeaponBase.generated.h"
 
 class USoundCue;
@@ -198,25 +199,25 @@ struct FWeaponAttachmentSlot
 
 	/**attachment class */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	TSubclassOf<AActor> WeaponAttachementClass;
+	TSubclassOf<AINSWeaponAttachment> WeaponAttachementClass;
 
 	/** attachment instance */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-	class AActor* WeaponAttachmentInstance;
+		class AINSWeaponAttachment* WeaponAttachmentInstance;
 
 	/** attachment instance */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	uint8 bIsAvailable : 1;
+		uint8 bIsAvailable : 1;
 
 	/** Weapon attachment type */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly)
-	EWeaponAttachmentType WeaponAttachmentType;
+		EWeaponAttachmentType WeaponAttachmentType;
 
 public:
 	/**
 	 * @desc return the class of The weapon class Attachment that will be used in this Attachment Slot
 	 */
-	class AActor* GetWeaponAttachmentInstance() const { return WeaponAttachmentInstance; }
+	class AINSWeaponAttachment* GetWeaponAttachmentInstance() const { return WeaponAttachmentInstance; }
 
 	/**
 	 * @desc return  Attachment class  that is used in this Attachment Slot
@@ -237,25 +238,17 @@ public:
 		WeaponAttachmentType = NewType;
 	}
 
-	/**
-	 * init this struct by default
-	 */
-	FORCEINLINE FWeaponAttachmentSlot()
-		: WeaponAttachementClass(nullptr)
-		  , WeaponAttachmentInstance(nullptr)
-		  , bIsAvailable(false)
-	{
-	}
+	FWeaponAttachmentSlot() {}
 
 	/**
 	 * @desc init this struct by passing a attachment type
 	 * @param WeaponAttachmentType set the attachment type of this attachment slot
 	 */
-	FORCEINLINE FWeaponAttachmentSlot(EWeaponAttachmentType WeaponAttachmentType)
+	FWeaponAttachmentSlot(EWeaponAttachmentType WeaponAttachmentType)
 		: WeaponAttachementClass(nullptr)
-		  , WeaponAttachmentInstance(nullptr)
-		  , bIsAvailable(true)
-		  , WeaponAttachmentType(WeaponAttachmentType)
+		, WeaponAttachmentInstance(nullptr)
+		, bIsAvailable(true)
+		, WeaponAttachmentType(WeaponAttachmentType)
 	{
 	}
 
@@ -264,11 +257,11 @@ public:
 	 * @param  WeaponAttachmentType  set the attachment type of this attachment slot
 	 * @param  IsAvailable  set the Availability  of this attachment slot
 	 */
-	FORCEINLINE FWeaponAttachmentSlot(EWeaponAttachmentType WeaponAttachmentType, bool IsAvailable)
+	FWeaponAttachmentSlot(EWeaponAttachmentType WeaponAttachmentType, bool IsAvailable)
 		: WeaponAttachementClass(nullptr)
-		  , WeaponAttachmentInstance(nullptr)
-		  , bIsAvailable(IsAvailable)
-		  , WeaponAttachmentType(WeaponAttachmentType)
+		, WeaponAttachmentInstance(nullptr)
+		, bIsAvailable(IsAvailable)
+		, WeaponAttachmentType(WeaponAttachmentType)
 	{
 	}
 };
@@ -302,7 +295,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 		Category = "WeaponState")
 	EWeaponState CurrentWeaponState;
 
-	/** rep counter to tell clients fire just happened and things will happen */
+	/** rep counter to tell clients fire just happened,mostly used for clients to play cosmetic events like fx */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponFireCount,
 		Category = "WeaponState")
 	uint8 RepWeaponFireCount;
@@ -326,7 +319,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 
 #if WITH_EDITORONLY_DATA
 	/** if enabled,fire will not consumes any ammo */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ammo")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Ammo")
 	uint8 bInfinitAmmo : 1;
 #endif
 
@@ -743,6 +736,8 @@ public:
 
 	inline virtual float GetTimeBetweenShots() const { return WeaponConfigData.TimeBetweenShots; }
 
+	virtual void CheckAndEquipWeaponAttachment();
+
 	/**
 	 * @Desc adjust projectile spawn rotation to hit center of the screen
 	 */
@@ -818,7 +813,7 @@ public:
 	 * returns the weapon animation data
 	 * @return WeaponAnimation UINSStaticAnimData
 	 */
-	inline virtual UINSStaticAnimData* GetWeaponAnim() const { return WeaponAnimation; }
+	inline virtual UINSStaticAnimData* GetWeaponAnimDataPtr() const { return WeaponAnimation; }
 
 	/**
 	 * returns the weapon state
@@ -829,4 +824,6 @@ public:
 
 
 	inline virtual EWeaponBasePoseType GetCurrentWeaponBasePose() const { return CurrentWeaponBasePoseType; }
+
+	virtual void SetWeaponBasePoseType(EWeaponBasePoseType NewPoseType) { CurrentWeaponBasePoseType = NewPoseType; }
 };

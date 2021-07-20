@@ -22,39 +22,65 @@ class INSURGENCY_API AINSWeaponAttachment : public AINSItems
 	GENERATED_UCLASS_BODY()
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WeaponMesh1PComp", meta = (AllowPrivateAccess = "true"))
-		USkeletalMeshComponent* Mesh1p;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WeaponMesh3PComp", meta = (AllowPrivateAccess = "true"))
-		USkeletalMeshComponent* Mesh3p;
+	/** attachment visual skeletal component , should have no collision(Physics) enabled */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AttachmentMeshComp", meta = (AllowPrivateAccess = "true"))
+		USkeletalMeshComponent* AttachmentMesh;
 
 	/** weapon that own this attachment */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "WeaponOwner")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated,ReplicatedUsing = OnRep_OwnerWeapon, Category = "WeaponOwner")
 		AINSWeaponBase* WeaponOwner;
 
 	/** in which slot can this attachment attach to, e.g. underBarrel,muzzle */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
-		TArray<EWeaponAttachmentType> CompatibleSlots;
+		TArray<EWeaponAttachmentType> CompatibleWeaponSlots;
+
+	UPROPERTY()
+	AINSWeaponAttachment* ClientVisualAttachment;
+
+	UPROPERTY()
+	uint8 bClientVisualAttachment:1;
+
+	UPROPERTY()
+	uint8 bChangeWeaponBasePoseType:1;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite,Category="WeaponAttachments")
+	EWeaponBasePoseType TargetWeaponBasePoseType;
 
 
 protected:
-	virtual void BeginPlay() override;
+	/** attach the attachment to weapon attachment slot */
+	virtual void AttachToWeaponSlot();
 
+	/** create attachment for client visual only */
+	virtual void CreateClientVisualAttachment();
+
+	UFUNCTION()
+	virtual void OnRep_OwnerWeapon();
+
+	virtual void UpdateWeaponBasePoseType();
+
+protected:
+	// ~ Begin AActor interface
+	virtual void Tick(float DeltaTime) override;
 	virtual void OnRep_Owner()override;
-
+	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
-
+	// ~ End AActor interface
 
 public:
-
-	virtual void Tick(float DeltaTime) override;
-
+	/** called when this attachment has been attached to the weapon */
 	virtual void ReceiveAttachmentEquipped(class AINSWeaponBase* WeaponEuippedBy);
 
 	/** return the weapon that own this attachment */
 	FORCEINLINE virtual class AINSWeaponBase* GetWeaponOwner()const { return WeaponOwner; }
 
-	/** return the weapon that own this attachment */
+	/** set the weapon that own this attachment */
 	virtual void SetWeaponOwner(class AINSWeaponBase* NewWeaponOwner) { this->WeaponOwner = NewWeaponOwner; }
+
+	FORCEINLINE virtual AINSWeaponAttachment* GetClientVisualAttachment()const { return ClientVisualAttachment; }
+
+	FORCEINLINE virtual class USkeletalMeshComponent* GetAttachmentMeshComp()const;
+
+	virtual void SetClientVisualAttachment(class AINSWeaponAttachment* NewClientAttachment) { ClientVisualAttachment = NewClientAttachment; }
 
 };

@@ -161,11 +161,20 @@ protected:
 
 
 public:
-	virtual void SetWeaponBasePoseType(EWeaponBasePoseType NewBasePoseType) { this->CurrentWeaponBaseType = NewBasePoseType; }
+	/**
+	 * @Desc  sets the current base pose type
+	 * @Param NewBasePoseType target base pose type
+	 */
+	virtual void SetWeaponBasePoseType(EWeaponBasePoseType NewBasePoseType);
 
+	/** returns if in falling state */
 	virtual bool GetIsFalling()const { return bIsFalling; };
 
-	virtual void SetIsSprinting(bool bIsSprintingNow) { this->bIsSprinting = bIsSprintingNow; }
+	/**
+	 * @Desc    sets sprint status
+	 * @Param   target base pose type
+	 */
+	virtual void SetIsSprinting(const bool NewSprintState);
 
 	virtual void SetSprintPressed(bool NewSprintPressed);
 
@@ -180,8 +189,6 @@ public:
 	virtual bool GetIsAiming()const { return bIsAiming; }
 
 	virtual void SetStartJump(bool NewJumpState) { this->bStartJump = NewJumpState; }
-
-
 
 	/**
 	 * Set the currently used weapon and weapon animation data

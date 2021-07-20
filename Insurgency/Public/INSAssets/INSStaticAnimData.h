@@ -199,15 +199,6 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TPAnim|SharedAddtive")
 	TArray<UAnimMontage*> TPFireRecoilAnims;
 
-	//shared additive animation between different weapons
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TPAnim")
-	FWeaponAnimDataPair TPDefaultBasePose;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TPAnim")
-	FWeaponAnimDataPair TPAltGripBasePose;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TPAnim")
-	FWeaponAnimDataPair TPForeGripBasePose;
 
 	//TP default pose CustomAnim
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TPAnim|CustomWeaponAnim")

@@ -184,21 +184,17 @@ void UINSCharacterAimInstance::UpdateDirection()
 
 void UINSCharacterAimInstance::UpdatePitchAndYaw()
 {
-	//FPS No need to update
-	if (CurrentViewMode == EViewMode::TPS)
+	const FRotator CharacterRotation = OwnerPlayerCharacter->GetActorRotation();
+	const FRotator ControlRotation = OwnerPlayerCharacter->GetBaseAimRotation();
+	Pitch = ControlRotation.Pitch <= 90.f ? ControlRotation.Pitch / 90.f : (ControlRotation.Pitch - 360.f) / 90.f;
+	//Pitch = UKismetMathLibrary::MapRangeClamped(ControlRotation.Pitch, -90.f, 360.f, -1.f, 1.f);
+	if (ControlRotation.Yaw > 0.f)
 	{
-		const FRotator CharacterRotation = OwnerPlayerCharacter->GetActorRotation();
-		const FRotator ControlRotation = OwnerPlayerCharacter->GetBaseAimRotation();
-		Pitch = ControlRotation.Pitch <= 90.f ? ControlRotation.Pitch / 90.f : (ControlRotation.Pitch - 360.f) / 90.f;
-		//Pitch = UKismetMathLibrary::MapRangeClamped(ControlRotation.Pitch, -90.f, 360.f, -1.f, 1.f);
-		if (ControlRotation.Yaw > 0.f)
-		{
-			Yaw = UKismetMathLibrary::MapRangeClamped(ControlRotation.Yaw, 0.f, 90.f, 0.5f, 0.f) * 1.067f;
-		}
-		if (ControlRotation.Yaw < 0.f)
-		{
-			Yaw = UKismetMathLibrary::MapRangeClamped(ControlRotation.Yaw, 0.f, -90.f, 0.5f, 1.f) * 1.067f;
-		}
+		Yaw = UKismetMathLibrary::MapRangeClamped(ControlRotation.Yaw, 0.f, 90.f, 0.5f, 0.f) * 1.067f;
+	}
+	if (ControlRotation.Yaw < 0.f)
+	{
+		Yaw = UKismetMathLibrary::MapRangeClamped(ControlRotation.Yaw, 0.f, -90.f, 0.5f, 1.f) * 1.067f;
 	}
 }
 
@@ -322,6 +318,16 @@ float UINSCharacterAimInstance::PlayWeaponIdleAnim()
 	return 0.f;
 }
 
+void UINSCharacterAimInstance::SetWeaponBasePoseType(EWeaponBasePoseType NewBasePoseType)
+{
+	CurrentWeaponBaseType = NewBasePoseType;
+}
+
+void UINSCharacterAimInstance::SetIsSprinting(const bool NewSprintState)
+{
+	bIsSprinting = NewSprintState;
+}
+
 void UINSCharacterAimInstance::SetSprintPressed(bool NewSprintPressed)
 {
 	this->bSprintPressed = NewSprintPressed;
@@ -346,7 +352,7 @@ void UINSCharacterAimInstance::SetCurrentWeaponAndAnimationData(class AINSWeapon
 	CurrentWeapon = NewWeapon;
 	CurrentWeaponAnimData = CurrentWeapon == nullptr
 		? nullptr
-		: CurrentWeapon->GetWeaponAnim();
+		: CurrentWeapon->GetWeaponAnimDataPtr();
 }
 
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
