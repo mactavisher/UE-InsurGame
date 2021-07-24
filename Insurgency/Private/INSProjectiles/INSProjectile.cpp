@@ -272,7 +272,7 @@ void AINSProjectile::LifeSpanExpired()
 	ProjectileLiftTimeData.EndLoc = GetActorLocation();
 	if(!bVisualProjectile)
 	{
-		UE_LOG(LogINSProjectile, Log, TEXT("Projectile%s has reached it's life span,life span data is %s"), *GetName(),*ProjectileLiftTimeData.ToString());
+		UE_LOG(LogINSProjectile, Log, TEXT("Projectile:%s has reached it's life span,life span data is: %s"), *GetName(),*ProjectileLiftTimeData.ToString());
 	}
 }
 

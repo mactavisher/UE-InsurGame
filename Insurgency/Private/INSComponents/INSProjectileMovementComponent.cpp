@@ -23,7 +23,7 @@ void UINSProjectileMovementComponent::TickComponent(float DeltaTime, enum ELevel
 			ScanHitTime += DeltaTime;
 			if (ScanHitTime > OwnerProjectile->GetScanTraceTime())
 			{
-				Velocity *= 0.999f;
+				Velocity *= 0.99f;
 				ProjectileGravityScale = FMath::Clamp<float>(DeltaTime * 90.f, ProjectileGravityScale, 20.f);
 			}
 		}

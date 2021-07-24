@@ -24,7 +24,7 @@ struct FAttackAnimMontages
 	UAnimMontage* LeftHandAttackMontage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animations")
-	UAnimMontage* RighHandAttackMontage;
+	UAnimMontage* RightHandAttackMontage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animations")
 	UAnimMontage* HyperAttackMontage;
@@ -47,9 +47,9 @@ enum class EZombieMoveMode :uint8
 UENUM(BlueprintType)
 enum class EZombieAttackMode :uint8
 {
-	LeftHand UMETA(DisplayName = "LeftHand"),
-	RightHand UMETA(DisplayName = "RightHand"),
-	Hyper UMETA(DisplayName = "Hyper"),
+	LeftHand UMETA(DisplayName = "Attack Using Left Hand"),
+	RightHand UMETA(DisplayName = "Attack Using Right Hand"),
+	Hyper UMETA(DisplayName = "Hyper Attack"),
 };
 
 /**
@@ -199,9 +199,9 @@ public:
 
 	/**
 	 * Set the current zombie attack mode
-	 * @param NewAttakMode New Attack Mode to set for this zombie
+	 * @param NewAttackMode New Attack Mode to set for this zombie
 	 */
-	virtual void SetZombieCurrentAttackMode(EZombieAttackMode NewAttakMode) { this->CurrenAttackMode = NewAttakMode; };
+	virtual void SetZombieCurrentAttackMode(const enum EZombieAttackMode NewAttackMode) { this->CurrenAttackMode = NewAttackMode; };
 
 	/**
 	 * performs a line trace damage
@@ -216,5 +216,5 @@ public:
 	/**
 	 * add rage point to  zombie's current rage point
 	 */
-	virtual void AddZombieRagePoint(int32 RageToAdd) { RagePoint += RageToAdd; }
+	virtual void AddZombieRagePoint(const int32 RageToAdd) { RagePoint += RageToAdd; }
 };

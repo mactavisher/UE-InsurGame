@@ -132,7 +132,7 @@ enum class EWeaponPendingEventType :uint8
 	Reload,
 	Equip,
 	SwitchFireMode,
-	Unequip,
+	UnEquip,
 	None,
 };
 
@@ -157,17 +157,13 @@ struct FWeaponPendingEvent
 	float DelayedTimeElapsed;
 
 public:
-	FWeaponPendingEvent(EWeaponPendingEventType Type, float EventTime, float DelayedExecuteTime)
-	{
-		EventType = Type;
-		EventCreateTime = EventTime;
-		DelayedExecuteTime = DelayedExecuteTime;
-	}
-
-	FWeaponPendingEvent()
-	{
-	}
-
+	FWeaponPendingEvent():
+	EventType(EWeaponPendingEventType::None)
+	,EventCreateTime(0.f)
+	,DelayedExecuteTime(0.f)
+	,bIsValid(false)
+	,DelayedTimeElapsed(0.f)
+	{}
 	void Reset()
 	{
 		EventType = EWeaponPendingEventType::None;

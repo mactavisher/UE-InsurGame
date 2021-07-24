@@ -183,7 +183,7 @@ void AINSZombie::OnRep_ZombieAttackMode()
 		{
 		case EZombieAttackMode::LeftHand: SelectedAttackMontage = ZombieAttackMontages.LeftHandAttackMontage;
 			break;
-		case EZombieAttackMode::RightHand: SelectedAttackMontage = ZombieAttackMontages.RighHandAttackMontage;
+		case EZombieAttackMode::RightHand: SelectedAttackMontage = ZombieAttackMontages.RightHandAttackMontage;
 			break;
 		case EZombieAttackMode::Hyper: SelectedAttackMontage = ZombieAttackMontages.HyperAttackMontage;
 			break;
