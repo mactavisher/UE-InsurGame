@@ -158,12 +158,14 @@ struct FWeaponPendingEvent
 
 public:
 	FWeaponPendingEvent():
-	EventType(EWeaponPendingEventType::None)
-	,EventCreateTime(0.f)
-	,DelayedExecuteTime(0.f)
-	,bIsValid(false)
-	,DelayedTimeElapsed(0.f)
-	{}
+		EventType(EWeaponPendingEventType::None)
+		, EventCreateTime(0.f)
+		, DelayedExecuteTime(0.f)
+		, bIsValid(false)
+		, DelayedTimeElapsed(0.f)
+	{
+	}
+
 	void Reset()
 	{
 		EventType = EWeaponPendingEventType::None;
