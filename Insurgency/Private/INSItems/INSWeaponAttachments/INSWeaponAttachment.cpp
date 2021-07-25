@@ -13,7 +13,7 @@
 #endif
 #include "INSItems/INSWeapons/INSWeaponBase.h"
 
-AINSWeaponAttachment::AINSWeaponAttachment(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
+AINSWeaponAttachment::AINSWeaponAttachment(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	bReplicates = true;
 	AttachmentMesh = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("Mesh3pComp"));
@@ -23,7 +23,8 @@ AINSWeaponAttachment::AINSWeaponAttachment(const FObjectInitializer& ObjectIniti
 	SetReplicatingMovement(false);
 	ItemType = EItemType::WEAPONATTACHMENT;
 	bClientVisualAttachment = false;
-	DisableTick();
+	CurrentAttachmentType = EWeaponAttachmentType::NONE;
+	AttachedSlotIndex = static_cast<uint8>(0);
 }
 
 void AINSWeaponAttachment::BeginPlay()
@@ -35,6 +36,12 @@ void AINSWeaponAttachment::BeginPlay()
 		UpdateWeaponBasePoseType();
 		AttachToWeaponSlot();
 	}
+}
+
+void AINSWeaponAttachment::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+	DisableTick();
 }
 
 void AINSWeaponAttachment::OnRep_Owner()
@@ -100,9 +107,9 @@ void AINSWeaponAttachment::Tick(float DeltaTime)
 }
 
 
-void AINSWeaponAttachment::ReceiveAttachmentEquipped(class AINSWeaponBase* WeaponEuippedBy)
+void AINSWeaponAttachment::ReceiveAttachmentEquipped(class AINSWeaponBase* WeaponEquippedBy)
 {
-	this->WeaponOwner = WeaponEuippedBy;
+	this->WeaponOwner = WeaponEquippedBy;
 }
 
 FORCEINLINE class USkeletalMeshComponent* AINSWeaponAttachment::GetAttachmentMeshComp() const

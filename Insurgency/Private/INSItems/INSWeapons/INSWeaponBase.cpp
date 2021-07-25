@@ -53,21 +53,17 @@ AINSWeaponBase::AINSWeaponBase(const FObjectInitializer& ObjectInitializer) : Su
 	RepWeaponFireCount = 0;
 	bIsAimingWeapon = false;
 #if WITH_EDITORONLY_DATA
-	bInfinitAmmo = false;
+	bInfinityAmmo = false;
 #endif
 	AimTime = 0.3f;
 	RecoilVerticallyFactor = -3.f;
 	RecoilHorizontallyFactor = 6.f;
 	bDryReload = false;
-	SetReplicateMovement(false);
-	WeaponMesh1PComp = ObjectInitializer.CreateDefaultSubobject<
-		UINSWeaponMeshComponent>(this, TEXT("WeaponMesh1PComp"));
-	WeaponMesh3PComp = ObjectInitializer.CreateDefaultSubobject<
-		UINSWeaponMeshComponent>(this, TEXT("WeaponMesh3PComp"));
-	WeaponParticleComp = ObjectInitializer.CreateDefaultSubobject<UParticleSystemComponent>(
-		this, TEXT("ParticelSystemComp"));
-	WeaponFireHandler = ObjectInitializer.CreateDefaultSubobject<
-		UINSWeaponFireHandler>(this, TEXT("WeaponFireHandler"));
+	SetReplicatingMovement(false);
+	WeaponMesh1PComp = ObjectInitializer.CreateDefaultSubobject<UINSWeaponMeshComponent>(this, TEXT("WeaponMesh1PComp"));
+	WeaponMesh3PComp = ObjectInitializer.CreateDefaultSubobject<UINSWeaponMeshComponent>(this, TEXT("WeaponMesh3PComp"));
+	WeaponParticleComp = ObjectInitializer.CreateDefaultSubobject<UParticleSystemComponent>(this, TEXT("ParticelSystemComp"));
+	WeaponFireHandler = ObjectInitializer.CreateDefaultSubobject<UINSWeaponFireHandler>(this, TEXT("WeaponFireHandler"));
 	WeaponMesh1PComp->AlwaysLoadOnClient = true;
 	WeaponMesh1PComp->AlwaysLoadOnServer = true;
 	WeaponMesh3PComp->AlwaysLoadOnClient = true;
@@ -201,16 +197,11 @@ void AINSWeaponBase::PreInitializeComponents()
 
 void AINSWeaponBase::InitWeaponAttachmentSlots()
 {
-	WeaponAttachementSlots.Add(WeaponAttachmentSlotName::Muzzle,
-	                           FWeaponAttachmentSlot(EWeaponAttachmentType::MUZZLE, true));
-	WeaponAttachementSlots.Add(WeaponAttachmentSlotName::Sight,
-	                           FWeaponAttachmentSlot(EWeaponAttachmentType::SIGHT, true));
-	WeaponAttachementSlots.Add(WeaponAttachmentSlotName::UnderBarrel,
-	                           FWeaponAttachmentSlot(EWeaponAttachmentType::UNDER_BARREL, true));
-	WeaponAttachementSlots.Add(WeaponAttachmentSlotName::LeftRail,
-	                           FWeaponAttachmentSlot(EWeaponAttachmentType::LEFT_RAIL, true));
-	WeaponAttachementSlots.Add(WeaponAttachmentSlotName::rightRail,
-	                           FWeaponAttachmentSlot(EWeaponAttachmentType::RIGHT_RAIL, true));
+	WeaponAttachmentSlots.Add(WeaponAttachmentSlotName::Muzzle,FWeaponAttachmentSlot(EWeaponAttachmentType::MUZZLE, true));
+	WeaponAttachmentSlots.Add(WeaponAttachmentSlotName::Sight,FWeaponAttachmentSlot(EWeaponAttachmentType::SIGHT, true));
+	WeaponAttachmentSlots.Add(WeaponAttachmentSlotName::UnderBarrel,FWeaponAttachmentSlot(EWeaponAttachmentType::UNDER_BARREL, true));
+	WeaponAttachmentSlots.Add(WeaponAttachmentSlotName::LeftRail,FWeaponAttachmentSlot(EWeaponAttachmentType::LEFT_RAIL, true));
+	WeaponAttachmentSlots.Add(WeaponAttachmentSlotName::RightRail,FWeaponAttachmentSlot(EWeaponAttachmentType::RIGHT_RAIL, true));
 }
 
 
@@ -224,7 +215,7 @@ void AINSWeaponBase::GetADSSightTransform(FTransform& OutTransform)
 
 void AINSWeaponBase::GetWeaponAttachmentSlotStruct(FName SlotName, FWeaponAttachmentSlot& OutWeaponAttachmentSlot)
 {
-	FWeaponAttachmentSlot* TargetAttachmentSlot = WeaponAttachementSlots.Find(SlotName);
+	FWeaponAttachmentSlot* TargetAttachmentSlot = WeaponAttachmentSlots.Find(SlotName);
 	if (!TargetAttachmentSlot)
 	{
 		UE_LOG(LogINSWeapon, Warning, TEXT("Weapon Slot Named %s Not found!"));
@@ -296,7 +287,7 @@ void AINSWeaponBase::SetOwnerCharacter(class AINSCharacter* NewOwnerCharacter)
 	}
 }
 
-void AINSWeaponBase::SetWeaponState(EWeaponState NewWeaponState)
+void AINSWeaponBase::SetWeaponState(const EWeaponState NewWeaponState)
 {
 	if (HasAuthority())
 	{
@@ -325,7 +316,7 @@ FORCEINLINE class UINSWeaponAnimInstance* AINSWeaponBase::GetWeapon1PAnimInstanc
 	return Cast<UINSWeaponAnimInstance>(WeaponMesh1PComp->AnimScriptInstance);
 }
 
-FORCEINLINE class UINSWeaponAnimInstance* AINSWeaponBase::GetWeapon3pAnimINstance()
+FORCEINLINE class UINSWeaponAnimInstance* AINSWeaponBase::GetWeapon3pAnimInstance()
 {
 	return Cast<UINSWeaponAnimInstance>(WeaponMesh3PComp->AnimScriptInstance);
 }
@@ -375,7 +366,7 @@ bool AINSWeaponBase::CheckScanTraceRange()
 }
 
 
-void AINSWeaponBase::FireShot(FVector FireLoc, FRotator ShotRot)
+void AINSWeaponBase::FireShot(const FVector FireLoc, const FRotator ShotRot)
 {
 	if (HasAuthority())
 	{
@@ -669,10 +660,10 @@ void AINSWeaponBase::CheckAndEquipWeaponAttachment()
 {
 	if (HasAuthority())
 	{
-		for (const TPair<FName, FWeaponAttachmentSlot>& pair : WeaponAttachementSlots)
+		for (const TPair<FName, FWeaponAttachmentSlot>& pair : WeaponAttachmentSlots)
 		{
 			FWeaponAttachmentSlot& CurrentSlot = (FWeaponAttachmentSlot&)pair.Value;
-			if (CurrentSlot.bIsAvailable&&CurrentSlot.WeaponAttachementClass)
+			if (CurrentSlot.bIsAvailable&&CurrentSlot.WeaponAttachmentClass)
 			{
 				CurrentSlot.WeaponAttachmentInstance = GetWorld()->SpawnActorDeferred<AINSWeaponAttachment>(CurrentSlot.GetWeaponAttachmentClass()
 					, GetActorTransform()
@@ -859,7 +850,7 @@ void AINSWeaponBase::OnWeaponStartReload()
 		else
 		{
 			OwnerPlayerCharacter->Get3PAnimInstance()->PlayReloadAnim(bDryReload);
-			GetWeapon3pAnimINstance()->PlayReloadAnim(bDryReload);
+			GetWeapon3pAnimInstance()->PlayReloadAnim(bDryReload);
 			UINSCharacterAudioComponent* const CharacterAudioComp = GetOwnerCharacter()->GetCharacterAudioComp();
 			if (CharacterAudioComp)
 			{
@@ -883,7 +874,7 @@ void AINSWeaponBase::OnWeaponSwitchFireMode()
 		else
 		{
 			OwnerPlayerCharacter->Get3PAnimInstance()->PlaySwitchFireModeAnim();
-			GetWeapon3pAnimINstance()->PlaySwitchFireModeAnim();
+			GetWeapon3pAnimInstance()->PlaySwitchFireModeAnim();
 		}
 	}
 }
@@ -902,7 +893,7 @@ void AINSWeaponBase::OnWeaponStartEquip()
 		else
 		{
 			OwnerPlayerCharacter->Get3PAnimInstance()->PlayWeaponStartEquipAnim();
-			GetWeapon3pAnimINstance()->PlayWeaponStartEquipAnim();
+			GetWeapon3pAnimInstance()->PlayWeaponStartEquipAnim();
 		}
 	}
 }
@@ -975,7 +966,7 @@ void AINSWeaponBase::GetBarrelStartLoc(FVector& BarrelStartLoc)
 void AINSWeaponBase::CalculateAmmoAfterReload()
 {
 #if WITH_EDITORONLY_DATA
-	if (bInfinitAmmo)
+	if (bInfinityAmmo)
 	{
 		UE_LOG(LogINSWeapon, Warning,
 		       TEXT("this Weapon :%s infinit ammo mode has enabled,reloading will consumes no ammo "), *GetName());
@@ -1001,7 +992,7 @@ void AINSWeaponBase::CalculateAmmoAfterReload()
 void AINSWeaponBase::ConsumeAmmo()
 {
 #if WITH_EDITORONLY_DATA
-	if (bInfinitAmmo)
+	if (bInfinityAmmo)
 	{
 		return;
 	}
@@ -1039,7 +1030,7 @@ void AINSWeaponBase::OnRep_WeaponFireCount()
 			else
 			{
 				PlayerCharacter->Get3PAnimInstance()->PlayFireAnim();
-				GetWeapon3pAnimINstance()->PlayFireAnim();
+				GetWeapon3pAnimInstance()->PlayFireAnim();
 			}
 			SimulateWeaponFireFX();
 		}

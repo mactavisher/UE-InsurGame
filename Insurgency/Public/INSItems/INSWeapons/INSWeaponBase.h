@@ -62,7 +62,6 @@ struct FWeaponConfigData
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	float ScanTraceRange;
 
-public:
 	FWeaponConfigData()
 		: AmmoPerClip(30)
 		  , MaxAmmo(AmmoPerClip * 3)
@@ -156,7 +155,6 @@ struct FWeaponPendingEvent
 	UPROPERTY()
 	float DelayedTimeElapsed;
 
-public:
 	FWeaponPendingEvent():
 		EventType(EWeaponPendingEventType::None)
 		, EventCreateTime(0.f)
@@ -186,7 +184,7 @@ namespace WeaponAttachmentSlotName
 	const FName Sight(TEXT("Sight")); // Sight slot name
 	const FName UnderBarrel(TEXT("UnderBarrel")); // UnderBarrel slot name
 	const FName LeftRail(TEXT("LeftRail")); // LeftRail slot name
-	const FName rightRail(TEXT("rightRail")); // rightRail slot name
+	const FName RightRail(TEXT("RightRail")); // rightRail slot name
 }
 
 /** weapon attachment slot */
@@ -197,19 +195,19 @@ struct FWeaponAttachmentSlot
 
 	/**attachment class */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	TSubclassOf<AINSWeaponAttachment> WeaponAttachementClass;
+	TSubclassOf<AINSWeaponAttachment> WeaponAttachmentClass;
 
 	/** attachment instance */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-		class AINSWeaponAttachment* WeaponAttachmentInstance;
+	class AINSWeaponAttachment* WeaponAttachmentInstance;
 
 	/** attachment instance */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-		uint8 bIsAvailable : 1;
+	uint8 bIsAvailable : 1;
 
 	/** Weapon attachment type */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly)
-		EWeaponAttachmentType WeaponAttachmentType;
+	EWeaponAttachmentType WeaponAttachmentType;
 
 public:
 	/**
@@ -220,7 +218,7 @@ public:
 	/**
 	 * @desc return  Attachment class  that is used in this Attachment Slot
 	 */
-	UClass* GetWeaponAttachmentClass() const { return WeaponAttachementClass; }
+	UClass* GetWeaponAttachmentClass() const { return WeaponAttachmentClass; }
 
 	/**
 	 * @desc return the Attachment type of the attachment slot
@@ -236,17 +234,15 @@ public:
 		WeaponAttachmentType = NewType;
 	}
 
-	FWeaponAttachmentSlot() {}
-
 	/**
 	 * @desc init this struct by passing a attachment type
 	 * @param WeaponAttachmentType set the attachment type of this attachment slot
 	 */
 	FWeaponAttachmentSlot(EWeaponAttachmentType WeaponAttachmentType)
-		: WeaponAttachementClass(nullptr)
-		, WeaponAttachmentInstance(nullptr)
-		, bIsAvailable(true)
-		, WeaponAttachmentType(WeaponAttachmentType)
+		: WeaponAttachmentClass(nullptr)
+		  , WeaponAttachmentInstance(nullptr)
+		  , bIsAvailable(true)
+		  , WeaponAttachmentType(WeaponAttachmentType)
 	{
 	}
 
@@ -256,10 +252,18 @@ public:
 	 * @param  IsAvailable  set the Availability  of this attachment slot
 	 */
 	FWeaponAttachmentSlot(EWeaponAttachmentType WeaponAttachmentType, bool IsAvailable)
-		: WeaponAttachementClass(nullptr)
+		: WeaponAttachmentClass(nullptr)
+		  , WeaponAttachmentInstance(nullptr)
+		  , bIsAvailable(IsAvailable)
+		  , WeaponAttachmentType(WeaponAttachmentType)
+	{
+	}
+
+	FWeaponAttachmentSlot():
+		WeaponAttachmentClass(nullptr)
 		, WeaponAttachmentInstance(nullptr)
-		, bIsAvailable(IsAvailable)
-		, WeaponAttachmentType(WeaponAttachmentType)
+		, bIsAvailable(true)
+		, WeaponAttachmentType(EWeaponAttachmentType::NONE)
 	{
 	}
 };
@@ -307,8 +311,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	FWeaponConfigData WeaponConfigData;
 
 	/** ammo count in a current clip */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_CurrentClipAmmo,
-		Category = "Ammo")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_CurrentClipAmmo, Category = "Ammo")
 	int32 CurrentClipAmmo;
 
 	/** ammo left in pocket */
@@ -318,7 +321,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 #if WITH_EDITORONLY_DATA
 	/** if enabled,fire will not consumes any ammo */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Ammo")
-	uint8 bInfinitAmmo : 1;
+	uint8 bInfinityAmmo : 1;
 #endif
 
 	/** if enable ,weapon will reload automatically when current clip ammo hit 0 */
@@ -442,7 +445,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 
 	/** WeaponAttachment Slots */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponAttachments")
-	TMap<FName, FWeaponAttachmentSlot> WeaponAttachementSlots;
+	TMap<FName, FWeaponAttachmentSlot> WeaponAttachmentSlots;
 
 	/** reference from the inventory index */
 	UPROPERTY()
@@ -586,9 +589,9 @@ public:
 	/** set weapon back to idle state */
 	virtual void SetWeaponReady();
 
-	inline virtual float GetScanTraceRange() const { return WeaponConfigData.ScanTraceRange; }
+	virtual float GetScanTraceRange() const { return WeaponConfigData.ScanTraceRange; }
 
-	inline virtual uint8 GetInventorySlotIndex() const { return InventorySlotIndex; }
+	virtual uint8 GetInventorySlotIndex() const { return InventorySlotIndex; }
 
 	virtual void SetInventorySlotIndex(uint8 TargetSlot) { this->InventorySlotIndex = TargetSlot; }
 
@@ -611,7 +614,7 @@ public:
 	/**check if can aim  */
 	virtual bool CheckCanAim();
 
-	inline virtual float GetWeaponADSAlpha() const { return ADSAlpha; }
+	virtual float GetWeaponADSAlpha() const { return ADSAlpha; }
 
 	virtual void SetOwner(AActor* NewOwner) override;
 
@@ -714,25 +717,25 @@ public:
 	 * @Desc returns the current weapon state
 	 * @Return EWeaponState the weapon current state
 	 */
-	inline virtual EWeaponState GetWeaponCurrentState() const { return CurrentWeaponState; }
+	virtual EWeaponState GetWeaponCurrentState() const { return CurrentWeaponState; }
 
 	FORCEINLINE virtual class UINSWeaponAnimInstance* GetWeapon1PAnimInstance();
 
-	FORCEINLINE virtual class UINSWeaponAnimInstance* GetWeapon3pAnimINstance();
+	FORCEINLINE virtual class UINSWeaponAnimInstance* GetWeapon3pAnimInstance();
 
-	inline virtual float GetWeaponCurrentSpread() const { return WeaponSpreadData.CurrentWeaponSpread; }
+	virtual float GetWeaponCurrentSpread() const { return WeaponSpreadData.CurrentWeaponSpread; }
 
 	FORCEINLINE virtual EWeaponFireMode GetCurrentWeaponFireMode() const { return CurrentWeaponFireMode; }
 
-	virtual void SetWeaponCurrentFireMode(EWeaponFireMode NewFireMode) { this->CurrentWeaponFireMode = NewFireMode; }
+	virtual void SetWeaponCurrentFireMode(const EWeaponFireMode NewFireMode) { this->CurrentWeaponFireMode = NewFireMode; }
 
-	inline virtual float GetWeaponAimTime() const { return AimTime; }
+	virtual float GetWeaponAimTime() const { return AimTime; }
 
-	inline virtual float GetRecoilVerticallyFactor() const { return RecoilVerticallyFactor; }
+	virtual float GetRecoilVerticallyFactor() const { return RecoilVerticallyFactor; }
 
-	inline virtual float GetRecoilHorizontallyFactor() const { return RecoilHorizontallyFactor; }
+	virtual float GetRecoilHorizontallyFactor() const { return RecoilHorizontallyFactor; }
 
-	inline virtual float GetTimeBetweenShots() const { return WeaponConfigData.TimeBetweenShots; }
+	virtual float GetTimeBetweenShots() const { return WeaponConfigData.TimeBetweenShots; }
 
 	virtual void CheckAndEquipWeaponAttachment();
 
@@ -754,7 +757,7 @@ public:
 	 * returns the bullet muzzle velocity speed value
 	 * @return WeaponConfigData.MuzzleSpeed    float
 	 */
-	inline virtual float GetMuzzleSpeedValue() const { return WeaponConfigData.MuzzleSpeed; }
+	virtual float GetMuzzleSpeedValue() const { return WeaponConfigData.MuzzleSpeed; }
 
 	/**
 	 * return the sight socket transform,in world space
@@ -769,7 +772,7 @@ public:
 	 * @Param FireLoc target spawn location of this shot
 	 * @param ShotRot target spawn Rotation of this shot
 	 */
-	virtual void FireShot(FVector FireLoc, FRotator ShotRot);
+	virtual void FireShot(const FVector FireLoc, const FRotator ShotRot);
 
 	/** executed cosmetic event when weapon fully zoomed out,clients only */
 	virtual void OnZoomedOut();
@@ -811,7 +814,7 @@ public:
 	 * returns the weapon animation data
 	 * @return WeaponAnimation UINSStaticAnimData
 	 */
-	inline virtual UINSStaticAnimData* GetWeaponAnimDataPtr() const { return WeaponAnimation; }
+	virtual UINSStaticAnimData* GetWeaponAnimDataPtr() const { return WeaponAnimation; }
 
 	/**
 	 * returns the weapon state
@@ -821,7 +824,7 @@ public:
 	virtual EWeaponState GetCurrentWeaponState() const { return CurrentWeaponState; }
 
 
-	inline virtual EWeaponBasePoseType GetCurrentWeaponBasePose() const { return CurrentWeaponBasePoseType; }
+	virtual EWeaponBasePoseType GetCurrentWeaponBasePose() const { return CurrentWeaponBasePoseType; }
 
-	virtual void SetWeaponBasePoseType(EWeaponBasePoseType NewPoseType) { CurrentWeaponBasePoseType = NewPoseType; }
+	virtual void SetWeaponBasePoseType(const EWeaponBasePoseType NewPoseType) { CurrentWeaponBasePoseType = NewPoseType; }
 };

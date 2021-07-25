@@ -120,7 +120,6 @@ protected:
 	UPROPERTY()
 	TArray<USkeletalMeshComponent*> CachedModularSkeletalMeshes;
 
-protected:
 	/**
 	 * override
 	 */
@@ -183,8 +182,7 @@ public:
 	 * overridden from base character
 	 * zombie will have some behavior to set up when they takes some damage
 	 */
-	virtual float TakeDamage(const float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator,
-	                         AActor* DamageCauser) override;
+	virtual float TakeDamage(const float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
 	/**
 	 * Handles zombie attack request from zombie controller

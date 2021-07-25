@@ -230,14 +230,15 @@ void AINSCharacter::Landed(const FHitResult& Hit)
 		const AINSGameModeBase* const GM = GetWorld()->GetAuthGameMode<AINSGameModeBase>();
 		if (GM && GM->GetAllowFallingDamage())
 		{
-			const float LandVelocity = GetVelocity().Size();
+			const float LandZVelocity = FMath::Abs(GetVelocity().Z);
+
 			float Damage = 0.f;
-			if (LandVelocity > 500.f)
+			if (LandZVelocity > 800.f)
 			{
-				Damage = FallingDamageCurve == nullptr ? 15.f : FallingDamageCurve->GetFloatValue(LandVelocity);
+				Damage = FallingDamageCurve == nullptr ? 15.f : FallingDamageCurve->GetFloatValue(LandZVelocity);
 			}
 
-			if (LandVelocity >= FatalFallingSpeed)
+			if (LandZVelocity >= FatalFallingSpeed)
 			{
 				Damage = 90.f;
 			}
@@ -246,7 +247,7 @@ void AINSCharacter::Landed(const FHitResult& Hit)
 			       , TEXT("Character %s is taking land damage falling from high,initial damage taken:%f,landing speed %f")
 			       , *GetName()
 			       , *UKismetStringLibrary::Conv_FloatToString(Damage)
-			       , LandVelocity);
+			       , LandZVelocity);
 			FPointDamageEvent FallingDamageEvent;
 			FallingDamageEvent.DamageTypeClass = UINSDamageType_Falling::StaticClass();
 			FallingDamageEvent.ShotDirection = Hit.ImpactNormal;
@@ -655,15 +656,15 @@ void AINSCharacter::SpawnWeaponPickup()
 	if (CurrentWeapon && WeaponPickupClass)
 	{
 		class AINSPickup_Weapon* WeaponPickup = GetWorld()->SpawnActorDeferred<AINSPickup_Weapon>(WeaponPickupClass,
-			CurrentWeapon->GetActorTransform(),
-			nullptr,
-			nullptr,
-			ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
+		                                                                                          CurrentWeapon->GetActorTransform(),
+		                                                                                          nullptr,
+		                                                                                          nullptr,
+		                                                                                          ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
 
-		FVector WeaponLocation = CurrentWeapon->GetActorLocation();
-		FTransform PickupSpawnTransform(CurrentWeapon->GetActorRotation(),
-		                                WeaponLocation + FVector(0.f, 0.f, 50.f),
-		                                FVector::OneVector);
+		const FVector WeaponLocation = CurrentWeapon->GetActorLocation();
+		const FTransform PickupSpawnTransform(CurrentWeapon->GetActorRotation(),
+		                                      WeaponLocation + FVector(0.f, 0.f, 50.f),
+		                                      FVector::OneVector);
 
 		if (WeaponPickup)
 		{

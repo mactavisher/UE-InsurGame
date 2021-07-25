@@ -162,6 +162,7 @@ enum class EWeaponAttachmentType :uint8
 	MUZZLE                             UMETA(DisplayName = "Muzzle"),
 	LEFT_RAIL                          UMETA(DisplayName = "Left Rail"),
 	RIGHT_RAIL                         UMETA(DisplayName = "Right Rail"),
+	NONE                               UMETA(DisplayName = "None"),
 };
 
 UENUM(BlueprintType)
