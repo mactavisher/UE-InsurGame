@@ -12,6 +12,8 @@
 #include "Components/CapsuleComponent.h"
 #endif
 #include "INSCharacter/INSPlayerCharacter.h"
+#include "INSComponents/INSCharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
 #include "DrawDebugHelpers.h"
 #endif
@@ -20,7 +22,7 @@ DEFINE_LOG_CATEGORY(LogZombiePawn);
 
 AINSZombie::AINSZombie(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-	AttackDamage = 20.f;
+	AttackDamage = 15.f;
 	RagePoint = 0.f;
 	bReplicates = true;
 	SetReplicatingMovement(true);
@@ -36,19 +38,34 @@ AINSZombie::AINSZombie(const FObjectInitializer& ObjectInitializer) : Super(Obje
 	CachedModularSkeletalMeshes.Add(RightArmComp);
 	CachedModularSkeletalMeshes.Add(LeftLegComp);
 	CachedModularSkeletalMeshes.Add(RightLegComp);
+	GetMesh()->AddRelativeLocation(FVector(0.f, 0.f, -90.f));
+	bDamageImmuneState = false;
+	BaseMoveSpeed = 50.f;
+	ChargeMoveSpeed = 200.f;
 }
 
 void AINSZombie::OnRep_Dead()
 {
 	Super::OnRep_Dead();
-	GetMesh()->SetSimulatePhysics(true);
+	if (bIsDead)
+	{
+		if (!IsNetMode(NM_DedicatedServer))
+		{
+			GetMesh()->SetSimulatePhysics(true);
+			// GetMesh()->SetAllBodiesBelowSimulatePhysics(LastHitInfo.HitBoneName, true);
+			// const float ShotDirPitchDecompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirPitch);
+			// const float ShotDirYawDeCompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirYaw);
+			// const FRotator BloodSpawnRotation = FRotator(ShotDirPitchDecompressed, ShotDirYawDeCompressed, 0.f);
+			// GetMesh()->AddImpulseToAllBodiesBelow(BloodSpawnRotation.Vector() * 800.f, LastHitInfo.HitBoneName);
+		}
+	}
 }
 
 void AINSZombie::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AINSZombie, CurrentZombieMoveMode);
-	DOREPLIFETIME(AINSZombie,CurrenAttackMode);
+	DOREPLIFETIME(AINSZombie, CurrenAttackMode);
 }
 
 void AINSZombie::PossessedBy(AController* NewController)
@@ -62,21 +79,31 @@ void AINSZombie::PossessedBy(AController* NewController)
 void AINSZombie::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-	GetMesh()->AddRelativeLocation(FVector(0.f, 0.f, -90.f));
-	GetMesh()->AddRelativeRotation(FRotator(0.f, -90.f, 0.f));
 	for (uint8 i = 0; i < CachedModularSkeletalMeshes.Num(); i++)
 	{
 		if (CachedModularSkeletalMeshes[i])
 		{
-			CachedModularSkeletalMeshes[i]->AttachToComponent(
-				GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale);
+			CachedModularSkeletalMeshes[i]->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale);
 			CachedModularSkeletalMeshes[i]->SetMasterPoseComponent(GetMesh());
 		}
 	}
+	// PhysicalAnimationComponent->SetSkeletalMeshComponent(GetMesh());
+	// FPhysicalAnimationData PhysicalAnimationData;
+	// PhysicalAnimationData.BodyName = TEXT("Bip01_Pelvis");
+	// PhysicalAnimationData.bIsLocalSimulation = false;
+	// PhysicalAnimationData.OrientationStrength = 1000.f;
+	// PhysicalAnimationData.VelocityStrength = 100.f;
+	// PhysicalAnimationData.PositionStrength = 100.f;
+	// PhysicalAnimationData.AngularVelocityStrength = 100.f;
+	// PhysicalAnimationData.MaxAngularForce = 0.f;
+	// PhysicalAnimationData.MaxLinearForce = 0.f;
+	// PhysicalAnimationComponent->ApplyPhysicalAnimationProfileBelow(TEXT("Bip01_Pelvis"),TEXT("bHitProfile"));
+	// PhysicalAnimationComponent->ApplyPhysicalAnimationSettingsBelow(TEXT("Bip01_Pelvis"), PhysicalAnimationData);
+	// GetMesh()->SetAllBodiesBelowSimulatePhysics(TEXT("Bip01_Pelvis"),true,false);
+	//GetMesh()->SetSimulatePhysics(true);
 }
 
-float AINSZombie::TakeDamage(const float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator,
-                             AActor* DamageCauser)
+float AINSZombie::TakeDamage(const float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	const float DamageApplied = Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
 	if (ZombieController)
@@ -128,8 +155,7 @@ void AINSZombie::PerformLineTraceDamage()
 		CollisionQueryParams.AddIgnoredActor(this);
 		CollisionQueryParams.AddIgnoredComponent(GetCapsuleComponent());
 		CollisionQueryParams.AddIgnoredComponent(GetMesh());
-		GetWorld()->LineTraceSingleByChannel(HitResult, ViewPoint, ViewRotation.Vector() * DamageRange + ViewPoint,
-		                                     ECollisionChannel::ECC_Camera, CollisionQueryParams);
+		GetWorld()->LineTraceSingleByChannel(HitResult, ViewPoint, ViewRotation.Vector() * DamageRange + ViewPoint, ECollisionChannel::ECC_Camera, CollisionQueryParams);
 		if (HitResult.bBlockingHit)
 		{
 			ACharacter* const HitCharacter = Cast<ACharacter>(HitResult.GetActor());
@@ -154,10 +180,25 @@ void AINSZombie::PerformLineTraceDamage()
 	}
 }
 
+void AINSZombie::Die()
+{
+	Super::Die();
+	ZombieController->OnZombieDead();
+	SetLifeSpan(5.f);
+}
+
 void AINSZombie::OnRep_LastHitInfo()
 {
 	Super::OnRep_LastHitInfo();
-	FName BoneName = LastHitInfo.HitBoneName;
+	if(GetIsDead()&&!IsNetMode(NM_DedicatedServer))
+	{
+		const float ShotDirPitchDecompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirPitch);
+		const float ShotDirYawDeCompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirYaw);
+		const FRotator BloodSpawnRotation = FRotator(ShotDirPitchDecompressed, ShotDirYawDeCompressed, 0.f);
+		//GetMesh()->GetBodyInstance(LastHitInfo.HitBoneName)->AddImpulseAtPosition(BloodSpawnRotation.Vector(),LastHitInfo.RelHitLocation);
+		 GetMesh()->AddImpulseAtLocation(BloodSpawnRotation.Vector()*2000.f,LastHitInfo.RelHitLocation,LastHitInfo.HitBoneName);
+		//GetMesh()->AddForceAtLocation(BloodSpawnRotation.Vector()*800.f,LastHitInfo.RelHitLocation,LastHitInfo.HitBoneName);
+	}
 }
 
 void AINSZombie::FaceRotation(FRotator NewControlRotation, float DeltaTime /* = 0.f */)
@@ -196,8 +237,12 @@ void AINSZombie::OnRep_ZombieAttackMode()
 		}
 		if (!SelectedAttackMontage)
 		{
-			UE_LOG(LogZombiePawn, Warning,
-			       TEXT("Zombie trying to play attack montage but no attack montage available"));
+			UE_LOG(LogZombiePawn, Warning,TEXT("Zombie trying to play attack montage but no attack montage available"));
 		}
 	}
+}
+
+void AINSZombie::OnRep_CurrentMoveSpeed()
+{
+	 GetINSCharacterMovement()->MaxWalkSpeed = CurrentMoveSpeed;
 }

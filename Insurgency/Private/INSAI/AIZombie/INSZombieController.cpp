@@ -6,6 +6,7 @@
 #include "Perception/PawnSensingComponent.h"
 #include "INSAI/AIZombie/INSZombie.h"
 #include "Components/BoxComponent.h"
+#include "GameFramework/PlayerState.h"
 #include "INSProjectiles/INSProjectile.h"
 #include "INSCharacter/INSPlayerController.h"
 #ifndef AINSPlayerCharacter
@@ -25,7 +26,8 @@
 #endif
 
 DEFINE_LOG_CATEGORY(LogZombieController);
-AINSZombieController::AINSZombieController(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
+
+AINSZombieController::AINSZombieController(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	BroadCastEnemyRange = 10000.f;
 	BrainComponent = BehaviorTreeComponent = ObjectInitializer.CreateDefaultSubobject<UBehaviorTreeComponent>(this, TEXT("BehaviourTreeComp"));
@@ -37,13 +39,13 @@ AINSZombieController::AINSZombieController(const FObjectInitializer& ObjectIniti
 	StimulateLevel = 0.f;
 	StimulateLocation = FVector(ForceInit);
 	LostEnemyTime = 5.f;
-//#if WITH_EDITOR&&!UE_BUILD_SHIPPING
-//	bDrawDebugLineOfSightLine = true;
-//	AttackRangeComp->bHiddenInGame = false;
-//#endif
-//#if !WITH_EDITOR&&UE_BUILD_SHIPPING
-//	AttackRangeComp->bHiddenInGame = true;
-//#endif
+	//#if WITH_EDITOR&&!UE_BUILD_SHIPPING
+	//	bDrawDebugLineOfSightLine = true;
+	//	AttackRangeComp->bHiddenInGame = false;
+	//#endif
+	//#if !WITH_EDITOR&&UE_BUILD_SHIPPING
+	//	AttackRangeComp->bHiddenInGame = true;
+	//#endif
 }
 
 
@@ -81,19 +83,24 @@ void AINSZombieController::BroadCastEnemyTo()
 			else if (ThatZombieTarget == GetMyTargetEnemy())
 			{
 				UE_LOG(LogZombieController
-					, Log
-					, TEXT("Zombie %s and I have the same enemy target %s,abort seting target enemy")
-					, ZombieController == nullptr ? TEXT("NULL") : *ZombieController->GetName()
-					, *GetName())
-					return;
+				       , Log
+				       , TEXT("Zombie %s and I have the same enemy target %s,abort seting target enemy")
+				       , ZombieController == nullptr ? TEXT("NULL") : *ZombieController->GetName()
+				       , *GetName())
+				return;
 			}
 		}
 	}
 }
 
+void AINSZombieController::InitPlayerState()
+{
+	Super::InitPlayerState();
+	GetPlayerState<APlayerState>()->SetIsABot(true);
+}
+
 void AINSZombieController::ReceiveBroadCastedEnemy(class AAIController* InstigatorZombie, AController* Enemey)
 {
-
 }
 
 bool AINSZombieController::TrySetTargetEnemy(class AController* NewEnemyTarget)
@@ -112,10 +119,10 @@ bool AINSZombieController::TrySetTargetEnemy(class AController* NewEnemyTarget)
 	else
 	{
 		UE_LOG(LogZombieController
-			, Log
-			, TEXT("%s trying to set it's enemy target , but %s Decide to do nothing!")
-			, *GetName()
-			, *GetName());
+		       , Log
+		       , TEXT("%s trying to set it's enemy target , but %s Decide to do nothing!")
+		       , *GetName()
+		       , *GetName());
 		return false;
 	}
 }
@@ -125,7 +132,6 @@ void AINSZombieController::OnPossess(APawn* InPawn)
 	Super::OnPossess(InPawn);
 	if (InPawn)
 	{
-		InitZombieMoveMode();
 		if (ZombieSensingComp)
 		{
 			ZombieSensingComp->OnSeePawn.AddDynamic(this, &AINSZombieController::OnSeePawn);
@@ -144,31 +150,43 @@ void AINSZombieController::OnUnPossess()
 	Super::OnUnPossess();
 	if (BehaviorTreeComponent && BehaviorTreeComponent->IsRunning())
 	{
-		ZombieSensingComp->OnSeePawn.RemoveAll(this);
-		ZombieSensingComp->OnHearNoise.RemoveAll(this);
 		BehaviorTreeComponent->StopTree(EBTStopMode::Safe);
-		AttackRangeComp->DetachFromComponent(FDetachmentTransformRules::KeepRelativeTransform);
-		AttackRangeComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
+	ZombieSensingComp->OnSeePawn.RemoveAll(this);
+	ZombieSensingComp->OnHearNoise.RemoveAll(this);
+	AttackRangeComp->DetachFromComponent(FDetachmentTransformRules::KeepRelativeTransform);
+	AttackRangeComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
-void AINSZombieController::InitZombieMoveMode()
+void AINSZombieController::DetermineZombieMoveMode()
 {
 	const int32 RandomNum = FMath::RandHelper(2);
 	EZombieMoveMode SelectedZombieMoveMode;
 	switch (RandomNum)
 	{
-	case 0:SelectedZombieMoveMode = EZombieMoveMode::Shamble; break;
-	case 1:SelectedZombieMoveMode = EZombieMoveMode::Walk; break;
-	case 2:SelectedZombieMoveMode = EZombieMoveMode::Chase; break;
-	default:SelectedZombieMoveMode = EZombieMoveMode::Shamble; break;
+	case 0: SelectedZombieMoveMode = EZombieMoveMode::Shamble;
+		break;
+	case 1: SelectedZombieMoveMode = EZombieMoveMode::Walk;
+		break;
+	case 2: SelectedZombieMoveMode = EZombieMoveMode::Chase;
+		break;
+	default: SelectedZombieMoveMode = EZombieMoveMode::Shamble;
+		break;
 	}
 	GetZombiePawn()->SetZombieMoveMode(SelectedZombieMoveMode);
+	if (GetZombiePawn()->GetZombieRagePoint() > 30.f)
+	{
+		GetZombiePawn()->SetZombieMoveMode(EZombieMoveMode::Walk);
+	}
+
+	if (GetZombiePawn()->GetZombieRagePoint() > 50.f)
+	{
+		GetZombiePawn()->SetZombieMoveMode(EZombieMoveMode::Chase);
+	}
 }
 
 void AINSZombieController::UpdateFocalPoint()
 {
-
 }
 
 void AINSZombieController::UpdateControlRotation(float DeltaTime, bool bUpdatePawn /* = true */)
@@ -182,9 +200,9 @@ void AINSZombieController::OnSeePawn(APawn* SeenPawn)
 	{
 		// we are zombies 
 		UE_LOG(LogZombieController
-			, Log
-			, TEXT("%s is another zombie of my type ,can't set it as my enemy !")
-			, *SeenPawn->GetName());
+		       , Log
+		       , TEXT("%s is another zombie of my type ,can't set it as my enemy !")
+		       , *SeenPawn->GetName());
 		return;
 	}
 	if (GetMyTargetEnemy())
@@ -193,9 +211,9 @@ void AINSZombieController::OnSeePawn(APawn* SeenPawn)
 		{
 			// that pawn is already my enemy now 
 			UE_LOG(LogZombieController
-				, Log
-				, TEXT("%s is is already my enemy now !")
-				, *SeenPawn->GetName());
+			       , Log
+			       , TEXT("%s is is already my enemy now !")
+			       , *SeenPawn->GetName());
 			return;
 		}
 		else
@@ -211,7 +229,6 @@ void AINSZombieController::OnSeePawn(APawn* SeenPawn)
 
 void AINSZombieController::OnHearNoise(APawn* NoiseInstigator, const FVector& Location, float Volume)
 {
-
 }
 
 void AINSZombieController::OnEnemyLost()
@@ -219,44 +236,35 @@ void AINSZombieController::OnEnemyLost()
 	CurrentTargetEnemy = nullptr;
 	StimulateLocation = FVector(ForceInit);
 	GetWorldTimerManager().ClearTimer(LostEnemyTimerHandle);
-	UE_LOG(LogZombieController
-		, Log
-		, TEXT("%s Zombie has lost target enemy")
-		, *GetZombiePawn()->GetName());
+	UE_LOG(LogZombieController, Log, TEXT("%s Zombie has lost target enemy"), GetZombiePawn()?*GetZombiePawn()->GetName():TEXT("None"));
 }
 
 void AINSZombieController::TickEnemyVisibility()
 {
 	if (CurrentTargetEnemy)
 	{
-		bool isEnemyVisible = LineOfSightTo(GetMyTargetEnemy()->GetPawn());
-		if (!isEnemyVisible)
+		const bool bEnemyVisible = LineOfSightTo(GetMyTargetEnemy()->GetPawn());
+		if (!bEnemyVisible)
 		{
 			if (!GetWorldTimerManager().IsTimerActive(LostEnemyTimerHandle))
 			{
 				GetWorldTimerManager().SetTimer(LostEnemyTimerHandle, this, &AINSZombieController::OnEnemyLost, 1.f, false, LostEnemyTime);
 			}
 		}
-//#if WITH_EDITOR&&!UE_BUILD_SHIPPING
-//		DrawLOSDebugLine();
-//#endif
+		//#if WITH_EDITOR&&!UE_BUILD_SHIPPING
+		//		DrawLOSDebugLine();
+		//#endif
 	}
 }
 
 void AINSZombieController::ZombieAttack()
 {
-	if (GetZombiePawn()&&!GetZombiePawn()->GetIsDead())
+	if (GetZombiePawn() && !GetZombiePawn()->GetIsDead())
 	{
-		
 	}
 }
 
-void AINSZombieController::OnAttackRangeCompOverlap(UPrimitiveComponent* OverlappedComponent
-	, AActor* OtherActor
-	, UPrimitiveComponent* OtherComp
-	, int32 OtherBodyIndex
-	, bool bFromSweep
-	, const FHitResult& SweepResult)
+void AINSZombieController::OnAttackRangeCompOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	//refer to face to BB-entry
 	if (OtherActor->GetClass()->IsChildOf(AINSPlayerCharacter::StaticClass()))
@@ -268,21 +276,19 @@ void AINSZombieController::OnAttackRangeCompOverlap(UPrimitiveComponent* Overlap
 	}
 	else if (GetMyTargetEnemy() == OtherActor->GetOwner())
 	{
-
 	}
 }
 
-void AINSZombieController::AddStimulate(float ValueToAdd)
+void AINSZombieController::AddStimulate(const float ValueToAdd)
 {
-	this->StimulateLevel += ValueToAdd;
-	UE_LOG(LogZombieController
-		, Log
-		, TEXT("%s Zombie has increase Stimulate %f!")
-		, *GetZombiePawn()->GetName()
-		, ValueToAdd);
+	if (GetZombiePawn() && !GetZombiePawn()->GetIsDead())
+	{
+		StimulateLevel += ValueToAdd;
+		UE_LOG(LogZombieController, Log, TEXT("%s Zombie has increase Stimulate %f!"), *GetZombiePawn()->GetName(), ValueToAdd);
+	}
 }
 
-void AINSZombieController::OnZombieTakeDamage(float Damage, class AController* DamageEventInstigator, class AActor* DamageCausedBy)
+void AINSZombieController::OnZombieTakeDamage(const float Damage, class AController* DamageEventInstigator, class AActor* DamageCausedBy)
 {
 	if (Damage <= 0.f)
 	{
@@ -302,6 +308,11 @@ void AINSZombieController::OnZombieTakeDamage(float Damage, class AController* D
 	}
 }
 
+void AINSZombieController::OnZombieDead()
+{
+	OnUnPossess();
+}
+
 //#if WITH_EDITOR && !UE_BUILD_SHIPPING
 //void AINSZombieController::DrawLOSDebugLine()
 //{
@@ -314,4 +325,3 @@ void AINSZombieController::OnZombieTakeDamage(float Damage, class AController* D
 //	}
 //}
 //#endif
-

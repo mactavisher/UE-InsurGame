@@ -24,6 +24,7 @@
 #include "INSComponents/INSWeaponMeshComponent.h"
 #include "Curves/CurveFloat.h"
 #include "Engine/ActorChannel.h"
+#include "INSDamageTypes/INSDamageType_Projectile.h"
 
 DEFINE_LOG_CATEGORY(LogINSProjectile);
 
@@ -129,9 +130,10 @@ void AINSProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* 
 			FPointDamageEvent PointDamageEvent;
 			PointDamageEvent.HitInfo = Hit;
 			PointDamageEvent.Damage = DamageBase;
+			PointDamageEvent.DamageTypeClass = UINSDamageType_Projectile::StaticClass();
 			PointDamageEvent.ShotDirection = this->GetVelocity().GetSafeNormal();
 			HitCharacter->TakeDamage(DamageBase, PointDamageEvent, InstigatorPlayer.Get(), this);
-			ProjectileLiftTimeData.ImpactPlayer  = HitCharacter->GetController();
+			ProjectileLiftTimeData.ImpactPlayer = HitCharacter->GetController();
 			ProjectileLiftTimeData.EndLoc = GetActorLocation();
 		}
 		UE_LOG(LogINSProjectile, Log, TEXT("Projectile%s Hit Happened,Will Force Send a Movement info to all Conected Clients"), *GetName());
@@ -260,7 +262,7 @@ void AINSProjectile::BeginPlay()
 		InitRepTickFunc.Target = this;
 		InitRepTickFunc.RegisterTickFunction(GetLevel());
 	}
-	if(!bVisualProjectile)
+	if (!bVisualProjectile)
 	{
 		ProjectileLiftTimeData.StartLoc = GetActorLocation();
 	}
@@ -270,9 +272,9 @@ void AINSProjectile::LifeSpanExpired()
 {
 	Super::LifeSpanExpired();
 	ProjectileLiftTimeData.EndLoc = GetActorLocation();
-	if(!bVisualProjectile)
+	if (!bVisualProjectile)
 	{
-		UE_LOG(LogINSProjectile, Log, TEXT("Projectile:%s has reached it's life span,life span data is: %s"), *GetName(),*ProjectileLiftTimeData.ToString());
+		UE_LOG(LogINSProjectile, Log, TEXT("Projectile:%s has reached it's life span,life span data is: %s"), *GetName(), *ProjectileLiftTimeData.ToString());
 	}
 }
 
@@ -308,49 +310,44 @@ void AINSProjectile::PostNetReceiveLocationAndRotation()
 
 void AINSProjectile::GatherCurrentMovement()
 {
-		if (HasAuthority()&&!bVisualProjectile && RootComponent != nullptr && !IsPendingKill() && !IsPendingKillPending())
+	if (HasAuthority() && !bVisualProjectile && RootComponent != nullptr && !IsPendingKill() && !IsPendingKillPending())
+	{
+		// If we are attached, don't replicate absolute position
+		if (RootComponent->GetAttachParent() != nullptr)
 		{
-			// If we are attached, don't replicate absolute position
-			if (RootComponent->GetAttachParent() != nullptr)
-			{
-				Super::GatherCurrentMovement();
-			}
-			else
-			{
-				FRepMovement OptRepMovement;
-				OptRepMovement.Location = FRepMovement::RebaseOntoZeroOrigin(RootComponent->GetComponentLocation(), this);
-				OptRepMovement.Rotation = RootComponent->GetComponentRotation();
-				OptRepMovement.LinearVelocity = GetVelocity();
-				OptRepMovement.AngularVelocity = FVector::ZeroVector;
-				OptRepMovement.bRepPhysics = true;
-				OptRepMovement.LocationQuantizationLevel = MovementQuantizeLevel;
-				//OptRepMovement.RotationQuantizationLevel = ERotatorQuantization::ShortComponents;
-				OptRepMovement.VelocityQuantizationLevel = MovementQuantizeLevel;
-				SetReplicatedMovement(OptRepMovement);
-				bForceMovementReplication = false;
-				bIsGatheringMovement = false;
-				LastMovementRepTime = GetWorld()->GetRealTimeSeconds();
-			}
+			Super::GatherCurrentMovement();
 		}
-	// if (!bVisualProjectile)
-	// {
-	// 	Super::GatherCurrentMovement();
-	// }
+		else
+		{
+			FRepMovement OptRepMovement;
+			OptRepMovement.Location = FRepMovement::RebaseOntoZeroOrigin(RootComponent->GetComponentLocation(), this);
+			OptRepMovement.Rotation = RootComponent->GetComponentRotation();
+			OptRepMovement.LinearVelocity = GetVelocity();
+			OptRepMovement.AngularVelocity = FVector::ZeroVector;
+			OptRepMovement.bRepPhysics = true;
+			OptRepMovement.LocationQuantizationLevel = MovementQuantizeLevel;
+			//OptRepMovement.RotationQuantizationLevel = ERotatorQuantization::ShortComponents;
+			OptRepMovement.VelocityQuantizationLevel = MovementQuantizeLevel;
+			SetReplicatedMovement(OptRepMovement);
+			bForceMovementReplication = false;
+			bIsGatheringMovement = false;
+			LastMovementRepTime = GetWorld()->GetRealTimeSeconds();
+		}
+	}
 }
 
 
 void AINSProjectile::PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker)
 {
-		if (HasAuthority() && !bIsGatheringMovement && !bVisualProjectile&& IsReplicatingMovement())
+	if (HasAuthority() && !bIsGatheringMovement && !bVisualProjectile && IsReplicatingMovement())
+	{
+		const bool bRepDeltaTimeAllowed = GetWorld()->GetRealTimeSeconds() - LastMovementRepTime >= MovementRepInterval;
+		if (bRepDeltaTimeAllowed || bForceMovementReplication)
 		{
-			const bool bRepDeltaTimeAllowed = GetWorld()->GetRealTimeSeconds() - LastMovementRepTime >= MovementRepInterval;
-			if (bRepDeltaTimeAllowed || bForceMovementReplication)
-			{
-				TGuardValue<bool> HitGuard(bIsGatheringMovement, true);
-				GatherCurrentMovement();
-			}
+			TGuardValue<bool> HitGuard(bIsGatheringMovement, true);
+			GatherCurrentMovement();
 		}
-	//Super::PreReplication(ChangedPropertyTracker);
+	}
 }
 
 void AINSProjectile::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -367,11 +364,11 @@ void AINSProjectile::OnRep_ReplicatedMovement()
 {
 	FRepMovement DecompressedMovementRep = GetReplicatedMovement();
 	float QuantizationDivider = 1.f;
-	if(MovementQuantizeLevel==EVectorQuantization::RoundOneDecimal)
+	if (MovementQuantizeLevel == EVectorQuantization::RoundOneDecimal)
 	{
 		QuantizationDivider = 10.f;
 	}
-	if(MovementQuantizeLevel==EVectorQuantization::RoundTwoDecimals)
+	if (MovementQuantizeLevel == EVectorQuantization::RoundTwoDecimals)
 	{
 		QuantizationDivider = 100.f;
 	}
@@ -399,9 +396,9 @@ void AINSProjectile::InitClientFakeProjectile(const AINSProjectile* const Server
 		GetVisualFakeProjectile()->NetAuthorityProjectile = this;
 		GetVisualFakeProjectile()->SetOwnerWeapon(GetOwnerWeapon());
 		GetVisualFakeProjectile()->SetCurrentPenetrateCount(ServerNetProjectile->GetCurrentPenetrateCount() + 1);
-		GetVisualFakeProjectile()->GetCollsioncomp()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		GetVisualFakeProjectile()->GetCollsioncomp()->SetUseCCD(false);
-		GetVisualFakeProjectile()->GetCollsioncomp()->SetAllUseCCD(false);
+		GetVisualFakeProjectile()->GetCollisionComp()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		GetVisualFakeProjectile()->GetCollisionComp()->SetUseCCD(false);
+		GetVisualFakeProjectile()->GetCollisionComp()->SetAllUseCCD(false);
 		GetVisualFakeProjectile()->GetProjectileMovementComp()->InitialSpeed = OwnerWeapon->GetMuzzleSpeedValue();
 		GetVisualFakeProjectile()->SetScanTraceTime(OwnerWeapon->GetScanTraceRange() / OwnerWeapon->GetMuzzleSpeedValue());
 		UGameplayStatics::FinishSpawningActor(VisualFakeProjectile, SpawnTransform);
@@ -526,7 +523,7 @@ void AINSProjectile::CheckImpactHit()
 #endif
 }
 
-void AINSProjectile::SetMuzzleSpeed(float NewSpeed)
+void AINSProjectile::SetMuzzleSpeed(const float NewSpeed)
 {
 	ProjectileMoveComp->InitialSpeed = NewSpeed;
 }

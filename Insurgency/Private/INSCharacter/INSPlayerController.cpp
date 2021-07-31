@@ -33,10 +33,7 @@ AINSPlayerController::AINSPlayerController(const FObjectInitializer& ObjectIniti
 	bAutoReload = true;
 }
 
-void AINSPlayerController::OnUnPossess()
-{
 
-}
 
 void AINSPlayerController::SetupInputComponent()
 {
@@ -528,7 +525,7 @@ void AINSPlayerController::PlayerCauseDamage(const FTakeHitInfo& HitInfo)
 }
 
 
-void AINSPlayerController::InspecWeapon()
+void AINSPlayerController::InspectWeapon()
 {
 
 }
@@ -540,7 +537,7 @@ void AINSPlayerController::ServerInspectWeapon_Implementation()
 	}
 	else
 	{
-		InspecWeapon();
+		InspectWeapon();
 	}
 }
 
@@ -794,4 +791,14 @@ void AINSPlayerController::OnPossess(APawn* InPawn)
 		GetINSPlayerCharacter()->SetTeamType(PlayerTeam->GetTeamType());
 	}
 	Super::OnPossess(InPawn);
+}
+
+void AINSPlayerController::OnCharacterDead()
+{
+	if(HasAuthority())
+	{
+		UnPossess();
+		GetINSPlayerState()->OnPawnCharDeath();
+	}
+	
 }

@@ -127,13 +127,13 @@ public:
 	 * @Desc  Set the re_spawn remaining time for this player if killed
 	 * @Param NewTime time to set
 	 */
-	virtual void SetRepawnRemainingTime(float NewTime) { RespawnRemainingTime = NewTime; }
+	virtual void SetRespawnRemainingTime(const float NewTime) { RespawnRemainingTime = NewTime; }
 
 	/**
 	 * @Desc  Set the player waiting for re_spawn state
 	 * @Param NewState new state to set
 	 */
-	virtual void SetWaitingForRespawn(bool NewState) { bIsWaitingForRespawn = NewState; }
+	virtual void SetWaitingForRespawn(const bool NewState) { bIsWaitingForRespawn = NewState; }
 
 	/**
 	 * @Desc  add the score to the current score so score gets accumulated
@@ -145,19 +145,18 @@ public:
 	 * @Desc  Add kill num
 	 * @Param KillNum kills to add
 	 */
-	inline void AddKill(int32 KillNum = 1);
+	inline void AddKill(const int32 KillNum = 1);
 
 	/**
 	 * @Desc  Add mistake kill num, such as kill friendlies
 	 * @Param mistake kills to add
 	 */
-	inline void AddMissTakeKill(int32 KillsToAdd = 1);
+	inline void AddMissTakeKill(const int32 KillsToAdd = 1);
 
 	/**
 	 * @Desc  called when the pawn is dead
-	 * @Param DeadPlayer the player who's controlled pawn is dead
 	 */
-	virtual void ReceivePlayerDeath(AINSPlayerController* DeadPlayer);
+	virtual void OnPawnCharDeath();
 
 	/**
 	 * @Desc Add deaths num
@@ -172,7 +171,7 @@ public:
 	virtual float GetRespawnRemainingTime()const { return RespawnRemainingTime; }
 
 	/** ticking and update the remaining re_spawn time */
-	virtual void UpdateRepliatedRespawnRemaingTime();
+	virtual void UpdateReplicatedRespawnRemainingTime();
 
 	/** get whether this player is waiting for a re_spawn */
 	virtual bool GetIsWaitingForRespawn()const { return bIsWaitingForRespawn; }

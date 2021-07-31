@@ -13,15 +13,15 @@ class UINSCharSkeletalMeshComponent;
 class UINSInventoryComponent;
 
 USTRUCT(BlueprintType)
-struct  FDefaultPlayerMesh
+struct FDefaultPlayerMesh
 {
-   GENERATED_USTRUCT_BODY()
+	GENERATED_USTRUCT_BODY()
 
-   UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "DefaultMesh1p")
-       USkeletalMesh* Mesh1p;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "DefaultMesh1p")
+	USkeletalMesh* Mesh1p;
 
-   UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "DefaultMesh1p")
-	   USkeletalMesh* Mesh3p;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "DefaultMesh1p")
+	USkeletalMesh* Mesh3p;
 };
 
 /**
@@ -31,84 +31,83 @@ UCLASS()
 class INSURGENCY_API AINSPlayerCharacter : public AINSCharacter
 {
 	GENERATED_UCLASS_BODY()
-
 protected:
+	/** Player camera comp */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "FirstPersonCamera", meta = (AllowPrivateAccess = "true"))
+	UCameraComponent* FirstPersonCamera;
 
 	/** Player camera comp */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "FirstPersonCamera", meta = (AllowPrivateAccess = "true"))
-		UCameraComponent* FirstPersonCamera;
+	UINSInventoryComponent* InventoryComp;
 
-	/** Player camera comp */
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "FirstPersonCamera", meta = (AllowPrivateAccess = "true"))
-		UINSInventoryComponent* InventoryComp;
-
-	/* Camera arm comp*/ 
+	/* Camera arm comp*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"), Category = "FirstPersonCamera")
-		USpringArmComponent* SpringArm;
-		
+	USpringArmComponent* SpringArm;
+
 	/* a dummy helper aligner to help align the sprint arm*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"), Category = "FirstPersonCamera")
-		USceneComponent* SpringArmAligner;
+	USceneComponent* SpringArmAligner;
 
 	/** player character's 1P mesh comp,only visible to owner player */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "CharacterMesh")
-		FDefaultPlayerMesh CTDefaultMesh;
+	FDefaultPlayerMesh CTDefaultMesh;
 
 	/** Player character's 3P mesh comp,only visible to non-owner player */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "CharacterMesh")
-		FDefaultPlayerMesh TerroristDefaultMesh;
+	FDefaultPlayerMesh TerroristDefaultMesh;
 
 	/** player character's 1P mesh comp,only visible to owner player */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "CharacterMesh")
-		UINSCharSkeletalMeshComponent* CharacterMesh1P;
+	UINSCharSkeletalMeshComponent* CharacterMesh1P;
 
 	/** Player character's 3P mesh comp,only visible to non-owner player */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "3PMesh")
-		UINSCharSkeletalMeshComponent* CharacterMesh3P;
+	UINSCharSkeletalMeshComponent* CharacterMesh3P;
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Replicated,ReplicatedUsing=OnRep_TeamType, Category = "Team")
-	    ETeamType MyTeamType;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing=OnRep_TeamType, Category = "Team")
+	ETeamType MyTeamType;
 
 	/** crouched relative location of springArm */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Camera")
-		float SpringArmRelLocCrouched;
+	float SpringArmRelLocCrouched;
 
 	FTimerHandle EquipDefaultWeaponHandle;
-	
+
+
+	/** Current Player controller that control this character */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PlayerController")
+	AINSPlayerController* INSPlayerController;
 
 protected:
+	virtual void BeginPlay() override;
 
-	virtual void BeginPlay()override;
+	virtual void PostInitializeComponents() override;
 
-	virtual void PostInitializeComponents()override;
+	virtual void Tick(float DeltaTime) override;
 
-	virtual void Tick(float DeltaTime)override;
+	virtual void OnCauseDamage(const FTakeHitInfo& HitInfo) override;
 
-	virtual void OnCauseDamage(const FTakeHitInfo& HitInfo)override;
+	virtual void PossessedBy(AController* NewController) override;
 
-	virtual void PossessedBy(AController* NewController)override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
+	virtual void OnRep_CurrentWeapon() override;
 
-	virtual void OnRep_CurrentWeapon()override;
+	virtual void OnRep_Dead() override;
 
-	virtual void OnDeath()override;
+	virtual void OnRep_Aim() override;
 
-	virtual void OnRep_Dead()override;
+	virtual void OnRep_IsCrouched() override;
 
-	virtual void OnRep_Aim()override;
+	virtual void OnRep_Sprint() override;
 
-	virtual void OnRep_IsCrouched()override;
+	virtual void OnRep_PlayerState() override;
 
-	virtual void OnRep_Sprint()override;
+	virtual void OnRep_LastHitInfo() override;
 
-	virtual void OnRep_PlayerState()override;
+	virtual void Crouch(bool bClientSimulation) override;
 
-	virtual void OnRep_LastHitInfo()override;
-
-	virtual void Crouch(bool bClientSimulation)override;
-
-	virtual void UnCrouch(bool bClientSimulation)override;
+	virtual void UnCrouch(bool bClientSimulation) override;
 
 	UFUNCTION()
 	virtual void OnRep_TeamType();
@@ -120,27 +119,26 @@ protected:
 	 * @desc called when owner gets replicated and for controllers , 
 	 *       this will only get called on server or autonomus_proxy clients
 	 */
-	virtual void OnRep_Owner()override;
+	virtual void OnRep_Owner() override;
 
-	virtual void SetOwner(AActor* NewOwner)override;
+	virtual void SetOwner(AActor* NewOwner) override;
 
 	/**
 	 * called when player controller gets replicated,this will only be called on Role_Athority or Role_AutonomousProxy
 	 */
-	virtual void OnRep_Controller()override;
+	virtual void OnRep_Controller() override;
 
 	UFUNCTION()
 	virtual void UpdateCrouchEyeHeightSmoothly();
 
 public:
-
 	/** handles a friendly fire event */
 	virtual void ReceiveFriendlyFire(class AINSPlayerController* InstigatorPlayer, float DamageTaken);
 
 	/** return character camera comp */
-	FORCEINLINE virtual UCameraComponent* GetPlayerCameraComp()const { return FirstPersonCamera; }
+	FORCEINLINE virtual UCameraComponent* GetPlayerCameraComp() const { return FirstPersonCamera; }
 
-	virtual FTransform GetPlayerCameraTransform()const;
+	virtual FTransform GetPlayerCameraTransform() const;
 
 	/**
 	 * @desc  get the camera socket transform in world space
@@ -151,10 +149,10 @@ public:
 	virtual void GetPlayerCameraSocketWorldTransform(FTransform& OutCameraSocketTransform);
 
 	/** returns character's 3P mesh comp */
-	FORCEINLINE UINSCharSkeletalMeshComponent* GetCharacter3PMesh()const { return CharacterMesh3P; }
+	FORCEINLINE UINSCharSkeletalMeshComponent* GetCharacter3PMesh() const { return CharacterMesh3P; }
 
 	/** returns character's 1p mesh comp */
-	FORCEINLINE UINSCharSkeletalMeshComponent* GetCharacter1PMesh()const { return CharacterMesh1P; }
+	FORCEINLINE UINSCharSkeletalMeshComponent* GetCharacter1PMesh() const { return CharacterMesh1P; }
 
 	/** returns 1P animation instance */
 	FORCEINLINE virtual class UINSCharacterAimInstance* Get1PAnimInstance();
@@ -163,59 +161,54 @@ public:
 	FORCEINLINE virtual class UINSCharacterAimInstance* Get3PAnimInstance();
 
 	/** returns current equipped weapon of this character */
-	virtual void SetCurrentWeapon(class AINSWeaponBase* NewWeapon)override;
+	virtual void SetCurrentWeapon(class AINSWeaponBase* NewWeapon) override;
 
 	virtual void SetupWeaponAttachment();
 
-	/** Set INS player controller that currently possess this character */
-	virtual void SetINSPlayerController(class AINSPlayerController* NewPlayerController);
-
-	/**
-	 * @desc returns player controller if INS Type,this func should only be called on role authority or Autonomous
-	 *       since controller only exist on that 2 client roles
-	 */
-	inline virtual class AINSPlayerController* GetINSPlayerController();
-
 	/** handles a move forward request from player controller */
-	virtual void HandleMoveForwardRequest(float Value)override;
+	virtual void HandleMoveForwardRequest(float Value) override;
 
 	/** handles a move right request from player controller */
-	virtual void HandleMoveRightRequest(float Value)override;
+	virtual void HandleMoveRightRequest(float Value) override;
 
 	/** handle s sprint request from player controller */
-	virtual void HandleStopSprintRequest()override;
+	virtual void HandleStopSprintRequest() override;
 
 	/** handles a stop sprint request from player controller */
-	virtual void HandleStartSprintRequest()override;
+	virtual void HandleStartSprintRequest() override;
 
-	virtual void HandleCrouchRequest()override;
+	virtual void HandleCrouchRequest() override;
 
-	virtual void HandleItemEquipRequest(const uint8 SlotIndex)override;
+	virtual void HandleItemEquipRequest(const uint8 SlotIndex) override;
 
 	virtual void PutCurrentWeaponBackToSlot();
 
 	UFUNCTION()
-		virtual void EquipGameModeDefaultWeapon();
+	virtual void EquipGameModeDefaultWeapon();
 
 	/**
 	 * return if Mesh1p is hidden in game currently
 	 */
-	inline bool GetIsMesh1pHidden()const;
+	inline bool GetIsMesh1pHidden() const;
 
 	/**
 	 * return if Mesh3p is hidden in game currently
 	 */
-	inline bool GetIsMesh3pHidden()const;
+	inline bool GetIsMesh3pHidden() const;
 
 	virtual void SetTeamType(const ETeamType NewTeamType);
 
-	virtual void OnEnterIdleState()override;
+	virtual void OnEnterIdleState() override;
 
-	virtual void OnOutIdleState()override;
+	virtual void OnOutIdleState() override;
 
-	virtual void OnEnterBoredState()override;
+	virtual void OnEnterBoredState() override;
 
-	virtual void OnLowHealth()override;
+	virtual void OnLowHealth() override;
 
-	virtual void SetWeaponBasePoseType(const EWeaponBasePoseType NewType)override;
+	virtual void Die() override;
+
+	virtual AINSPlayerController* GetINSPlayerController() const { return INSPlayerController; }
+
+	virtual void SetWeaponBasePoseType(const EWeaponBasePoseType NewType) override;
 };

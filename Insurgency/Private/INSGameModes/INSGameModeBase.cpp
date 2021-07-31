@@ -147,6 +147,18 @@ void AINSGameModeBase::EndMatchPerparing()
 
 void AINSGameModeBase::ModifyDamage(float& OutDamage, const float& OriginDamage, class AController* PlayerInstigator, class AController* Victim, const FDamageEvent& DamageEvent, const FName BoneName)
 {
+	if (!Victim)
+	{
+		OutDamage = 0.f;
+		return;
+	}
+	AINSCharacter* const Character = CastChecked<AINSCharacter>(Victim->GetPawn());
+	if (!Character)
+	{
+		OutDamage = 0.f;
+		return;
+	}
+
 	//modify match state damage first
 	if (GetMatchState() != MatchState::InProgress)
 	{
@@ -174,12 +186,12 @@ void AINSGameModeBase::ModifyDamage(float& OutDamage, const float& OriginDamage,
 			OutDamage *= 3.f;
 		}
 		UE_LOG(LogINSCharacter
-			, Log
-			, TEXT("character %s hit with bone:%s,damage modifier values is:%f,Modified damage value is %f")
-			, *GetName()
-			, *BoneName.ToString()
-			, BoneDamageModifier
-			, ModifiedDamage);
+		       , Log
+		       , TEXT("character %s hit with bone:%s,damage modifier values is:%f,Modified damage value is %f")
+		       , *GetName()
+		       , *BoneName.ToString()
+		       , BoneDamageModifier
+		       , ModifiedDamage);
 	}
 	//modify team damage
 	const bool bIsTeamDamage = GetIsTeamDamage(PlayerInstigator, Victim) && !bDamageCausedByWorld;
@@ -432,7 +444,7 @@ void AINSGameModeBase::CountDownMatchPrepare()
 	MatchPrepareRemainingTime -= 1.f;
 	AINSGameStateBase* const CurrentGameState = GetGameState<AINSGameStateBase>();
 	//compress to uint8 
-	CurrentGameState->SetMatchPrepareRemainingTime((uint8)FMath::CeilToInt(MatchPrepareRemainingTime));
+	CurrentGameState->SetMatchPrepareRemainingTime(static_cast<uint8>(FMath::CeilToInt(MatchPrepareRemainingTime)));
 	if (MatchPrepareRemainingTime == 0)
 	{
 		GetWorldTimerManager().ClearTimer(MatchPrepareTimer);

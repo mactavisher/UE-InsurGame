@@ -18,26 +18,27 @@ UCLASS()
 class INSURGENCY_API UINSZombieAnimInstance : public UAnimInstance
 {
 	GENERATED_UCLASS_BODY()
-
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|State")
-		uint8 bIsMoving : 1;
+	uint8 bIsMoving : 1;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|State")
-		uint8 bIsFalling : 1;
+	uint8 bIsMovingHorizontal : 1;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|State")
-		uint8 bIsInAir : 1;
+	uint8 bIsFalling : 1;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|State")
+	uint8 bIsInAir : 1;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ZombiePawn")
-		AINSZombie* ZombiePawnOwner;
+	AINSZombie* ZombiePawnOwner;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ZombiePawn")
-		UCharacterMovementComponent* ZombiePawnMovementComp;
+	UCharacterMovementComponent* ZombiePawnMovementComp;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "ZombiePawn")
-		EZombieMoveMode ZombieCurrentMoveMode;
-
+	EZombieMoveMode ZombieCurrentMoveMode;
 
 
 protected:
@@ -46,20 +47,20 @@ protected:
 	/**
 	 * called when AnimInstance initialized in c++ side
 	 */
-	virtual void NativeInitializeAnimation();
+	virtual void NativeInitializeAnimation() override;
 
 	/**
 	 * called every frame
 	 * @param DeltaSeconds Update interval
 	 */
-	virtual void NativeUpdateAnimation(float DeltaSeconds)override;
-
+	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 	//~End UAnimInstance Interface
 
-	/**
-	 * update zombie moving condition
-	 */
+	/** update zombie moving condition*/
 	virtual void UpdateIsMoving();
+
+	/** update zombie horizontal moving condition*/
+	virtual void UpdateIsMovingHorizontal();
 
 	/**
 	 * update zombie falling condition
@@ -67,16 +68,15 @@ protected:
 	virtual void UpdateIsFalling();
 
 public:
-
 	/**
 	 * Get the Owner zombie pawn
 	 */
-	virtual class AINSZombie* GetZombiePawnOwner()const { return ZombiePawnOwner; }
+	virtual class AINSZombie* GetZombiePawnOwner() const { return ZombiePawnOwner; }
 
 	/**
 	 * Get the owner zombie movement comp
 	 */
-	virtual class UCharacterMovementComponent* GetZombieMovementComp()const { return ZombiePawnMovementComp; }
+	virtual class UCharacterMovementComponent* GetZombieMovementComp() const { return ZombiePawnMovementComp; }
 
 	/**
 	 * Set the zombie Current MoveMode
@@ -87,5 +87,5 @@ public:
 	/**
 	 * Get the owner zombie movement Mode
 	 */
-	virtual EZombieMoveMode GetZombieCurrentMoveMode()const { return ZombieCurrentMoveMode; }
+	virtual EZombieMoveMode GetZombieCurrentMoveMode() const { return ZombieCurrentMoveMode; }
 };

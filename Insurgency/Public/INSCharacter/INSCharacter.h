@@ -20,6 +20,7 @@ class UINSHealthComponent;
 class UINSCharacterAudioComponent;
 class AINSPickup_Weapon;
 class UPawnNoiseEmitterComponent;
+class UPhysicalAnimationComponent;
 
 INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogINSCharacter, Log, All);
 
@@ -69,9 +70,7 @@ public:
 	{
 		const float* const BoneDamageModifier = BoneMappedDamageModifier.Find(BoneName);
 		const float BoneDamageRandomSeed = FMath::RandRange(1.0f, 1.5f);
-		return BoneDamageModifier == nullptr
-			       ? 1.f * BoneDamageRandomSeed
-			       : *(BoneDamageModifier) * BoneDamageRandomSeed;
+		return BoneDamageModifier == nullptr ? 1.f * BoneDamageRandomSeed : *(BoneDamageModifier) * BoneDamageRandomSeed;
 	}
 
 	/**
@@ -97,14 +96,14 @@ class INSURGENCY_API AINSCharacter : public ACharacter
 	GENERATED_UCLASS_BODY()
 protected:
 	/** is this character dead ? */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_Dead, Category = "States")
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_Dead, Category = "States")
 	uint8 bIsDead : 1;
 
 	/** is this character sprinting ? */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_Sprint, Category = "Stances")
 	uint8 bIsSprint : 1;
 
-	/** is this charActer prone ? */
+	/** is this character prone ? */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_Prone, Category = "Stances")
 	uint8 bIsProne : 1;
 
@@ -125,14 +124,16 @@ protected:
 	FTakeHitInfo LastHitInfo;
 
 	/** current stance of this character */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_CurrentStance,
-		Category = "Stances")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_CurrentStance, Category = "Stances")
 	ECharacterStance CharacterCurrentStance;
 
 	/** noise emitter comp, give the ability for the character to make noise */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PawnMakeNoiseComp",
-		meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PawnMakeNoiseComp", meta = (AllowPrivateAccess = "true"))
 	UPawnNoiseEmitterComponent* NoiseEmitterComp;
+
+	/** noise emitter comp, give the ability for the character to make noise */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PawnMakeNoiseComp", meta = (AllowPrivateAccess = "true"))
+	UPhysicalAnimationComponent* PhysicalAnimationComponent;
 
 	/** blood particle spawned when taking hit */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
@@ -146,13 +147,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effects")
 	TArray<UMaterialInterface*> BloodSprayDecalMaterials;
 
-	/** Current Player controller that control this character */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "PlayerController")
-	AINSPlayerController* CurrentPlayerController;
-
 	/** Current Weapon that this character use */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_CurrentWeapon,
-		Category = "WeaponRef")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_CurrentWeapon, Category = "WeaponRef")
 	AINSWeaponBase* CurrentWeapon;
 
 	/** body hit sound when receives damage */
@@ -160,18 +156,15 @@ protected:
 	USoundCue* BodyHitSound;
 
 	/** Customized Character movement comp */
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "CharacterMovementComp",
-		meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "CharacterMovementComp", meta = (AllowPrivateAccess = "true"))
 	UINSCharacterMovementComponent* INSCharacterMovementComp;
 
 	/** Health comp */
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "CharacterHealthComp",
-		meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "CharacterHealthComp", meta = (AllowPrivateAccess = "true"))
 	UINSHealthComponent* CharacterHealthComp;
 
 	/** Audio comp */
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "CharacterAudioComp",
-		meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "CharacterAudioComp", meta = (AllowPrivateAccess = "true"))
 	UINSCharacterAudioComponent* CharacterAudioComp;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FallingDamage")
@@ -192,8 +185,7 @@ protected:
 	uint8 InitDamageImmuneTime;
 
 	/** time left for character immune since spawn */
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Replicated, ReplicatedUsing = "OnRep_DamageImmuneTime",
-		Category = "Damage")
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Replicated, ReplicatedUsing = "OnRep_DamageImmuneTime", Category = "Damage")
 	uint8 DamageImmuneLeft;
 
 	/** indicates if character is currently in spawn protection mode */
@@ -237,20 +229,19 @@ protected:
 	virtual bool ShouldTakeDamage(float Damage, const FDamageEvent& DamageEvent, AController* EventInstigator,
 	                              AActor* DamageCauser) const override;
 public:
-	virtual float TakeDamage(float Damage, const struct FDamageEvent& DamageEvent, AController* EventInstigator,
-	                         AActor* DamageCauser) override;
+	virtual float TakeDamage(float Damage, const struct FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 	//~ end AActor interface
 
 protected:
 	//~ begin ACharacter interface
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	virtual void ApplyDamageMomentum(float DamageTaken, const FDamageEvent& DamageEvent, APawn* PawnInstigator,
-	                                 AActor* DamageCauser) override;
+	virtual void ApplyDamageMomentum(float DamageTaken, const FDamageEvent& DamageEvent, APawn* PawnInstigator, AActor* DamageCauser) override;
 	virtual void Landed(const FHitResult& Hit) override;
 	virtual void BecomeViewTarget(APlayerController* PC) override;
 public:
 	virtual void Crouch(bool bClientSimulation /* = false */) override;
 	virtual void UnCrouch(bool bClientSimulation /* = false */) override;
+	virtual void Die();
 	//~ end ACharacter interface
 
 protected:
@@ -327,10 +318,6 @@ protected:
 	/** timer ticks the damage Immune state  */
 	UPROPERTY()
 	FTimerHandle DamageImmuneTimer;
-
-	/** delegate callbacks */
-	UFUNCTION()
-	virtual void OnDeath();
 
 public:
 	/** return current weapon instance used by this character */
@@ -490,6 +477,8 @@ public:
 
 	/** returns the current health of this character */
 	virtual float GetCurrentHealth() const;
+
+	virtual void ApplyPhysicAnimation();
 
 	/** called when this character damages other character */
 	virtual void OnCauseDamage(const FTakeHitInfo& HitInfo);

@@ -20,6 +20,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Net/RepLayout.h"
 #include "INSDamageTypes/INSDamageType_Falling.h"
+#include "PhysicsEngine/PhysicalAnimationComponent.h"
 #ifndef GEngine
 #endif // !GEngine
 #ifndef UWorld
@@ -32,9 +33,7 @@
 DEFINE_LOG_CATEGORY(LogINSCharacter);
 
 // Sets default values
-AINSCharacter::AINSCharacter(const FObjectInitializer& ObjectInitializer) :
-	Super(ObjectInitializer.SetDefaultSubobjectClass<UINSCharacterMovementComponent>(
-		ACharacter::CharacterMovementComponentName))
+AINSCharacter::AINSCharacter(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer.SetDefaultSubobjectClass<UINSCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
@@ -50,33 +49,26 @@ AINSCharacter::AINSCharacter(const FObjectInitializer& ObjectInitializer) :
 	DamageImmuneLeft = InitDamageImmuneTime;
 	CharacterCurrentStance = ECharacterStance::STAND;
 	FatalFallingSpeed = 2000.f;
-	NoiseEmitterComp = ObjectInitializer.CreateDefaultSubobject<UPawnNoiseEmitterComponent>(
-		this, TEXT("NoiseEmmiterComp"));
+	NoiseEmitterComp = ObjectInitializer.CreateDefaultSubobject<UPawnNoiseEmitterComponent>(this, TEXT("NoiseEmmiterComp"));
 	CharacterHealthComp = ObjectInitializer.CreateDefaultSubobject<UINSHealthComponent>(this, TEXT("HealthComp"));
-	if (CharacterHealthComp)
-	{
-		CharacterHealthComp->SetIsReplicated(true);
-	}
 	INSCharacterMovementComp = CastChecked<UINSCharacterMovementComponent>(GetCharacterMovement());
 	CharacterAudioComp = ObjectInitializer.CreateDefaultSubobject<UINSCharacterAudioComponent>(this, TEXT("AudioComp"));
+	PhysicalAnimationComponent = ObjectInitializer.CreateDefaultSubobject<UPhysicalAnimationComponent>(this, TEXT("PhysicalAnimationComponent"));
 	CharacterAudioComp->SetupAttachment(RootComponent);
 	CachedTakeHitArray.SetNum(10);
 	GetMesh()->SetReceivesDecals(false);
 #if WITH_EDITORONLY_DATA
 	bShowDebugTrace = true;
 #endif
+	if (CharacterHealthComp)
+	{
+		CharacterHealthComp->SetIsReplicated(true);
+	}
 }
 
 void AINSCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	if (HasAuthority())
-	{
-		FScriptDelegate DieDelegate;
-		DieDelegate.BindUFunction(this, TEXT("OnDeath"));
-		CharacterHealthComp->OnCharacterShouldDie.Add(DieDelegate);
-		GetWorldTimerManager().SetTimer(DamageImmuneTimer, this, &AINSCharacter::TickDamageImmune, 1.f, true, 0.f);
-	}
 	// we don't need sound comp in dedicated server,actually we can destroy it
 	if (IsNetMode(NM_DedicatedServer))
 	{
@@ -84,6 +76,13 @@ void AINSCharacter::BeginPlay()
 		{
 			CharacterAudioComp->DestroyComponent(true);
 			CharacterAudioComp = nullptr; //help GC
+		}
+	}
+	if (HasAuthority())
+	{
+		if (bDamageImmuneState)
+		{
+			GetWorldTimerManager().SetTimer(DamageImmuneTimer, this, &AINSCharacter::TickDamageImmune, 1.f, true, 0.f);
 		}
 	}
 }
@@ -112,8 +111,7 @@ void AINSCharacter::PostInitializeComponents()
 	Super::PostInitializeComponents();
 	if (CharacterAudioComp)
 	{
-		CharacterAudioComp->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale,
-		                                      TEXT("Bip01_HeadSocket"));
+		CharacterAudioComp->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale,TEXT("Bip01_HeadSocket"));
 		CharacterAudioComp->SetOwnerCharacter(this);
 	}
 }
@@ -143,8 +141,7 @@ void AINSCharacter::HandleOnTakeRadiusDamage(AActor* DamagedActor, float Damage,
 {
 }
 
-float AINSCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator,
-                                AActor* DamageCauser)
+float AINSCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	if (HasAuthority())
 	{
@@ -162,14 +159,13 @@ float AINSCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, A
 				                       , DamageEvent
 				                       , PointDamageEventPtr->HitInfo.BoneName);
 			}
-			const bool bFetalDamage = CharacterHealthComp->OnTakingDamage(DamageAfterModify, DamageCauser, EventInstigator);
 			if (PointDamageEventPtr)
 			{
-				LastHitInfo.bIsTeamDamage = GameMode->GetIsTeamDamage(EventInstigator, GetController());
+				CharacterHealthComp->OnTakingDamage(DamageAfterModify, DamageCauser, EventInstigator);
 				LastHitInfo.Damage = GetIsDead() ? 0.f : DamageAfterModify;
 				LastHitInfo.DamageCauser = DamageCauser;
 				LastHitInfo.Victim = this;
-				LastHitInfo.bVictimDead = bFetalDamage;
+				LastHitInfo.bVictimDead = GetCurrentHealth() - DamageAfterModify <= 0.f;
 				LastHitInfo.DamageType = DamageEvent.DamageTypeClass;
 				LastHitInfo.Momentum = DamageCauser->GetVelocity();
 				LastHitInfo.bVictimAlreadyDead = !GetIsDead();
@@ -189,6 +185,7 @@ float AINSCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, A
 				{
 					OnRep_LastHitInfo();
 				}
+				LastHitInfo.bIsTeamDamage = GameMode->GetIsTeamDamage(EventInstigator, GetController());
 				LastHitBy = EventInstigator;
 			}
 		}
@@ -197,8 +194,7 @@ float AINSCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, A
 	return 0.f;
 }
 
-bool AINSCharacter::ShouldTakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator,
-                                     AActor* DamageCauser) const
+bool AINSCharacter::ShouldTakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) const
 {
 	// ignore any kind of damage if we are in damage immune state
 	if (bDamageImmuneState)
@@ -316,23 +312,12 @@ void AINSCharacter::SetLastHitStateInfo(class AActor* LastHitActor)
 	LastHitState.CurrentHitStateLastTime = LastHitState.HitStateTime;
 }
 
-void AINSCharacter::OnRep_Dead()
-{
-	GetINSCharacterMovement()->StopMovementImmediately();
-	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
-	if (!IsNetMode(NM_DedicatedServer) && GetCharacterAudioComp())
-	{
-		GetCharacterAudioComp()->OnDeath();
-	}
-}
 
 void AINSCharacter::OnRep_LastHitInfo()
 {
 	if (!IsNetMode(NM_DedicatedServer))
 	{
-		UE_LOG(LogINSCharacter, Warning, TEXT("received Characters's:%s Hit Info,start handle take hit logic!"),
-		       *GetName());
+		UE_LOG(LogINSCharacter, Warning, TEXT("received Characters's:%s Hit Info,start handle take hit logic!"), *GetName());
 		SetLastHitStateInfo(LastHitInfo.DamageCauser);
 		if (LastHitInfo.DamageType && !LastHitInfo.DamageType->IsChildOf(UINSDamageType_Falling::StaticClass()))
 		{
@@ -340,20 +325,15 @@ void AINSCharacter::OnRep_LastHitInfo()
 			const FVector BloodSpawnLocation = FVector(LastHitInfo.RelHitLocation);
 			const float ShotDirPitchDecompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirPitch);
 			const float ShotDirYawDeCompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirYaw);
-			const FRotator BloodSpawenRotation = FRotator(ShotDirPitchDecompressed, ShotDirYawDeCompressed, 0.f);
-			const FTransform BloodSpawnTrans = FTransform(BloodSpawenRotation, BloodSpawnLocation, FVector::OneVector);
+			const FRotator BloodSpawnRotation = FRotator(ShotDirPitchDecompressed, ShotDirYawDeCompressed, 0.f);
+			const FTransform BloodSpawnTrans = FTransform(BloodSpawnRotation, BloodSpawnLocation, FVector::OneVector);
 			const int32 BloodParticlesSize = BloodParticles.Num();
-			if (BloodParticlesSize > 1)
+			if (BloodParticlesSize > 0)
 			{
-				const int32 randomIndex = FMath::RandHelper(BloodParticlesSize - 1);
-				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BloodParticles[randomIndex], BloodSpawnTrans);
+				const int32 RandomIndex = FMath::RandHelper(BloodParticlesSize - 1);
+				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BloodParticles[RandomIndex], BloodSpawnTrans);
 			}
 			UGameplayStatics::SpawnSoundAtLocation(this, BodyHitSound, LastHitInfo.RelHitLocation);
-			if (GetIsDead())
-			{
-				GetMesh()->AddImpulseToAllBodiesBelow(BloodSpawenRotation.Vector() * 2000.f, LastHitInfo.HitBoneName);
-				GetMesh()->AddAngularImpulseInRadians(BloodSpawenRotation.Vector() * 2000.f, LastHitInfo.HitBoneName);
-			}
 			const uint8 RandInt = FMath::RandHelper(10);
 			if (RandInt % 3 == 0)
 			{
@@ -361,8 +341,8 @@ void AINSCharacter::OnRep_LastHitInfo()
 			}
 			if (LastHitInfo.Damage > 0.f && !GetIsDead())
 			{
-				const uint8 RamdonNum = FMath::RandHelper(7);
-				if (RamdonNum % 3 == 0)
+				const uint8 RandomNum = FMath::RandHelper(7);
+				if (RandomNum % 3 == 0)
 				{
 					if (GetCharacterAudioComp())
 					{
@@ -377,6 +357,7 @@ void AINSCharacter::OnRep_LastHitInfo()
 			InstigatorCharacter->OnCauseDamage(LastHitInfo);
 		}
 	}
+	ApplyPhysicAnimation();
 	CachedTakeHitArray.Add(LastHitInfo);
 }
 
@@ -399,7 +380,7 @@ void AINSCharacter::OnRep_Sprint()
 		GetINSCharacterMovement()->StartSprint();
 		OnStartSprint.Broadcast();
 	}
-	if (!bIsSprint)
+	else
 	{
 		GetINSCharacterMovement()->EndSprint();
 		OnStopSprint.Broadcast();
@@ -465,7 +446,7 @@ void AINSCharacter::OnWeaponCollide(const FHitResult& Hit)
 	if (Hit.bBlockingHit)
 	{
 		AActor* HitOtherActor = Hit.GetActor();
-		if (HitOtherActor->GetClass()->IsChildOf(APawn::StaticClass()))
+		if (HitOtherActor && HitOtherActor->GetClass()->IsChildOf(APawn::StaticClass()))
 		{
 			GetController()->SetIgnoreMoveInput(true);
 		}
@@ -583,6 +564,30 @@ void AINSCharacter::UnCrouch(bool bClientSimulation /* = false */)
 	Super::UnCrouch(bClientSimulation);
 }
 
+void AINSCharacter::Die()
+{
+	if (HasAuthority() && !GetIsDead())
+	{
+		bIsDead = true;
+		OnRep_Dead();
+	}
+}
+
+void AINSCharacter::OnRep_Dead()
+{
+	if (bIsDead)
+	{
+		GetCharacterHealthComp()->DisableComponentTick();
+		GetINSCharacterMovement()->StopMovementImmediately();
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
+		if (!IsNetMode(NM_DedicatedServer) && GetCharacterAudioComp())
+		{
+			GetCharacterAudioComp()->OnDeath();
+		}
+	}
+}
+
 void AINSCharacter::OnRep_IsCrouched()
 {
 	if (INSCharacterMovementComp)
@@ -617,7 +622,7 @@ void AINSCharacter::HandleStartSprintRequest()
 		//Ignore vertical movement
 		Forward.Z = 0.0f;
 		MoveDirection.Z = 0.0f;
-		float VelocityDot = FVector::DotProduct(Forward, MoveDirection);
+		const float VelocityDot = FVector::DotProduct(Forward, MoveDirection);
 		bIsSprint = VelocityDot > 0.8f && !GetCharacterMovement()->IsFalling();
 		OnRep_Sprint();
 	}
@@ -720,7 +725,7 @@ void AINSCharacter::BecomeViewTarget(APlayerController* PC)
 void AINSCharacter::FellOutOfWorld(const class UDamageType& dmgType)
 {
 	Super::FellOutOfWorld(dmgType);
-	OnDeath();
+	Die();
 }
 
 bool AINSCharacter::GetIsLowHealth() const
@@ -728,11 +733,6 @@ bool AINSCharacter::GetIsLowHealth() const
 	return GetCharacterHealthComp()->CheckIsLowHealth();
 }
 
-void AINSCharacter::OnDeath()
-{
-	SetReplicates(false);
-	TornOff();
-}
 
 bool AINSCharacter::GetIsCharacterMoving() const
 {
@@ -741,13 +741,17 @@ bool AINSCharacter::GetIsCharacterMoving() const
 
 void AINSCharacter::OnLowHealth()
 {
-	UE_LOG(LogINSCharacter, Log, TEXT("Character %s received low health,Current health value is:%d"), *GetName(),
-	       GetCurrentHealth());
+	UE_LOG(LogINSCharacter, Log, TEXT("Character %s received low health,Current health value is:%d"), *GetName(),GetCurrentHealth());
 }
 
 float AINSCharacter::GetCurrentHealth() const
 {
 	return GetCharacterHealthComp()->GetCurrentHealth();
+}
+
+void AINSCharacter::ApplyPhysicAnimation()
+{
+	
 }
 
 // Called every frame

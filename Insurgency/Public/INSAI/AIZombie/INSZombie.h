@@ -39,6 +39,7 @@ enum class EZombieMoveMode :uint8
 	Walk UMETA(DisplayName = "Walk"),
 	Shamble UMETA(DisplayName = "Shamble"),
 	Chase UMETA(DisplayName = "Chase"),
+	NONE UMETA(DisplayName = "None"),
 };
 
 /**
@@ -65,8 +66,7 @@ protected:
 	UBehaviorTree* ZombieBehaviorTree;
 
 	/** zombie current move mode  */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_ZombieMoveMode,
-		Category = "ZombieMovement")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_ZombieMoveMode, Category = "ZombieMovement")
 	EZombieMoveMode CurrentZombieMoveMode;
 
 	/** cached zombie controller for this zombie */
@@ -74,8 +74,7 @@ protected:
 	AINSZombieController* ZombieController;
 
 	/** indicate the zombie attack mode,replicated */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_ZombieAttackMode,
-		Category = "Attack")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_ZombieAttackMode, Category = "Attack")
 	EZombieAttackMode CurrenAttackMode;
 
 	/** zombie attack montages */
@@ -92,6 +91,15 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Rage")
 	float RagePoint;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "movement")
+	float BaseMoveSpeed;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
+	float ChargeMoveSpeed;
+
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Replicated,ReplicatedUsing=OnRep_CurrentMoveSpeed,Category="Movement")
+    float CurrentMoveSpeed;
+	
 	/** modular zombie of HeadComp */
 	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	USkeletalMeshComponent* HeadComp;
@@ -161,6 +169,9 @@ protected:
 	UFUNCTION()
 	virtual void OnRep_ZombieAttackMode();
 
+	UFUNCTION()
+	virtual void OnRep_CurrentMoveSpeed();
+
 public:
 	/**
 	 * Get the zombie behavior tree asset
@@ -171,7 +182,7 @@ public:
 	 * Set the zombie current move mode
 	 * @param NewZombieMoveMode  the new zombie move mode to set for this zombie
 	 */
-	virtual void SetZombieMoveMode(EZombieMoveMode NewZombieMoveMode) { CurrentZombieMoveMode = NewZombieMoveMode; };
+	virtual void SetZombieMoveMode(const EZombieMoveMode NewZombieMoveMode) { CurrentZombieMoveMode = NewZombieMoveMode; };
 
 	/**
 	 * Get the zombie current move mode
@@ -211,8 +222,11 @@ public:
 	 */
 	inline virtual float GetZombieRagePoint() { return RagePoint; };
 
+	virtual void Die() override;
+
 	/**
 	 * add rage point to  zombie's current rage point
 	 */
 	virtual void AddZombieRagePoint(const int32 RageToAdd) { RagePoint += RageToAdd; }
+
 };

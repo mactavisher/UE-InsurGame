@@ -8,7 +8,6 @@
 #include "INSHealthComponent.generated.h"
 
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCharacterShouldDieSignature);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLowHealthSignature);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnReduceHealthSignature);
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
@@ -35,10 +34,6 @@ public:
 	/**low health percentage hit value when character is not in full health  */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "HealthComponent")
 		float TimeBeforeHealthRestore;
-
-	/** event syntax when character should die */
-	UPROPERTY(BlueprintAssignable, Category = "Events")
-		FOnCharacterShouldDieSignature OnCharacterShouldDie;
 
 	/** event syntax when character is in low health state */
 	UPROPERTY(BlueprintAssignable, Category = "Events")
@@ -146,4 +141,6 @@ public:
 		virtual void OnStopRestoreHealth();
 
 	inline virtual class AINSCharacter* GetOwnerCharacter() { return CastChecked<AINSCharacter>(GetOwner()); }
+public:
+	virtual void SetOwnerCharacter(AINSCharacter* NewOwnerCharacter){OwnerCharacter = NewOwnerCharacter;}
 };

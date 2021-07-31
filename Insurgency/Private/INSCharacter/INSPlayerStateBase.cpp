@@ -18,7 +18,8 @@
 #endif
 
 DEFINE_LOG_CATEGORY(LogINSPlayerState);
-AINSPlayerStateBase::AINSPlayerStateBase(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
+
+AINSPlayerStateBase::AINSPlayerStateBase(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	bIsWaitingForRespawn = false;
 	RespawnRemainingTime = 0.f;
@@ -26,8 +27,13 @@ AINSPlayerStateBase::AINSPlayerStateBase(const FObjectInitializer& ObjectInitial
 	CachedDamageInfos.SetNum(CachedDamageInfoMaxSize);
 	Kills = 0;
 	Deaths = 0;
+	ReplicatedRespawnRemainingTime = 0.f;
+	MissTakeKill = 0;
+	KDRatio = 0.f;
+	PlayerTeam = nullptr;
 }
-void AINSPlayerStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> & OutLifetimeProps) const
+
+void AINSPlayerStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AINSPlayerStateBase, PlayerTeam);
@@ -39,7 +45,7 @@ void AINSPlayerStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &
 
 void AINSPlayerStateBase::OnRep_Score()
 {
-	if (GetPawn()&& GetPawn()->IsLocallyControlled())
+	if (GetPawn() && GetPawn()->IsLocallyControlled())
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, FString::SanitizeFloat(GetScore()));
 	}
@@ -48,12 +54,11 @@ void AINSPlayerStateBase::OnRep_Score()
 void AINSPlayerStateBase::BeginPlay()
 {
 	Super::BeginPlay();
-	AINSGameStateBase*CurrentGameState = GetWorld()->GetGameState<AINSGameStateBase>();
+	AINSGameStateBase* CurrentGameState = GetWorld()->GetGameState<AINSGameStateBase>();
 }
 
 void AINSPlayerStateBase::OnRep_TeamInfo()
 {
-	
 }
 
 void AINSPlayerStateBase::OnRep_Deaths()
@@ -68,12 +73,10 @@ void AINSPlayerStateBase::OnRep_Kills()
 
 void AINSPlayerStateBase::OnRep_MistakeKill()
 {
-
 }
 
 void AINSPlayerStateBase::OnRep_RespawnRemainingTime()
 {
-
 }
 
 void AINSPlayerStateBase::SetPlayerTeam(class AINSTeamInfo* NewTeam)
@@ -85,12 +88,11 @@ void AINSPlayerStateBase::SetPlayerTeam(class AINSTeamInfo* NewTeam)
 	}
 }
 
-void AINSPlayerStateBase::UpdateRepliatedRespawnRemaingTime()
+void AINSPlayerStateBase::UpdateReplicatedRespawnRemainingTime()
 {
-
 }
 
-void AINSPlayerStateBase::AddKill(int32 KillNum /*= 1*/)
+void AINSPlayerStateBase::AddKill(const int32 KillNum /*= 1*/)
 {
 	if (HasAuthority())
 	{
@@ -99,7 +101,7 @@ void AINSPlayerStateBase::AddKill(int32 KillNum /*= 1*/)
 	}
 }
 
-void AINSPlayerStateBase::AddMissTakeKill(int32 KillsToAdd /*= 1*/)
+void AINSPlayerStateBase::AddMissTakeKill(const int32 KillsToAdd /*= 1*/)
 {
 	if (HasAuthority())
 	{
@@ -119,7 +121,7 @@ void AINSPlayerStateBase::AddDeath(const int32 DeathToAdd /*= 1*/)
 
 void AINSPlayerStateBase::UpdateKDRatio()
 {
-	UE_LOG(LogINSPlayerState,Log,TEXT("start update k/d ration for player %s,last k/d ration:%s"), *GetName(), *FString::SanitizeFloat(KDRatio));
+	UE_LOG(LogINSPlayerState, Log, TEXT("start update k/d ration for player %s,last k/d ration:%s"), *GetName(), *FString::SanitizeFloat(KDRatio));
 	if (Deaths == 0)
 	{
 		KDRatio = Kills;
@@ -128,7 +130,7 @@ void AINSPlayerStateBase::UpdateKDRatio()
 	{
 		KDRatio = Kills / Deaths;
 	}
-	UE_LOG(LogINSPlayerState,Log,TEXT("end update k/d ration for player %s,updated k/d ration:%s"), *GetName(), *FString::SanitizeFloat(KDRatio));
+	UE_LOG(LogINSPlayerState, Log, TEXT("end update k/d ration for player %s,updated k/d ration:%s"), *GetName(), *FString::SanitizeFloat(KDRatio));
 }
 
 
@@ -145,7 +147,7 @@ void AINSPlayerStateBase::TickRespawnTime()
 		if (bIsWaitingForRespawn)
 		{
 			RespawnRemainingTime -= 1.f;
-			ReplicatedRespawnRemainingTime = (uint8)FMath::CeilToInt(RespawnRemainingTime);
+			ReplicatedRespawnRemainingTime = static_cast<uint8>(FMath::CeilToInt(RespawnRemainingTime));
 			if (RespawnRemainingTime <= 0.f)
 			{
 				AINSPlayerController* OwnerPlayer = CastChecked<AINSPlayerController>(GetOwner());
@@ -167,14 +169,13 @@ void AINSPlayerStateBase::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 }
 
-void AINSPlayerStateBase::ReceivePlayerDeath(AINSPlayerController* DeadPlayer)
+void AINSPlayerStateBase::OnPawnCharDeath()
 {
 	if (GetLocalRole() == ROLE_Authority)
 	{
-		DeadPlayer->UnPossess();
 		bIsWaitingForRespawn = true;
 		const AINSGameStateBase* CurrentGameState = Cast<AINSGameStateBase>(GetWorld()->GetGameState());
 		RespawnRemainingTime = CurrentGameState->GetRespawnTime();
-		GetWorldTimerManager().SetTimer(RespawnTimer, this, &AINSPlayerStateBase::TickRespawnTime, 1.f, true, 1.f);
+		GetWorldTimerManager().SetTimer(RespawnTimer, this, &AINSPlayerStateBase::TickRespawnTime, 1.f, true, 0.f);
 	}
 }

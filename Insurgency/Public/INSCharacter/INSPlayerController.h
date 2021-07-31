@@ -62,8 +62,6 @@ protected:
 	/** possess a character */
 	virtual void OnPossess(APawn* InPawn) override;
 
-	/** un-possess a character */
-	virtual void OnUnPossess()override;
 
 	/** replication support */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
@@ -170,7 +168,7 @@ public:
 	virtual void SwitchFireMode();
 
 	/** inspect weapon */
-	virtual void InspecWeapon();
+	virtual void InspectWeapon();
 
 	/** sync server state to inspect weapon */
 	UFUNCTION(Server, Unreliable, WithValidation)
@@ -324,4 +322,6 @@ public:
 	 * @desc called when player weapon current clip is empty
 	 */
 	virtual void OnWeaponClipEmpty(class AController* WeaponOwnerPlayer);
+
+	virtual void OnCharacterDead();
 };

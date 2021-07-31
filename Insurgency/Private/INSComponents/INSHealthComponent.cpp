@@ -4,6 +4,7 @@
 #include "INSComponents/INSHealthComponent.h"
 #include "TimerManager.h"
 #include "Engine/World.h"
+#include "GameFramework/PlayerState.h"
 #include "Net/UnrealNetwork.h"
 
 UINSHealthComponent::UINSHealthComponent()
@@ -19,6 +20,7 @@ UINSHealthComponent::UINSHealthComponent()
 void UINSHealthComponent::BeginPlay()
 {
 	Super::BeginPlay();
+	OwnerCharacter = Cast<AINSCharacter>(GetOwner());
 }
 
 
@@ -45,26 +47,37 @@ float UINSHealthComponent::GetCurrentHealth() const
 
 bool UINSHealthComponent::OnTakingDamage(float ReduceAmount, class AActor* DamageCauser, class AController* DamageInstigator)
 {
-	GetWorld()->GetTimerManager().ClearTimer(HealthRestoreTimerHandle);
-	CurrentHealth = FMath::CeilToInt(FMath::Clamp<float>(CurrentHealth - ReduceAmount, 0.f, CurrentHealth));
-	if (CurrentHealth <= 0)
+	if (GetOwnerCharacter() && GetOwnerCharacter()->GetLocalRole() == ROLE_Authority)
 	{
-		OnCharacterShouldDie.Broadcast();
-		DisableComponentTick();
-	}
-	else
-	{
-		GetWorld()->GetTimerManager().SetTimer(HealthRestoreTimerHandle, this, &UINSHealthComponent::ReGenerateHealth, 0.1f, true, TimeBeforeHealthRestore);
+		GetWorld()->GetTimerManager().ClearTimer(HealthRestoreTimerHandle);
+		CurrentHealth = FMath::CeilToInt(FMath::Clamp<float>(CurrentHealth - ReduceAmount, 0.f, CurrentHealth));
+		if (CurrentHealth == 0)
+		{
+			OwnerCharacter->Die();
+			DisableComponentTick();
+		}
+		else
+		{
+			const APlayerState* const PlayerState = GetOwnerCharacter()->GetController()->GetPlayerState<APlayerState>();
+			
+			if(PlayerState&&!PlayerState->IsABot())
+			{
+				GetWorld()->GetTimerManager().SetTimer(HealthRestoreTimerHandle, this, &UINSHealthComponent::ReGenerateHealth, 0.1f, true, TimeBeforeHealthRestore);
+			}
+		}
 	}
 	return CurrentHealth == 0.f;
 }
 
 void UINSHealthComponent::ReGenerateHealth()
 {
-	CurrentHealth = FMath::Clamp<float>(CurrentHealth += 1, CurrentHealth, MaximunHealth);
-	if (CurrentHealth == MaximunHealth)
+	if(GetOwnerCharacter()&&GetOwnerCharacter()->GetLocalRole()==ROLE_Authority)
 	{
-		GetWorld()->GetTimerManager().ClearTimer(HealthRestoreTimerHandle);
+		CurrentHealth = FMath::Clamp<float>(CurrentHealth += 1, CurrentHealth, MaximunHealth);
+		if (CurrentHealth == MaximunHealth)
+		{
+			GetWorld()->GetTimerManager().ClearTimer(HealthRestoreTimerHandle);
+		}
 	}
 }
 
@@ -75,6 +88,7 @@ float UINSHealthComponent::GetHealthPercentage()
 
 void UINSHealthComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(UINSHealthComponent, MaximunHealth);
 	DOREPLIFETIME(UINSHealthComponent, CurrentHealth);
 }

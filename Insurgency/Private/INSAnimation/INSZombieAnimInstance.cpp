@@ -20,7 +20,6 @@ void UINSZombieAnimInstance::NativeInitializeAnimation()
 	ZombiePawnOwner = Cast<AINSZombie>(TryGetPawnOwner());
 	if (ZombiePawnOwner)
 	{
-		ZombiePawnOwner = Cast<AINSZombie>(TryGetPawnOwner());
 		ZombiePawnMovementComp = ZombiePawnOwner->GetINSCharacterMovement();
 	}
 	else
@@ -32,22 +31,34 @@ void UINSZombieAnimInstance::NativeInitializeAnimation()
 void UINSZombieAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
-	UpdateIsMoving();
-	UpdateIsFalling();
+	if(ZombiePawnOwner&&ZombiePawnMovementComp)
+	{
+		UpdateIsFalling();
+		UpdateIsMovingHorizontal();
+	}
 }
 
 void UINSZombieAnimInstance::UpdateIsMoving()
 {
-	const float HorizontalSpeed = ZombiePawnOwner&& ZombiePawnMovementComp?0.f: ZombiePawnMovementComp->GetLastUpdateVelocity().Size2D();
+	const float HorizontalSpeed = ZombiePawnOwner && ZombiePawnMovementComp ? 0.f : ZombiePawnMovementComp->GetLastUpdateVelocity().Size2D();
 	bIsMoving = HorizontalSpeed > 0.f;
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
-	if (TryGetPawnOwner() && TryGetPawnOwner()->GetNetMode() != ENetMode::NM_DedicatedServer)
+	if (bIsMoving)
 	{
-		FString DebugMessage = FString("Zombie is moving with speed");
+		FString DebugMessage = FString("Zombie is moving");
 		DebugMessage.Append(FString::SanitizeFloat(HorizontalSpeed));
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green,DebugMessage);
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, DebugMessage);
 	}
 #endif
+}
+
+void UINSZombieAnimInstance::UpdateIsMovingHorizontal()
+{
+	if (ZombiePawnOwner && ZombiePawnMovementComp)
+	{
+		//bIsMovingHorizontal = !ZombiePawnMovementComp->IsFalling() && ZombiePawnMovementComp->GetLastUpdateVelocity().Size2D() > 0.f;
+		bIsMovingHorizontal = !(ZombiePawnMovementComp->IsFalling())&&ZombiePawnOwner->GetVelocity().Size2D()>0.f;
+	}
 }
 
 void UINSZombieAnimInstance::UpdateIsFalling()

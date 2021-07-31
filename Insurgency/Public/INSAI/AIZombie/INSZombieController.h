@@ -86,17 +86,17 @@ protected:
 	 */
 	virtual void BroadCastEnemyTo();
 
-	/**
-	 * Receive broad casted enemy from other
-	 * @param Instigator Player who broadCast this Enemey
-	 */
-	virtual void ReceiveBroadCastedEnemy(class AAIController* InstigatorZombie, AController* Enemey);
+	virtual void InitPlayerState() override;
 
 	/**
-	 * Get The Current Target Enemey
-	 * @param Instigator Player who broadCast this Enemey
+	 * Receive broad casted enemy from other
+	 * @param InstigatorZombie Player who broadCast this Enemy
+	 * @Param Enemy
 	 */
-	inline virtual AController* GetMyTargetEnemy()const { return CurrentTargetEnemy; }
+	virtual void ReceiveBroadCastedEnemy(class AAIController* InstigatorZombie, AController* Enemy);
+
+	/** returns the current focus enemy*/
+	virtual AController* GetMyTargetEnemy()const { return CurrentTargetEnemy; }
 
 	/**
 	 * @desc   set the current target enemy,whether this will set is not sure
@@ -125,7 +125,7 @@ protected:
 	/**
 	 * randomly initialize a zombies move mode
 	 */
-	virtual void InitZombieMoveMode();
+	virtual void DetermineZombieMoveMode();
 
 	/**
 	 * update the zombie's focal point
@@ -142,14 +142,14 @@ protected:
 
 	/**
 	 * on see a pawn,call back function bind for PawnSensing comp
-	 * @param Pawn We see
+	 * @param SeenPawn We see
 	 */
 	UFUNCTION()
 		virtual void OnSeePawn(APawn* SeenPawn);
 
 	/**
 	 * on hear noise,call back function bind for PawnSensing comp
-	 * @param Instigator  pawn that made that noise
+	 * @param NoiseInstigator  pawn that made that noise
 	 * @param Location    The noise location
 	 * @param Volume      The noise volume
 	 */
@@ -191,15 +191,17 @@ public:
 	 * Add the stimulate to this zombie
 	 * @Params ValueToAdd  Value of stimulate to Add
 	 */
-	virtual void AddStimulate(float ValueToAdd);
+	virtual void AddStimulate(const float ValueToAdd);
 
 	/**
-	 * Happens when zombie takes damage
-	 * @Params Damage  damage taken
+	 * @Desc Happens when zombie takes damage
+	 * @param Damage  damage taken
 	 * @param DamageEventInstigator instigator who instigate this damage
 	 * @param DamageCausedBy Actor who actually cause this damage
 	 */
-	virtual void OnZombieTakeDamage(float Damage, class AController* DamageEventInstigator, class AActor* DamageCausedBy);
+	virtual void OnZombieTakeDamage(const float Damage, class AController* DamageEventInstigator, class AActor* DamageCausedBy);
+
+	virtual void OnZombieDead();
 
 	/*
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
