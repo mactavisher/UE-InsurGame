@@ -666,6 +666,8 @@ public:
 
 	virtual void WeaponGoToIdleState();
 
+	virtual bool GetIsWeaponInIdleState() { return CurrentWeaponState == EWeaponState::IDLE; }
+
 	/**
 	 * @desc init and create default attachment slot that this weapon will possess by default
 	 */

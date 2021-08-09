@@ -204,6 +204,8 @@ public:
 
 	virtual void OnEnterBoredState() override;
 
+	virtual void OnOutBoredState()override;
+
 	virtual void OnLowHealth() override;
 
 	virtual void Die() override;

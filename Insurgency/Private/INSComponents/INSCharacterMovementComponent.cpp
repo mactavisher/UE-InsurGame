@@ -3,6 +3,7 @@
 
 #include "INSComponents/INSCharacterMovementComponent.h"
 #include "INSCharacter/INSPlayerCharacter.h"
+#include "INSItems/INSWeapons/INSWeaponBase.h"
 
 DEFINE_LOG_CATEGORY(LogINSCharacterMovementComponent)
 UINSCharacterMovementComponent::UINSCharacterMovementComponent(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
@@ -16,21 +17,16 @@ UINSCharacterMovementComponent::UINSCharacterMovementComponent(const FObjectInit
 	AimSpeedModifier = 0.3f;
 	MaxAcceleration = 500.f;
 	AccumulatedIdleTime = 0.f;
-	IdleStateTime = 1.f;
+	IdleStateTime = 0.2f;
 	BoredStateTime = 10.f;
 	bInIdleState = false;
 	bInBoredState = false;
-	IdleCheckFunction.bCanEverTick = true;
-	IdleCheckFunction.SetTickFunctionEnable(true);
+	bEnableBoredState = true;
 }
 
 void UINSCharacterMovementComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	if (CharacterOwner)
-	{
-		IdleCheckFunction.AddPrerequisite(CharacterOwner, CharacterOwner->PrimaryActorTick);
-	}
 	//note this will still set OwnerPlayerCharacter to null is class is not compatible
 	INSCharacterOwner = CharacterOwner == nullptr ? nullptr : Cast<AINSPlayerCharacter>(CharacterOwner);
 }
@@ -97,27 +93,34 @@ void UINSCharacterMovementComponent::CheckCharacterIdleState(const float DeltaTi
 	{
 		UE_LOG(LogTemp, Log, TEXT("INScharacterMovementcomp ticking without characterowner"));
 	}
-	if (INSCharacterOwner && !INSCharacterOwner->GetIsDead())
+	if (bEnableBoredState&&!CharacterOwner->IsNetMode(NM_DedicatedServer))
 	{
-		if (FMath::Abs(GetLastUpdateVelocity().Size()) > 0)
+		if (INSCharacterOwner && !INSCharacterOwner->GetIsDead())
 		{
-			AccumulatedIdleTime = 0.f;
-			bInIdleState = false;
-			bInBoredState = false;
-			INSCharacterOwner->OnOutIdleState();
-		}
-		else
-		{
-			AccumulatedIdleTime += DeltaTime;
-			if (!bInIdleState && AccumulatedIdleTime >= IdleStateTime)
+			if (FMath::Abs(GetLastUpdateVelocity().Size()) > 0
+				|| (INSCharacterOwner->GetCurrentWeapon() && !INSCharacterOwner->GetCurrentWeapon()->GetIsWeaponInIdleState())
+				|| INSCharacterOwner->GetIsAiming())
 			{
-				bInIdleState = true;
-				INSCharacterOwner->OnEnterIdleState();
+				AccumulatedIdleTime = 0.f;
+				bInIdleState = false;
+				bInBoredState = false;
+				INSCharacterOwner->OnOutIdleState();
+				INSCharacterOwner->OnOutBoredState();
 			}
-			if (!bInBoredState && AccumulatedIdleTime >= BoredStateTime)
+			else
 			{
-				bInBoredState = true;
-				INSCharacterOwner->OnEnterBoredState();
+
+				AccumulatedIdleTime += DeltaTime;
+				if (!bInIdleState && AccumulatedIdleTime >= IdleStateTime)
+				{
+					bInIdleState = true;
+					INSCharacterOwner->OnEnterIdleState();
+				}
+				if (!bInBoredState && AccumulatedIdleTime >= BoredStateTime)
+				{
+					bInBoredState = true;
+					INSCharacterOwner->OnEnterBoredState();
+				}
 			}
 		}
 	}

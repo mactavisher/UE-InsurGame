@@ -388,28 +388,12 @@ void AINSPlayerController::Sprint()
 
 void AINSPlayerController::Jump()
 {
-	if (HasAuthority())
-	{
 		if (GetINSPlayerCharacter())
 		{
 			GetINSPlayerCharacter()->HandleJumpRequest();
 		}
-	}
-	else
-	{
-		ServerJump();
-	}
 }
 
-void AINSPlayerController::ServerJump_Implementation()
-{
-	Jump();
-}
-
-bool AINSPlayerController::ServerJump_Validate()
-{
-	return true;
-}
 
 void AINSPlayerController::ServerSprint_Implementation()
 {
@@ -797,8 +781,8 @@ void AINSPlayerController::OnCharacterDead()
 {
 	if(HasAuthority())
 	{
-		UnPossess();
 		GetINSPlayerState()->OnPawnCharDeath();
+		UnPossess();
 	}
 	
 }

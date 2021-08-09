@@ -48,7 +48,7 @@ struct FInvetorySlot
 
 	/** how many pieces of this item do we have */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly)
-	int32 Inventory;
+	int32 count;
 };
 
 

@@ -150,9 +150,6 @@ public:
 	virtual void Jump();
 
 	UFUNCTION(Server, Unreliable, WithValidation)
-	virtual void ServerJump();
-
-	UFUNCTION(Server, Unreliable, WithValidation)
 		virtual void ServerSprint();
 
 	virtual void StopSprint();

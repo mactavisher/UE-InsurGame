@@ -39,13 +39,17 @@ UINSCharacterAimInstance::UINSCharacterAimInstance(const FObjectInitializer& Obj
 #endif
 	bIdleState = false;
 	bBoredState = false;
-	LastBoredAnimPlayTime = 0.f;
-	BoredAnimPlayTimeInterval = 15.f;
 }
 
 void UINSCharacterAimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
+	
+}
+
+void UINSCharacterAimInstance::NativeBeginPlay()
+{
+	Super::NativeBeginPlay();
 	OwnerPlayerCharacter = Cast<AINSPlayerCharacter>(TryGetPawnOwner());
 	if (OwnerPlayerCharacter)
 	{
@@ -287,6 +291,17 @@ void UINSCharacterAimInstance::SetIdleState(bool NewIdleState)
 void UINSCharacterAimInstance::SetBoredState(bool NewBoredState)
 {
 	bBoredState = NewBoredState;
+	if (bBoredState)
+	{
+		if (!GetWorld()->GetTimerManager().IsTimerActive(BoredAnimPlayTimer))
+		{
+			GetWorld()->GetTimerManager().SetTimer(BoredAnimPlayTimer, this, &UINSCharacterAimInstance::PlayBoredAnim, 15.0, true, 0.f);
+		}
+	}
+	else 
+	{
+		GetWorld()->GetTimerManager().ClearTimer(BoredAnimPlayTimer);
+	}
 }
 
 void UINSCharacterAimInstance::OnWeaponAnimDelegateBindingFinished()
@@ -346,6 +361,10 @@ void UINSCharacterAimInstance::SetIsAiming(bool IsAiming)
 }
 
 
+
+void UINSCharacterAimInstance::PlayBoredAnim()
+{
+}
 
 void UINSCharacterAimInstance::SetCurrentWeaponAndAnimationData(class AINSWeaponBase* NewWeapon)
 {

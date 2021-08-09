@@ -81,6 +81,11 @@ void AINSPlayerCharacter::PostInitializeComponents()
 	Super::PostInitializeComponents();
 	FirstPersonCamera->AttachToComponent(CharacterMesh1P, FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("Bip01_CameraBoneSocket"));
 	PhysicalAnimationComponent->SetSkeletalMeshComponent(CharacterMesh3P);
+	if (CharacterAudioComp)
+	{
+		CharacterAudioComp->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale,TEXT("Bip01_HeadSocket"));
+		CharacterAudioComp->SetOwnerCharacter(this);
+	}
 	//PhysicalAnimationComponent->ApplyPhysicalAnimationSettingsBelow()
 }
 
@@ -180,19 +185,13 @@ void AINSPlayerCharacter::OnEnterIdleState()
 	Super::OnEnterIdleState();
 	if (!GetCurrentWeapon())
 	{
-		UE_LOG(LogINSCharacter
-		       , Log
-		       , TEXT("Character:%s with no weapon is not moving for some time ,enter idle state")
-		       , *GetName());
+		UE_LOG(LogINSCharacter, Log, TEXT("Character:%s with no weapon is not moving for some time ,enter idle state"), *GetName());
 		Get1PAnimInstance()->SetIdleState(true);
 		Get3PAnimInstance()->SetIdleState(true);
 	}
 	if (GetCurrentWeapon() && GetCurrentWeapon()->GetCurrentWeaponState() == EWeaponState::IDLE)
 	{
-		UE_LOG(LogINSCharacter
-		       , Log, TEXT("Character:%s with weapon %s is not moving and not using weapon for some time ,enter idle state")
-		       , *GetName()
-		       , *(GetCurrentWeapon()->GetName()));
+		UE_LOG(LogINSCharacter, Log, TEXT("Character:%s with weapon %s is not moving and not using weapon for some time ,enter idle state"), *GetName(), *(GetCurrentWeapon()->GetName()));
 		Get1PAnimInstance()->SetIdleState(true);
 		Get3PAnimInstance()->SetIdleState(true);
 	}
@@ -222,6 +221,12 @@ void AINSPlayerCharacter::OnEnterBoredState()
 	}
 }
 
+
+void AINSPlayerCharacter::OnOutBoredState()
+{
+	Get1PAnimInstance()->SetBoredState(false);
+	Get3PAnimInstance()->SetBoredState(false);
+}
 
 void AINSPlayerCharacter::OnLowHealth()
 {
@@ -285,6 +290,8 @@ void AINSPlayerCharacter::SetWeaponBasePoseType(const EWeaponBasePoseType NewTyp
 void AINSPlayerCharacter::OnOutIdleState()
 {
 	Super::OnOutIdleState();
+	Get1PAnimInstance()->SetIdleState(false);
+	Get3PAnimInstance()->SetIdleState(false);
 }
 
 

@@ -472,6 +472,11 @@ public:
 	{
 	};
 
+	/** called when this character enters bored state, mainly used by Player characters,empty impl by default */
+	virtual void OnOutBoredState()
+	{
+	};
+
 	/** on low health  */
 	virtual void OnLowHealth();
 

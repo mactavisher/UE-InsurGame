@@ -109,11 +109,6 @@ void AINSCharacter::OnRep_ReplicatedMovement()
 void AINSCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-	if (CharacterAudioComp)
-	{
-		CharacterAudioComp->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale,TEXT("Bip01_HeadSocket"));
-		CharacterAudioComp->SetOwnerCharacter(this);
-	}
 }
 
 
@@ -641,14 +636,18 @@ void AINSCharacter::HandleJumpRequest()
 {
 	if (HasAuthority())
 	{
-		if (CanJump() && !bPressedJump)
+		if (bIsSprint)
 		{
-			if (bIsSprint)
-			{
-				HandleStopSprintRequest();
-			}
-			Jump();
+			HandleStopSprintRequest();
 		}
+	}
+	if (GetLocalRole() == ROLE_AutonomousProxy)
+	{
+
+	}
+	if (CanJump() && !bPressedJump)
+	{
+		Jump();
 	}
 }
 

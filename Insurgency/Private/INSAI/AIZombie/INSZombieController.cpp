@@ -38,7 +38,7 @@ AINSZombieController::AINSZombieController(const FObjectInitializer& ObjectIniti
 	AttackRangeComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	StimulateLevel = 0.f;
 	StimulateLocation = FVector(ForceInit);
-	LostEnemyTime = 5.f;
+	LostEnemyTime = 3.f;
 	//#if WITH_EDITOR&&!UE_BUILD_SHIPPING
 	//	bDrawDebugLineOfSightLine = true;
 	//	AttackRangeComp->bHiddenInGame = false;
@@ -63,7 +63,7 @@ void AINSZombieController::TickActor(float DeltaTime, enum ELevelTick TickType, 
 	}
 	if (CurrentTargetEnemy)
 	{
-		MoveToActor(CurrentTargetEnemy->GetPawn());
+		MoveToActor(CurrentTargetEnemy->GetPawn(), 120.f);
 	}
 }
 
@@ -82,11 +82,7 @@ void AINSZombieController::BroadCastEnemyTo()
 			}
 			else if (ThatZombieTarget == GetMyTargetEnemy())
 			{
-				UE_LOG(LogZombieController
-				       , Log
-				       , TEXT("Zombie %s and I have the same enemy target %s,abort seting target enemy")
-				       , ZombieController == nullptr ? TEXT("NULL") : *ZombieController->GetName()
-				       , *GetName())
+				UE_LOG(LogZombieController, Log, TEXT("Zombie %s and I have the same enemy target %s,abort seting target enemy"), ZombieController == nullptr ? TEXT("NULL") : *ZombieController->GetName(), *GetName())
 				return;
 			}
 		}
@@ -118,11 +114,7 @@ bool AINSZombieController::TrySetTargetEnemy(class AController* NewEnemyTarget)
 	}
 	else
 	{
-		UE_LOG(LogZombieController
-		       , Log
-		       , TEXT("%s trying to set it's enemy target , but %s Decide to do nothing!")
-		       , *GetName()
-		       , *GetName());
+		UE_LOG(LogZombieController, Log, TEXT("%s trying to set it's enemy target , but %s Decide to do nothing!"), *GetName(), *GetName());
 		return false;
 	}
 }
@@ -199,10 +191,7 @@ void AINSZombieController::OnSeePawn(APawn* SeenPawn)
 	if (SeenPawn->GetClass()->IsChildOf(AINSZombie::StaticClass()))
 	{
 		// we are zombies 
-		UE_LOG(LogZombieController
-		       , Log
-		       , TEXT("%s is another zombie of my type ,can't set it as my enemy !")
-		       , *SeenPawn->GetName());
+		UE_LOG(LogZombieController, Log, TEXT("%s is another zombie of my type ,can't set it as my enemy !"), *SeenPawn->GetName());
 		return;
 	}
 	if (GetMyTargetEnemy())
@@ -210,10 +199,7 @@ void AINSZombieController::OnSeePawn(APawn* SeenPawn)
 		if (GetMyTargetEnemy()->GetPawn() == SeenPawn)
 		{
 			// that pawn is already my enemy now 
-			UE_LOG(LogZombieController
-			       , Log
-			       , TEXT("%s is is already my enemy now !")
-			       , *SeenPawn->GetName());
+			UE_LOG(LogZombieController, Log, TEXT("%s is is already my enemy now !"), *SeenPawn->GetName());
 			return;
 		}
 		else

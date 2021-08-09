@@ -45,7 +45,7 @@ bool UINSInventoryComponent::PutItemInSlot(class AINSWeaponBase* Item)
 	Slot->AmmoLeft = Item->AmmoLeft;
 	Slot->ClipAmmo = Item->CurrentClipAmmo;
 	Slot->SlotWeaponClass = Item->GetClass();
-	Slot->Inventory = 1;
+	Slot->count = 1;
 	return true;
 }
 

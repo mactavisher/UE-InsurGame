@@ -23,25 +23,28 @@
 
 UINSFPAnimInstance::UINSFPAnimInstance(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-	MaxWeaponSwayPitch = 5.f;
 	bSighLocReCalculated = false;
 	ADSAlpha = 0.f;
 	ADSTime = 0.f;
+	WeaponSwayLocation = FVector::ZeroVector;
+	MaxWeaponSwayDelta = 6.5f;
+	WeaponSwaySpeed = 12.f;
+	MaxWeaponSwayDeltaAimingModifier = 0.4f;
+	WeaponSwayLocationFactor = 10.f;
 }
 
 void UINSFPAnimInstance::UpdateAdsAlpha(float DeltaSeconds)
 {
-	if (CurrentWeapon == nullptr)
+	if (CurrentWeapon)
 	{
-		return;
+		ADSAlpha = CurrentWeapon->GetWeaponADSAlpha();
 	}
-	ADSAlpha = CurrentWeapon->GetWeaponADSAlpha();
 }
 
 void UINSFPAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
-	if (OwnerPlayerController)
+	if (!OwnerPlayerController)
 	{
 		return;
 	}
@@ -49,18 +52,53 @@ void UINSFPAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	UpdateAdsAlpha(DeltaSeconds);
 	UpdateFiringHandsShift(DeltaSeconds);
 	PlayWeaponBasePose();
-	FPPlayIdleOrMovingAnim();
+	FPPlayMovingAnim();
 	UpdateSight();
 	UpdateCanEnterSprint();
+	FPPlayIdleAnim();
 }
 
 void UINSFPAnimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
+	
+}
+
+void UINSFPAnimInstance::NativeBeginPlay()
+{
+	Super::NativeBeginPlay();
 	if (OwnerPlayerCharacter)
 	{
 		AController* Controller = OwnerPlayerCharacter->GetController();
-		OwnerPlayerController = OwnerPlayerController == nullptr ? nullptr : Cast<AINSPlayerController>(Controller);
+		OwnerPlayerController = Cast<AINSPlayerController>(Controller);
+		if (OwnerPlayerController)
+		{
+			LastRotation = OwnerPlayerController->GetControlRotation();
+		}
+	}
+}
+
+void UINSFPAnimInstance::FPStopIdleAnim()
+{
+	if (Montage_IsPlaying(CurrentWeaponAnimData->FPIdleAnim))
+	{
+		Montage_Stop(0.15f, CurrentWeaponAnimData->FPIdleAnim);
+	}
+}
+
+void UINSFPAnimInstance::FPStopMoveAnim()
+{
+	if (Montage_IsPlaying(CurrentWeaponAnimData->FPMoveAnim))
+	{
+		Montage_Stop(0.15f, CurrentWeaponAnimData->FPMoveAnim);
+	}
+}
+
+void UINSFPAnimInstance::FPStopAimMoveAnim()
+{
+	if (Montage_IsPlaying(CurrentWeaponAnimData->FPAimMoveAnim))
+	{
+		Montage_Stop(0.15f, CurrentWeaponAnimData->FPAimMoveAnim);
 	}
 }
 
@@ -68,54 +106,23 @@ void UINSFPAnimInstance::UpdateWeaponIkSwayRotation(float deltaSeconds)
 {
 	if (OwnerPlayerController)
 	{
-		const float RotYaw = OwnerPlayerController->GetInputAxisValue(TEXT("Turn"));
-		const float RotPitch = OwnerPlayerController->GetInputAxisValue(TEXT("LookUp"));
-		if (RotYaw == 0.f)
+		const FRotator CurrentRotation = OwnerPlayerController->GetControlRotation();
+		WeaponIKSwayRotation = FMath::RInterpTo(WeaponIKSwayRotation, CurrentRotation - LastRotation, deltaSeconds, WeaponSwaySpeed);
+		WeaponIKSwayRotation.Pitch = FMath::Clamp<float>(WeaponIKSwayRotation.Pitch, -MaxWeaponSwayDelta, MaxWeaponSwayDelta);
+		WeaponIKSwayRotation.Roll = FMath::Clamp<float>(WeaponIKSwayRotation.Roll, -MaxWeaponSwayDelta, MaxWeaponSwayDelta);
+		WeaponIKSwayRotation.Yaw = FMath::Clamp<float>(WeaponIKSwayRotation.Yaw, -MaxWeaponSwayDelta, MaxWeaponSwayDelta);
+		if (bIsAiming)
 		{
-			if (WeaponIKSwayRotation.Yaw > 0.f)
-			{
-				WeaponIKSwayRotation.Yaw = FMath::Clamp<float>(
-					WeaponIKSwayRotation.Yaw - GetWorld()->GetDeltaSeconds() * WeaponSwayRecoverySpeed, 0.f,
-					MaxWeaponSwayYaw);
-			}
-			if (WeaponIKSwayRotation.Yaw < 0.f)
-			{
-				WeaponIKSwayRotation.Yaw = FMath::Clamp<float>(
-					WeaponIKSwayRotation.Yaw + GetWorld()->GetDeltaSeconds() * WeaponSwayRecoverySpeed,
-					-MaxWeaponSwayYaw, 0.f);
-			}
+			WeaponIKSwayRotation.Yaw = WeaponIKSwayRotation.Yaw * MaxWeaponSwayDeltaAimingModifier;
+			WeaponIKSwayRotation.Roll = WeaponIKSwayRotation.Roll * MaxWeaponSwayDeltaAimingModifier;
+			WeaponIKSwayRotation.Pitch = WeaponIKSwayRotation.Pitch * MaxWeaponSwayDeltaAimingModifier;
 		}
-		else
-		{
-			WeaponIKSwayRotation.Yaw = FMath::Clamp<float>(
-				WeaponIKSwayRotation.Yaw + GetWorld()->GetDeltaSeconds() * RotYaw * WeaponSwayScale, -MaxWeaponSwayYaw,
-				MaxWeaponSwayYaw);
-		}
-		if (RotPitch == 0.f)
-		{
-			if (WeaponIKSwayRotation.Pitch > 0.f)
-			{
-				WeaponIKSwayRotation.Pitch = FMath::Clamp<float>(
-					WeaponIKSwayRotation.Pitch - GetWorld()->GetDeltaSeconds() * WeaponSwayRecoverySpeed, 0.f,
-					MaxWeaponSwayPitch);
-			}
-			if (WeaponIKSwayRotation.Pitch < 0.f)
-			{
-				WeaponIKSwayRotation.Pitch = FMath::Clamp<float>(
-					WeaponIKSwayRotation.Pitch + GetWorld()->GetDeltaSeconds() * WeaponSwayRecoverySpeed,
-					-MaxWeaponSwayPitch, 0.f);
-			}
-		}
-		else
-		{
-			WeaponIKSwayRotation.Pitch = FMath::Clamp<float>(
-				WeaponIKSwayRotation.Pitch - GetWorld()->GetDeltaSeconds() * RotPitch * WeaponSwayScale,
-				-MaxWeaponSwayPitch, MaxWeaponSwayPitch);
-		}
+		WeaponSwayLocation = FVector(WeaponIKSwayRotation.Pitch, WeaponIKSwayRotation.Yaw, WeaponIKSwayRotation.Pitch) * WeaponSwayLocationFactor;
+		LastRotation = CurrentRotation;
 	}
 }
 
-void UINSFPAnimInstance::FPPlayIdleOrMovingAnim()
+void UINSFPAnimInstance::FPPlayMovingAnim()
 {
 	if (!CheckValid())
 	{
@@ -123,31 +130,21 @@ void UINSFPAnimInstance::FPPlayIdleOrMovingAnim()
 	}
 	if (bIsMoving)
 	{
-		if (Montage_IsPlaying(CurrentWeaponAnimData->FPAimIdleAnim))
-		{
-			Montage_Stop(0.1f, CurrentWeaponAnimData->FPAimIdleAnim);
-		}
-		if (Montage_IsPlaying(CurrentWeaponAnimData->FPIdleAnim))
-		{
-			Montage_Stop(0.1f, CurrentWeaponAnimData->FPIdleAnim);
-		}
+		FPStopIdleAnim();
 		if (bIsAiming)
 		{
-			if (Montage_IsPlaying(CurrentWeaponAnimData->FPMoveAnim))
+			FPStopMoveAnim();
+			if (ADSAlpha >= 1.f)
 			{
-				Montage_Stop(0.1f, CurrentWeaponAnimData->FPMoveAnim);
-			}
-			if (ADSAlpha >= 1.f && !Montage_IsPlaying(CurrentWeaponAnimData->FPAimMoveAnim))
-			{
-				Montage_Play(CurrentWeaponAnimData->FPAimMoveAnim);
+				if (!Montage_IsPlaying(CurrentWeaponAnimData->FPAimMoveAnim))
+				{
+					Montage_Play(CurrentWeaponAnimData->FPAimMoveAnim);
+				}
 			}
 		}
 		else
 		{
-			if (Montage_IsPlaying(CurrentWeaponAnimData->FPAimMoveAnim))
-			{
-				Montage_Stop(0.1f, CurrentWeaponAnimData->FPAimMoveAnim);
-			}
+			FPStopAimMoveAnim();
 			if (!Montage_IsPlaying(CurrentWeaponAnimData->FPMoveAnim))
 			{
 				Montage_Play(CurrentWeaponAnimData->FPMoveAnim);
@@ -156,35 +153,30 @@ void UINSFPAnimInstance::FPPlayIdleOrMovingAnim()
 	}
 	else
 	{
-		if (Montage_IsPlaying(CurrentWeaponAnimData->FPMoveAnim))
-		{
-			Montage_Stop(0.25f, CurrentWeaponAnimData->FPMoveAnim);
-		}
-		if (Montage_IsPlaying(CurrentWeaponAnimData->FPAimMoveAnim))
-		{
-			Montage_Stop(0.25f, CurrentWeaponAnimData->FPAimMoveAnim);
-		}
-		if (bIsAiming)
-		{
-			if (Montage_IsPlaying(CurrentWeaponAnimData->FPIdleAnim))
-			{
-				Montage_Stop(0.1f, CurrentWeaponAnimData->FPIdleAnim);
-			}
-		}
-		else
-		{
-			if (Montage_IsPlaying(CurrentWeaponAnimData->FPMoveAnim))
-			{
-				Montage_Stop(0.1f, CurrentWeaponAnimData->FPMoveAnim);
-			}
-			if (!Montage_IsPlaying(CurrentWeaponAnimData->FPIdleAnim))
-			{
-				Montage_Play(CurrentWeaponAnimData->FPIdleAnim);
-			}
-		}
+		FPStopAimMoveAnim();
+		FPStopMoveAnim();
 	}
 }
 
+
+void UINSFPAnimInstance::FPPlayIdleAnim()
+{
+	if (!CheckValid())
+	{
+		return;
+	}
+	if (bIdleState)
+	{
+		if (!Montage_IsPlaying(CurrentWeaponAnimData->FPIdleAnim))
+		{
+			Montage_Play(CurrentWeaponAnimData->FPIdleAnim);
+		}
+	}
+	else
+	{
+		Montage_Stop(0.1f, CurrentWeaponAnimData->FPIdleAnim);
+	}
+}
 
 void UINSFPAnimInstance::UpdateSight()
 {
@@ -200,8 +192,7 @@ void UINSFPAnimInstance::UpdateSight()
 		const float TargetLocX = TargetSightLoc.X;
 		const float TargetLocY = TargetSightLoc.Y;
 		const float TargetLocZ = TargetSightLoc.Z;
-		SightLocWhenAiming.Z = FMath::Clamp<float>(-(SightLocWhenAiming.Z + InterpSpeed), -TargetLocZ,
-			-SightLocWhenAiming.Z);
+		SightLocWhenAiming.Z = FMath::Clamp<float>(-(SightLocWhenAiming.Z + InterpSpeed), -TargetLocZ, -SightLocWhenAiming.Z);
 	}
 	if (!bIsAiming)
 	{
@@ -308,16 +299,10 @@ void UINSFPAnimInstance::SetIsAiming(bool IsAiming)
 	Super::SetIsAiming(IsAiming);
 	if (bIsAiming)
 	{
-		WeaponSwayScale = 2.f;
-		MaxWeaponSwayPitch *= 0.2f;
-		MaxWeaponSwayYaw *= 0.2f;
 	}
 	else
 	{
 		ADSHandIKEffector = FVector(0.f, 0.f, 0.f);
-		WeaponSwayScale = 5.f;
-		MaxWeaponSwayPitch = 5.f;
-		MaxWeaponSwayYaw = 5.f;
 	}
 }
 
@@ -368,6 +353,45 @@ void UINSFPAnimInstance::SetIdleState(bool NewIdleState)
 void UINSFPAnimInstance::SetBoredState(bool NewBoredState)
 {
 	Super::SetBoredState(NewBoredState);
+	if (CurrentWeaponAnimData)
+	{
+		const uint8 AnimNum = CurrentWeaponAnimData->FPBoredAnims.Num();
+		if (!bBoredState && AnimNum > 0)
+		{
+			for (uint8 i = 0; i < AnimNum; i++)
+			{
+				if (Montage_IsPlaying(CurrentWeaponAnimData->FPBoredAnims[i]))
+				{
+					Montage_Stop(0.2f, CurrentWeaponAnimData->FPBoredAnims[i]);
+					break;
+				}
+			}
+		}
+	}
+}
+
+void UINSFPAnimInstance::PlayBoredAnim()
+{
+	Super::PlayBoredAnim();
+	//if we have any active bored animation is playing,just leave it
+	if (CurrentWeaponAnimData)
+	{
+		const uint8 AnimNum = CurrentWeaponAnimData->FPBoredAnims.Num();
+		if (AnimNum > 0)
+		{
+			for (uint8 i = 0; i < AnimNum; i++)
+			{
+				if (Montage_IsPlaying(CurrentWeaponAnimData->FPBoredAnims[i]))
+				{
+					return;
+				}
+			}
+		}
+
+		//else we randomly choose one to play
+		const uint8 RandomAnimIdx = FMath::RandHelper(AnimNum);
+		Montage_Play(CurrentWeaponAnimData->FPBoredAnims[RandomAnimIdx]);
+	}
 }
 
 float UINSFPAnimInstance::PlaySwitchFireModeAnim()
@@ -379,14 +403,11 @@ float UINSFPAnimInstance::PlaySwitchFireModeAnim()
 	UAnimMontage* SelectedSwitchFireModeAnim = nullptr;
 	switch (CurrentWeaponBaseType)
 	{
-	case EWeaponBasePoseType::ALTGRIP: SelectedSwitchFireModeAnim =
-		CurrentWeaponAnimData->FPWeaponAltGripAnim.SwitchFireModeAnim.CharAnim;
+	case EWeaponBasePoseType::ALTGRIP: SelectedSwitchFireModeAnim = CurrentWeaponAnimData->FPWeaponAltGripAnim.SwitchFireModeAnim.CharAnim;
 		break;
-	case EWeaponBasePoseType::FOREGRIP: SelectedSwitchFireModeAnim =
-		CurrentWeaponAnimData->FPWeaponForeGripAnim.SwitchFireModeAnim.CharAnim;
+	case EWeaponBasePoseType::FOREGRIP: SelectedSwitchFireModeAnim = CurrentWeaponAnimData->FPWeaponForeGripAnim.SwitchFireModeAnim.CharAnim;
 		break;
-	case EWeaponBasePoseType::DEFAULT: SelectedSwitchFireModeAnim = CurrentWeaponAnimData->FPWeaponDefaultPoseAnim.
-		SwitchFireModeAnim.CharAnim;
+	case EWeaponBasePoseType::DEFAULT: SelectedSwitchFireModeAnim = CurrentWeaponAnimData->FPWeaponDefaultPoseAnim.SwitchFireModeAnim.CharAnim;
 		break;
 	default: SelectedSwitchFireModeAnim = nullptr;
 		break;

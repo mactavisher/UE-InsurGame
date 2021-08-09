@@ -142,6 +142,8 @@ protected:
 		uint8 bShowDebugTrace : 1;
 #endif
 
+	FTimerHandle BoredAnimPlayTimer;
+
 protected:
 	/** cached player character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
@@ -188,6 +190,9 @@ public:
 
 	virtual bool GetIsAiming()const { return bIsAiming; }
 
+	UFUNCTION()
+	virtual void PlayBoredAnim();
+
 	virtual void SetStartJump(bool NewJumpState) { this->bStartJump = NewJumpState; }
 
 	/**
@@ -216,6 +221,8 @@ protected:
 
 	/** native initialize Animation implementation */
 	virtual void NativeInitializeAnimation()override;
+
+	virtual void NativeBeginPlay()override;
 
 	/** calculate horizontal speed */
 	virtual void UpdateHorizontalSpeed();

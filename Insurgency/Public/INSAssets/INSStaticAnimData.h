@@ -163,7 +163,7 @@ public:
 	UAnimMontage* FPSprintAnim;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim|SharedAddtive")
-	UAnimMontage* FPBoredAnim;
+	TArray<UAnimMontage*> FPBoredAnims;
 
 	/** weapon fire trigger and bolt animation */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FPAnim|SharedAddtive")

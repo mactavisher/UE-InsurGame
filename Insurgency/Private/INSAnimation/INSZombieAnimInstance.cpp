@@ -35,7 +35,13 @@ void UINSZombieAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	{
 		UpdateIsFalling();
 		UpdateIsMovingHorizontal();
+		EvaluateAnimCurves();
 	}
+}
+
+void UINSZombieAnimInstance::EvaluateAnimCurves()
+{
+
 }
 
 void UINSZombieAnimInstance::UpdateIsMoving()
@@ -57,7 +63,7 @@ void UINSZombieAnimInstance::UpdateIsMovingHorizontal()
 	if (ZombiePawnOwner && ZombiePawnMovementComp)
 	{
 		//bIsMovingHorizontal = !ZombiePawnMovementComp->IsFalling() && ZombiePawnMovementComp->GetLastUpdateVelocity().Size2D() > 0.f;
-		bIsMovingHorizontal = !(ZombiePawnMovementComp->IsFalling())&&ZombiePawnOwner->GetVelocity().Size2D()>0.f;
+		bIsMovingHorizontal = !(ZombiePawnMovementComp->IsFalling())&&ZombiePawnMovementComp->GetLastUpdateVelocity().Size2D() > 0.f;
 	}
 }
 

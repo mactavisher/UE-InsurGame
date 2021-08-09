@@ -54,6 +54,8 @@ protected:
 	 * @param DeltaSeconds Update interval
 	 */
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
+
+	virtual void EvaluateAnimCurves();
 	//~End UAnimInstance Interface
 
 	/** update zombie moving condition*/

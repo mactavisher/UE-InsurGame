@@ -32,16 +32,17 @@ protected:
 	   UAnimSequence* AdjustableAdsPoseRef;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSway")
-		float MaxWeaponSwayPitch;
+		float MaxWeaponSwayDelta;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSway")
-		float MaxWeaponSwayYaw;
+		float WeaponSwaySpeed;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSway")
-		float WeaponSwayRecoverySpeed;
+		float MaxWeaponSwayDeltaAimingModifier;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSway")
-		float WeaponSwayScale;
+		float WeaponSwayLocationFactor;
+
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSway")
 		FVector SightLocWhenAiming;
@@ -53,6 +54,12 @@ protected:
 	   uint8 bSighLocReCalculated:1;
 
 	UPROPERTY()
+	FRotator LastRotation;
+
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
+    FVector WeaponSwayLocation;
+
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
 	AINSPlayerController* OwnerPlayerController;
 
 	/**
@@ -72,9 +79,19 @@ protected:
 	 */
 	virtual void NativeInitializeAnimation()override;
 
+	virtual void NativeBeginPlay()override;
+
+	virtual void FPStopIdleAnim();
+
+	virtual void FPStopMoveAnim();
+
+	virtual void FPStopAimMoveAnim();
+
 	virtual void UpdateWeaponIkSwayRotation(float deltaSeconds);
 
-	virtual void FPPlayIdleOrMovingAnim();
+	virtual void FPPlayMovingAnim();
+
+	virtual void FPPlayIdleAnim();
 
 	/**
 	 * @desc when entering ads, calculate and adjust the hand IK to line up sight with camera
@@ -115,6 +132,8 @@ protected:
 	virtual void SetIdleState(bool NewIdleState)override;
 
 	virtual void SetBoredState(bool NewBoredState)override;
+
+	virtual void PlayBoredAnim()override;
 
 	virtual float PlaySwitchFireModeAnim() override;
 

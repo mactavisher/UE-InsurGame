@@ -55,16 +55,18 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "StanimaModifier")
 		float BoredStateTime;
 
-	UPROPERTY()
-	uint8 bInIdleState:1;
+	/** how much time this player can enter bored state */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "StanimaModifier")
+		uint8 bEnableBoredState:1;
 
 	UPROPERTY()
-	uint8 bInBoredState : 1;
+		uint8 bInIdleState : 1;
+
+	UPROPERTY()
+		uint8 bInBoredState : 1;
 
 protected:
 	AINSCharacter* INSCharacterOwner;
-
-	FActorComponentTickFunction IdleCheckFunction;
 
 protected:
 	//~ begin UCharacterMovement Interface

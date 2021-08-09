@@ -110,23 +110,22 @@ protected:
 
 	/** modular zombie of LeftArmComp */
 	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	USkeletalMeshComponent* LeftArmComp;
+	USkeletalMeshComponent* ArmComp;
 
 	/** modular zombie of RightArmComp */
 	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	USkeletalMeshComponent* RightArmComp;
+	USkeletalMeshComponent* PelvisComp;
 
 	/** modular zombie of LeftLegComp */
 	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	USkeletalMeshComponent* LeftLegComp;
-
-	/** modular zombie of rightLegComp */
-	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
-	USkeletalMeshComponent* RightLegComp;
+	USkeletalMeshComponent* LegComp;
 
 	/** cache the modular skeletal meshes for later easy access purpose */
 	UPROPERTY()
 	TArray<USkeletalMeshComponent*> CachedModularSkeletalMeshes;
+
+	UPROPERTY(Replicated,ReplicatedUsing=OnRep_CurrentWalkSpeed)
+	float CurrentWalkSpeed;
 
 	/**
 	 * override
@@ -146,6 +145,8 @@ protected:
 	virtual void PossessedBy(AController* NewController) override;
 
 	virtual void PostInitializeComponents() override;
+
+	virtual void Tick(float DeltaSeconds) override;
 
 	/**
 	 * override
@@ -171,6 +172,9 @@ protected:
 
 	UFUNCTION()
 	virtual void OnRep_CurrentMoveSpeed();
+
+	UFUNCTION()
+	virtual void OnRep_CurrentWalkSpeed();
 
 public:
 	/**
@@ -220,7 +224,7 @@ public:
 	/**
 	 * retrieves the zombie's current rage point
 	 */
-	inline virtual float GetZombieRagePoint() { return RagePoint; };
+	virtual float GetZombieRagePoint() { return RagePoint; };
 
 	virtual void Die() override;
 
@@ -228,5 +232,7 @@ public:
 	 * add rage point to  zombie's current rage point
 	 */
 	virtual void AddZombieRagePoint(const int32 RageToAdd) { RagePoint += RageToAdd; }
+
+	virtual void SetCurrentWalkSpeed(const float NewSpeedValue){CurrentMoveSpeed = NewSpeedValue;}
 
 };

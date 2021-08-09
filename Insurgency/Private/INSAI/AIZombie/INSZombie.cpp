@@ -17,6 +17,7 @@
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
 #include "DrawDebugHelpers.h"
 #endif
+#include "INSComponents/INSCharacterAudioComponent.h"
 
 DEFINE_LOG_CATEGORY(LogZombiePawn);
 
@@ -28,20 +29,20 @@ AINSZombie::AINSZombie(const FObjectInitializer& ObjectInitializer) : Super(Obje
 	SetReplicatingMovement(true);
 	HeadComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("HeadComp"));
 	TorsoComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("TorsoComp"));
-	LeftArmComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("LeftArmComp"));
-	RightArmComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("RightArmComp"));
-	LeftLegComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("LeftLegComp"));
-	RightLegComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("rightLegComp"));
+	ArmComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("ArmComp"));
+    LegComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("LegComp"));
+	PelvisComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("PelvisComp"));
 	CachedModularSkeletalMeshes.Add(HeadComp);
 	CachedModularSkeletalMeshes.Add(TorsoComp);
-	CachedModularSkeletalMeshes.Add(LeftArmComp);
-	CachedModularSkeletalMeshes.Add(RightArmComp);
-	CachedModularSkeletalMeshes.Add(LeftLegComp);
-	CachedModularSkeletalMeshes.Add(RightLegComp);
+	CachedModularSkeletalMeshes.Add(ArmComp);
+	CachedModularSkeletalMeshes.Add(LegComp);
+	CachedModularSkeletalMeshes.Add(PelvisComp);
 	GetMesh()->AddRelativeLocation(FVector(0.f, 0.f, -90.f));
 	bDamageImmuneState = false;
 	BaseMoveSpeed = 50.f;
 	ChargeMoveSpeed = 200.f;
+	AIControllerClass = AINSZombieController::StaticClass();
+	CurrentMoveSpeed = BaseMoveSpeed;
 }
 
 void AINSZombie::OnRep_Dead()
@@ -87,20 +88,27 @@ void AINSZombie::PostInitializeComponents()
 			CachedModularSkeletalMeshes[i]->SetMasterPoseComponent(GetMesh());
 		}
 	}
-	// PhysicalAnimationComponent->SetSkeletalMeshComponent(GetMesh());
-	// FPhysicalAnimationData PhysicalAnimationData;
-	// PhysicalAnimationData.BodyName = TEXT("Bip01_Pelvis");
-	// PhysicalAnimationData.bIsLocalSimulation = false;
-	// PhysicalAnimationData.OrientationStrength = 1000.f;
-	// PhysicalAnimationData.VelocityStrength = 100.f;
-	// PhysicalAnimationData.PositionStrength = 100.f;
-	// PhysicalAnimationData.AngularVelocityStrength = 100.f;
-	// PhysicalAnimationData.MaxAngularForce = 0.f;
-	// PhysicalAnimationData.MaxLinearForce = 0.f;
-	// PhysicalAnimationComponent->ApplyPhysicalAnimationProfileBelow(TEXT("Bip01_Pelvis"),TEXT("bHitProfile"));
-	// PhysicalAnimationComponent->ApplyPhysicalAnimationSettingsBelow(TEXT("Bip01_Pelvis"), PhysicalAnimationData);
-	// GetMesh()->SetAllBodiesBelowSimulatePhysics(TEXT("Bip01_Pelvis"),true,false);
-	//GetMesh()->SetSimulatePhysics(true);
+	if (CharacterAudioComp)
+	{
+		CharacterAudioComp->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale,TEXT("head"));
+		CharacterAudioComp->SetOwnerCharacter(this);
+	}
+}
+
+void AINSZombie::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	/*if (!GetIsDead() && GetINSCharacterMovement() && CachedZombieAnimInstance)
+	{
+		static FName VelocityCurveName = FName(TEXT("FwD Vel"));
+		float VelocitySizeValue = GetINSCharacterMovement()->MaxWalkSpeed;
+		CachedZombieAnimInstance->GetCurveValue(VelocityCurveName,VelocitySizeValue);
+		GetINSCharacterMovement()->MaxWalkSpeed = VelocitySizeValue;
+		if(HasAuthority())
+		{
+			CurrentMoveSpeed = VelocitySizeValue;
+		}
+	}*/
 }
 
 float AINSZombie::TakeDamage(const float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
@@ -190,20 +198,20 @@ void AINSZombie::Die()
 void AINSZombie::OnRep_LastHitInfo()
 {
 	Super::OnRep_LastHitInfo();
-	if(GetIsDead()&&!IsNetMode(NM_DedicatedServer))
+	if (GetIsDead() && !IsNetMode(NM_DedicatedServer))
 	{
 		const float ShotDirPitchDecompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirPitch);
 		const float ShotDirYawDeCompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirYaw);
 		const FRotator BloodSpawnRotation = FRotator(ShotDirPitchDecompressed, ShotDirYawDeCompressed, 0.f);
 		//GetMesh()->GetBodyInstance(LastHitInfo.HitBoneName)->AddImpulseAtPosition(BloodSpawnRotation.Vector(),LastHitInfo.RelHitLocation);
-		 GetMesh()->AddImpulseAtLocation(BloodSpawnRotation.Vector()*2000.f,LastHitInfo.RelHitLocation,LastHitInfo.HitBoneName);
+		GetMesh()->AddImpulseAtLocation(BloodSpawnRotation.Vector() * 2000.f, LastHitInfo.RelHitLocation, LastHitInfo.HitBoneName);
 		//GetMesh()->AddForceAtLocation(BloodSpawnRotation.Vector()*800.f,LastHitInfo.RelHitLocation,LastHitInfo.HitBoneName);
 	}
 }
 
 void AINSZombie::FaceRotation(FRotator NewControlRotation, float DeltaTime /* = 0.f */)
 {
-	const FRotator CurrentRotation = FMath::RInterpTo(GetActorRotation(), NewControlRotation, DeltaTime, 8.0f);
+	const FRotator CurrentRotation = FMath::RInterpTo(GetActorRotation(), NewControlRotation, DeltaTime, 1.f);
 	Super::FaceRotation(CurrentRotation, DeltaTime);
 }
 
@@ -245,4 +253,9 @@ void AINSZombie::OnRep_ZombieAttackMode()
 void AINSZombie::OnRep_CurrentMoveSpeed()
 {
 	 GetINSCharacterMovement()->MaxWalkSpeed = CurrentMoveSpeed;
+}
+
+void AINSZombie::OnRep_CurrentWalkSpeed()
+{
+	GetINSCharacterMovement()->MaxWalkSpeed = CurrentMoveSpeed;
 }
