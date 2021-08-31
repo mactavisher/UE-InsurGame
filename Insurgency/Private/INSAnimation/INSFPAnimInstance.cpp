@@ -84,7 +84,7 @@ void UINSFPAnimInstance::UpdateAimHandsIKXLocation(float DeltaTimeSeconds)
 
 	const float TargetValue = AimHandIKXLocationValue - BaseHandIKEffector.X;
 	//const float InterpSpeed = FMath::Abs(TargetValue / (ADSTime * (1.f / DeltaTimeSeconds)));
-	const float IntertSpeed = FMath::Abs(TargetValue * DeltaTimeSeconds / ADSTime);
+	const float InterpSpeed = FMath::Abs(TargetValue * DeltaTimeSeconds / ADSTime);
 	if (bIsAiming)
 	{
 		CurrentAimHandIKXLocationValue = FMath::Clamp<float>(CurrentAimHandIKXLocationValue - InterpSpeed, TargetValue, CurrentAimHandIKXLocationValue);
