@@ -57,9 +57,6 @@ protected:
 	FRotator LastRotation;
 
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
-    FVector WeaponSwayLocation;
-
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
 	AINSPlayerController* OwnerPlayerController;
 
 	/**
@@ -80,6 +77,8 @@ protected:
 	virtual void NativeInitializeAnimation()override;
 
 	virtual void NativeBeginPlay()override;
+
+	virtual void UpdateAimHandsIKXLocation(float DeltaTimeSeconds);
 
 	virtual void FPStopIdleAnim();
 

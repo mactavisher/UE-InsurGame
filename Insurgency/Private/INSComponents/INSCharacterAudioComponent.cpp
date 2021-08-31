@@ -102,5 +102,6 @@ class USoundCue* UINSCharacterAudioComponent::GetSoundToPlay(const EVoiceType Ne
 void UINSCharacterAudioComponent::BeginPlay()
 {
 	Super::BeginPlay();
+	SetVoiceType(EVoiceType::NONE);
 	OnAudioFinished.AddDynamic(this, &UINSCharacterAudioComponent::OnSoundFinishPlay);
 }

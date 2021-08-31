@@ -92,6 +92,7 @@ void AINSGameModeBase::PreLogin(const FString& Options, const FString& Address, 
 void AINSGameModeBase::PreInitializeComponents()
 {
 	Super::PreInitializeComponents();
+	InitDamageModifiers();
 	bAllowFire = false;
 	bAllowMove = false;
 	AINSGameStateBase* CurrentGameState = GetGameState<AINSGameStateBase>();
@@ -124,6 +125,19 @@ void AINSGameModeBase::SpawnTerrorisTeam()
 	}
 }
 
+void AINSGameModeBase::InitDamageModifiers()
+{
+	int32 NumDamageModifier = DamageModifiers.Num();
+	if (NumDamageModifier > 0)
+	{
+		for (int32 i = 0; i < NumDamageModifier; i++)
+		{
+			DamageModifierInstances.Add(NewObject<UINSDamageModifierBase>(this, DamageModifiers[i]));
+			UE_LOG(LogINSGameMode, Log, TEXT("create game modifiers:%s"), *(DamageModifierInstances[i]->GetName()));
+		}
+	}
+}
+
 void AINSGameModeBase::SpawnCounterTerroristTeam()
 {
 	if (TeamInfoClass)
@@ -145,68 +159,58 @@ void AINSGameModeBase::EndMatchPerparing()
 
 }
 
-void AINSGameModeBase::ModifyDamage(float& OutDamage, const float& OriginDamage, class AController* PlayerInstigator, class AController* Victim, const FDamageEvent& DamageEvent, const FName BoneName)
+float AINSGameModeBase::ModifyDamage(float InDamage,class AController* PlayerInstigator, class AController* Victim,  const struct FDamageEvent& DamageEvent)
 {
 	if (!Victim)
 	{
-		OutDamage = 0.f;
-		return;
+		return 0.f;
 	}
 	AINSCharacter* const Character = CastChecked<AINSCharacter>(Victim->GetPawn());
 	if (!Character)
 	{
-		OutDamage = 0.f;
-		return;
+		return 0.f;
 	}
 
 	//modify match state damage first
 	if (GetMatchState() != MatchState::InProgress)
 	{
 		//do not apply any damage when game is not in progress
-		OutDamage = 0.f;
-		return;
+		return 0.f;
 	}
 
+	float ActualDamageToApply = InDamage;
+	int32 NumDamageModifier = DamageModifierInstances.Num();
+	if (NumDamageModifier > 0) 
+	{
+		for (int32 i = 0; i < NumDamageModifier; i++)
+		{
+			UINSDamageModifierBase* DamageModifier = DamageModifierInstances[i];
+			if (DamageModifier)
+			{
+				DamageModifier->ModifyDamage(ActualDamageToApply, (FDamageEvent&)DamageEvent, PlayerInstigator, Victim);
+			}
+		}
+	}
 	//handle falling damage
 	const UClass* const DmgTypeClass = DamageEvent.DamageTypeClass;
 	const bool bDamageCausedByWorld = DmgTypeClass && DmgTypeClass->IsChildOf(UINSDamageType_Falling::StaticClass());
 	bool bIsHeadShot = false;
 	//modify bone damage
 	AINSCharacter* const VictimCharacter = Victim->GetPawn() == nullptr ? nullptr : CastChecked<AINSCharacter>(Victim->GetPawn());
-	if (VictimCharacter)
-	{
-		FBoneDamageModifier BoneDamageModifierStruct;
-		VictimCharacter->GetBoneDamageModifierStruct(BoneDamageModifierStruct);
-		const float BoneDamageModifier = BoneDamageModifierStruct.GetBoneDamageModifier(BoneName);
-		const float ModifiedDamage = OriginDamage * BoneDamageModifier;
-		OutDamage = ModifiedDamage;
-		bIsHeadShot = BoneName.ToString().Contains("Head", ESearchCase::IgnoreCase);
-		if (bIsHeadShot)
-		{
-			OutDamage *= 3.f;
-		}
-		UE_LOG(LogINSCharacter
-		       , Log
-		       , TEXT("character %s hit with bone:%s,damage modifier values is:%f,Modified damage value is %f")
-		       , *GetName()
-		       , *BoneName.ToString()
-		       , BoneDamageModifier
-		       , ModifiedDamage);
-	}
-	//modify team damage
 	const bool bIsTeamDamage = GetIsTeamDamage(PlayerInstigator, Victim) && !bDamageCausedByWorld;
 	if (bIsTeamDamage)
 	{
 		if (bAllowTeamDamage)
 		{
-			OutDamage *= TeamDamageModifier;
-			UE_LOG(LogINSGameMode, Log, TEXT("Modify Team damage from %f to %f for Victim Player %s"), OriginDamage, OutDamage, *Victim->GetName());
+			ActualDamageToApply *= TeamDamageModifier;
+			UE_LOG(LogINSGameMode, Log, TEXT("Modify Team damage from %f to %f for Victim Player %s"), ActualDamageToApply, *Victim->GetName());
 		}
 		else
 		{
-			OutDamage = 0.f;
+			ActualDamageToApply = 0.f;
 		}
 	}
+	return ActualDamageToApply;
 }
 
 void AINSGameModeBase::PlayerScore(class AController* ScorePlayer, class AController* Victim, const FTakeHitInfo& HitInfo)
@@ -267,14 +271,21 @@ void AINSGameModeBase::GetInGameTeams(TMap<FString, AINSTeamInfo*>& OutTeams)
 
 bool AINSGameModeBase::GetIsTeamDamage(class AController* DamageInstigator, class AController* Victim)
 {
-	const class AINSPlayerController* const InstigatorPlayer = Cast<AINSPlayerController>(DamageInstigator);
-	const class AINSPlayerController* const VictimPlayer = Cast<AINSPlayerController>(Victim);
-	if (InstigatorPlayer && VictimPlayer)
+	if (DamageInstigator && Victim)
 	{
-		const ETeamType InstigatorTeamType = InstigatorPlayer->GetPlayerState<AINSPlayerStateBase>()->GetPlayerTeam()->GetTeamType();
-		const ETeamType VictimTeamType = VictimPlayer->GetPlayerState<AINSPlayerStateBase>()->GetPlayerTeam()->GetTeamType();
-		UE_LOG(LogINSGameMode, Log, TEXT("player %s is causing Team damage to player %s"), *DamageInstigator->GetName(), *VictimPlayer->GetName());
-		return InstigatorTeamType == VictimTeamType;
+		const UClass* InstigtorClass = DamageInstigator->GetClass();
+		const UClass* VictimClass = Victim->GetClass();
+		if (InstigtorClass->IsChildOf(AINSPlayerController::StaticClass()) && VictimClass->IsChildOf(AINSPlayerController::StaticClass()))
+		{
+			const AINSPlayerStateBase* const InstigtorPlayerState = DamageInstigator->GetPlayerState<AINSPlayerStateBase>();
+			const AINSPlayerStateBase* const VictimPlayerState = Victim->GetPlayerState<AINSPlayerStateBase>();
+			const AINSTeamInfo* const InstigatorTeam = InstigtorPlayerState == nullptr ? nullptr : InstigtorPlayerState->GetPlayerTeam();
+			const AINSTeamInfo* const VicmtimTeam = VictimPlayerState == nullptr ? nullptr : VictimPlayerState->GetPlayerTeam();
+			if (InstigtorPlayerState && VictimPlayerState && InstigatorTeam && VicmtimTeam && InstigatorTeam->GetTeamType() == VicmtimTeam->GetTeamType())
+			{
+				return true;
+			}
+		}
 	}
 	return false;
 }

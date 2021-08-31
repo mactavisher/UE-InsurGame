@@ -46,13 +46,11 @@ void UINSWeaponFireHandler::BeginWeaponFire(enum EWeaponFireMode NewFireMode)
 		}
 		else if (CurrentFireMode == EWeaponFireMode::SEMIAUTO)
 		{
-			GetWorld()->GetTimerManager().SetTimer(SemiAutoFireTimer, this, &UINSWeaponFireHandler::FireShot,
-			                                       OwnerWeapon->GetTimeBetweenShots() * 0.8f, true, 0.f);
+			GetWorld()->GetTimerManager().SetTimer(SemiAutoFireTimer, this, &UINSWeaponFireHandler::FireShot,OwnerWeapon->GetTimeBetweenShots() * 0.8f, true, 0.f);
 		}
 		else if (CurrentFireMode == EWeaponFireMode::FULLAUTO)
 		{
-			GetWorld()->GetTimerManager().SetTimer(FullAutoFireTimer, this, &UINSWeaponFireHandler::FireShot,
-			                                       OwnerWeapon->GetTimeBetweenShots(), true, 0.f);
+			GetWorld()->GetTimerManager().SetTimer(FullAutoFireTimer, this, &UINSWeaponFireHandler::FireShot,OwnerWeapon->GetTimeBetweenShots(), true, 0.f);
 		}
 	}
 }

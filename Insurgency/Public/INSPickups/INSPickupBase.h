@@ -10,6 +10,24 @@
 class USphereComponent;
 class UBoxComponent;
 
+USTRUCT(BlueprintType)
+struct FRepPickupInfo
+{
+	GENERATED_USTRUCT_BODY()
+
+		UPROPERTY()
+		FString VisualAssetPath;
+
+	UPROPERTY()
+		uint8 skinIndex;
+
+	FRepPickupInfo()
+		:VisualAssetPath("None")
+		, skinIndex(0)
+	{}
+};
+
+
 INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogINSPickup, Log, All);
 
 UCLASS()
@@ -42,6 +60,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "InteractComp", meta = (AllowPrivateAccess = "true"))
 		USphereComponent* InteractionComp;
 
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="VisualMesh", meta = (AllowPrivateAccess = "true"))
+	    UStaticMeshComponent* VisualMeshComp;
+	    
 	/** Box component providing simple physics for pickups if enabled  */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "InteractComp", meta = (AllowPrivateAccess = "true"))
 		UBoxComponent* SimpleCollisionComp;
@@ -53,6 +74,13 @@ protected:
 	/** indicate this pick up will be auto picked up by player who get overlapped with this  */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
 		uint8 bAutoDestroy : 1;
+
+	UPROPERTY(ReplicatedUsing = "OnRep_PickupInfo")
+		FRepPickupInfo RepPickupInfo;
+
+	UFUNCTION()
+		virtual void OnRep_PickupInfo();
+
 protected:
 	// ~begin AActor interface
 	virtual void BeginPlay() override;
@@ -78,6 +106,7 @@ protected:
 
 	/** owner rep notify,override */
 	virtual void OnRep_Owner()override;
+
 
 	/**
 	 * @Desc handles overlap with characters
@@ -150,4 +179,12 @@ public:
 
 	/** return the display info for this pick up */
 	virtual FText GetItemDisplayName()const { return ItemDisplayName; }
+
+	virtual void SetRepPickupInfo(FRepPickupInfo InRepInfo) { RepPickupInfo = InRepInfo; }
+
+	FORCEINLINE UBoxComponent* GetSimpleCollisionComp()const { return SimpleCollisionComp; }
+
+	FORCEINLINE USphereComponent* GetInteractComp()const { return InteractionComp; }
+
+	FORCEINLINE UStaticMeshComponent* GetVisualMeshComp()const { return VisualMeshComp; };
 };

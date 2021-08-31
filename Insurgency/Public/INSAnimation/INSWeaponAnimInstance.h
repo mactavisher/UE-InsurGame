@@ -30,9 +30,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "CurrentWeaponBaseType")
 		EWeaponBasePoseType CurrentWeaponBasePoseType;
 
-protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AnimDelegate")
 		uint8 bWeaponAnimDelegateBindingFinished : 1;
+
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="Optic")
+	    uint8 bOpticEquipped:1;
 
 
 protected:
@@ -47,6 +49,7 @@ protected:
 public:
 	//~begin INSWeaponAnim Interface
 	virtual float PlayFireAnim()override;
+	virtual void SetOpticEquipped(bool OpticEquipped) { bOpticEquipped = OpticEquipped; };
 	virtual float PlayReloadAnim(bool bIsDry)override;
 	virtual float PlaySwitchFireModeAnim()override;
 	virtual void OnWeaponAnimDelegateBindingFinished()override;

@@ -266,6 +266,8 @@ protected:
 	/** Cast Blood decal on static building when take damage */
 	virtual void CastBloodDecal(FVector HitLocation, FVector HitDir);
 
+	virtual void TossCurrentWeapon();
+
 	/** ~~--------------------------------------------------------------
 	   Rep callbacks-------------------------------------------*/
 

@@ -5,9 +5,11 @@
 #include "INSItems/INSWeapons/INSWeaponBase.h"
 #include "GameFramework/PlayerController.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "INSCharacter/INSPlayerController.h"
 #include "INSCharacter/INSPlayerCharacter.h"
 #include "Net/UnrealNetwork.h"
+#include "Kismet/GameplayStatics.h"
 #ifndef UINSWeaponMeshComponent
 #include "INSComponents/INSWeaponMeshComponent.h"
 #endif
@@ -16,32 +18,31 @@
 AINSWeaponAttachment::AINSWeaponAttachment(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	bReplicates = true;
-	AttachmentMesh = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("Mesh3pComp"));
-	AttachmentMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	AttachmentMesh->AlwaysLoadOnClient = true;
+	AttachmentMeshComp = ObjectInitializer.CreateDefaultSubobject<UStaticMeshComponent>(this, TEXT("AttachmentMeshComp"));
+	AttachmentMeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	RootComponent = AttachmentMeshComp;
+	AttachmentMeshComp->AlwaysLoadOnClient = true;
+	AttachmentMeshComp->SetupAttachment(RootComponent);
+	AttachmentMeshComp->SetHiddenInGame(false);
 	bChangeWeaponBasePoseType = false;
 	SetReplicatingMovement(false);
 	ItemType = EItemType::WEAPONATTACHMENT;
-	bClientVisualAttachment = false;
-	CurrentAttachmentType = EWeaponAttachmentType::NONE;
+	AttachmentType = EWeaponAttachmentType::NONE;
 	AttachedSlotIndex = static_cast<uint8>(0);
+	bBlockQuickBoltRifileReloading = false;
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.SetTickFunctionEnable(true);
+	TargetFOV = 70.f;
 }
 
 void AINSWeaponAttachment::BeginPlay()
 {
 	Super::BeginPlay();
-	if (!bClientVisualAttachment)
-	{
-		SetActorHiddenInGame(true);
-		UpdateWeaponBasePoseType();
-		AttachToWeaponSlot();
-	}
 }
 
 void AINSWeaponAttachment::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-	DisableTick();
 }
 
 void AINSWeaponAttachment::OnRep_Owner()
@@ -56,14 +57,13 @@ void AINSWeaponAttachment::AttachToWeaponSlot()
 	{
 		return;
 	}
-	if ((WeaponOwner->GetLocalRole() == ROLE_AutonomousProxy)
-		|| (HasAuthority() && !bClientVisualAttachment))
+	if (GetWeaponOwner()->GetOwner() == UGameplayStatics::GetPlayerController(GetWorld(), 0))
 	{
-		GetClientVisualAttachment()->GetAttachmentMeshComp()->AttachToComponent(WeaponOwner->WeaponMesh1PComp, FAttachmentTransformRules::KeepRelativeTransform, NAME_None);
+		AttachmentMeshComp->AttachToComponent(GetWeaponOwner()->GetWeapon1PMeshComp(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName(TEXT("Optic")));
 	}
 	else
 	{
-		GetClientVisualAttachment()->GetAttachmentMeshComp()->AttachToComponent(WeaponOwner->WeaponMesh3PComp, FAttachmentTransformRules::KeepRelativeTransform, NAME_None);
+		AttachmentMeshComp->AttachToComponent(GetWeaponOwner()->GetWeapon3PMeshComp(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName(TEXT("Optic")));
 	}
 }
 
@@ -73,13 +73,14 @@ void AINSWeaponAttachment::OnRep_OwnerWeapon()
 	{
 		return;
 	}
-	CreateClientVisualAttachment();
 	AttachToWeaponSlot();
+	WeaponOwner->AddAttachmentInstance(this);
 }
 
-void AINSWeaponAttachment::UpdateWeaponBasePoseType()
+
+void AINSWeaponAttachment::CheckAndUpdateWeaponBasePoseType()
 {
-	if (bChangeWeaponBasePoseType)
+	if (bChangeWeaponBasePoseType && WeaponOwner)
 	{
 		WeaponOwner->SetWeaponBasePoseType(TargetWeaponBasePoseType);
 	}
@@ -91,15 +92,6 @@ void AINSWeaponAttachment::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>&
 	DOREPLIFETIME(AINSWeaponAttachment, WeaponOwner);
 }
 
-void AINSWeaponAttachment::CreateClientVisualAttachment()
-{ 
-	ClientVisualAttachment = GetWorld()->SpawnActorDeferred<AINSWeaponAttachment>(GetClass(), GetActorTransform(), this, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-	if (GetClientVisualAttachment())
-	{
-		GetClientVisualAttachment()->bClientVisualAttachment = true;
-		GetClientVisualAttachment()->FinishSpawning(ClientVisualAttachment->GetActorTransform());
-	}
-}
 
 void AINSWeaponAttachment::Tick(float DeltaTime)
 {
@@ -112,8 +104,17 @@ void AINSWeaponAttachment::ReceiveAttachmentEquipped(class AINSWeaponBase* Weapo
 	this->WeaponOwner = WeaponEquippedBy;
 }
 
-FORCEINLINE class USkeletalMeshComponent* AINSWeaponAttachment::GetAttachmentMeshComp() const
+void AINSWeaponAttachment::SetWeaponOwner(class AINSWeaponBase* NewWeaponOwner)
 {
-	return AttachmentMesh;
+	this->WeaponOwner = NewWeaponOwner;
+	if (HasAuthority())
+	{
+		OnRep_OwnerWeapon();
+	}
+}
+
+FORCEINLINE class UStaticMeshComponent* AINSWeaponAttachment::GetAttachmentMeshComp() const
+{
+	return AttachmentMeshComp;
 }
 

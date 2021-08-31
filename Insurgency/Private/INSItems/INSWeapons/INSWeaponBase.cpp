@@ -27,6 +27,7 @@
 #include "INSComponents/INSCharacterAudioComponent.h"
 #include "INSAssets/INSStaticAnimData.h"
 #include "INSWeaponCrossHair/INSCrossHair_Cross.h"
+#include "INSItems/INSWeaponAttachments/INSWeaponAttachment_Optic.h"
 #ifndef UINSCrossHairBase
 #include "INSWeaponCrossHair/INSCrossHairBase.h"
 #endif
@@ -89,6 +90,11 @@ AINSWeaponBase::AINSWeaponBase(const FObjectInitializer& ObjectInitializer) : Su
 	ZoomedInEventTriggered = false;
 	ZoomedOutEventTriggered = false;
 	CrossHairClass = UINSCrossHair_Cross::StaticClass();
+	bSupressorEquiped = false;
+	DefaultAimingFOV = 80.f;
+	bUsingNoFrontSightMesh = false;
+	BaseAimHandIKXLocatioin = -5.f;
+	BaseHandsOffSetLoc = FVector(8.f, 0.f, 0.f);
 }
 
 void AINSWeaponBase::Tick(float DeltaTime)
@@ -107,6 +113,7 @@ void AINSWeaponBase::Tick(float DeltaTime)
 void AINSWeaponBase::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
+	InitWeaponAttachmentSlots();
 	WeaponFireHandler->SetOwnerWeapon(this);
 	WeaponFireHandler->SetIsReplicated(true);
 	WeaponConfigData.ForceInitWeaponConfig();
@@ -122,6 +129,17 @@ void AINSWeaponBase::BeginPlay()
 		ClientCreateWeaponCrossHair();
 		OnRep_WeaponBasePoseType();
 		CheckAndEquipWeaponAttachment();
+	}
+	const FWeaponAttachmentSlot* SightSlot = GetWeaponAttachmentSlot(WeaponAttachmentSlotName::Sight);
+	if (SightSlot && SightSlot->GetWeaponAttachmentInstance())
+	{
+		WeaponMesh1PComp->SetSkeletalMesh(WeaponMeshNoFrontSight);
+		WeaponMesh3PComp->SetSkeletalMesh(WeaponMeshNoFrontSight);
+	}
+	else
+	{
+		WeaponMesh1PComp->SetSkeletalMesh(WeaponMeshWithFrontSight);
+		WeaponMesh3PComp->SetSkeletalMesh(WeaponMeshWithFrontSight);
 	}
 }
 
@@ -145,9 +163,7 @@ void AINSWeaponBase::InspectWeapon()
 bool AINSWeaponBase::CheckCanSwitchFireMode()
 {
 	AINSPlayerController* PlayerController = Cast<AINSPlayerController>(GetOwner());
-	AINSPlayerCharacter* PlayerCharacter = PlayerController == nullptr
-		                                       ? nullptr
-		                                       : PlayerController->GetINSPlayerCharacter();
+	AINSPlayerCharacter* PlayerCharacter = PlayerController == nullptr? nullptr : PlayerController->GetINSPlayerCharacter();
 	if (!PlayerController)
 	{
 		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s has no owner player , can't Switch Fire Mode"), *GetName());
@@ -155,26 +171,22 @@ bool AINSWeaponBase::CheckCanSwitchFireMode()
 	}
 	if (!PlayerCharacter)
 	{
-		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s has no owner player character ,  can't Switch Fire Mode"),
-		       *GetName());
+		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s has no owner player character ,  can't Switch Fire Mode"),*GetName());
 		return false;
 	}
 	if (PlayerCharacter->GetIsDead())
 	{
-		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s and it's owner charcter is dead,  can't Switch Fire Mode "),
-		       *GetName());
+		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s and it's owner charcter is dead,  can't Switch Fire Mode "), *GetName());
 		return false;
 	}
 	if (CurrentWeaponState != EWeaponState::IDLE)
 	{
-		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s is busy,  can't Switch Fire Mode "),
-		       *GetName());
+		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s is busy,  can't Switch Fire Mode "),*GetName());
 		return false;
 	}
 	if (AvailableFireModes.Num() == 1)
 	{
-		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s has only one fire mode,can't Switch Fire Mode "),
-		       *GetName());
+		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s has only one fire mode,can't Switch Fire Mode "),*GetName());
 		return false;
 	}
 	return true;
@@ -188,7 +200,6 @@ void AINSWeaponBase::WeaponGoToIdleState()
 void AINSWeaponBase::PreInitializeComponents()
 {
 	Super::PreInitializeComponents();
-	InitWeaponAttachmentSlots();
 	if (WeaponAnimationClass)
 	{
 		WeaponAnimation = NewObject<UINSStaticAnimData>(this, WeaponAnimationClass);
@@ -213,15 +224,15 @@ void AINSWeaponBase::GetADSSightTransform(FTransform& OutTransform)
 	}
 }
 
-void AINSWeaponBase::GetWeaponAttachmentSlotStruct(FName SlotName, FWeaponAttachmentSlot& OutWeaponAttachmentSlot)
+FWeaponAttachmentSlot* AINSWeaponBase::GetWeaponAttachmentSlot(FName SlotName)
 {
 	FWeaponAttachmentSlot* TargetAttachmentSlot = WeaponAttachmentSlots.Find(SlotName);
 	if (!TargetAttachmentSlot)
 	{
 		UE_LOG(LogINSWeapon, Warning, TEXT("Weapon Slot Named %s Not found!"));
-		return;
+		return nullptr;
 	}
-	OutWeaponAttachmentSlot = *TargetAttachmentSlot;
+	return TargetAttachmentSlot;
 }
 
 void AINSWeaponBase::SpawnProjectile(FVector SpawnLoc, FVector SpawnDir)
@@ -321,9 +332,30 @@ FORCEINLINE class UINSWeaponAnimInstance* AINSWeaponBase::GetWeapon3pAnimInstanc
 	return Cast<UINSWeaponAnimInstance>(WeaponMesh3PComp->AnimScriptInstance);
 }
 
-FTransform AINSWeaponBase::GetSightsTransform() const
+FTransform AINSWeaponBase::GetSightsTransform()
 {
+	const uint8 NumAttachment = CachedWeaponAttachmentInstances.Num();
+	if (NumAttachment > 0)
+	{
+		for (int i = 0; i < NumAttachment; i++)
+		{
+			AINSWeaponAttachment* AttachmentIns = CachedWeaponAttachmentInstances[i];
+			if (AttachmentIns->GetCurrentAttachmentType() == EWeaponAttachmentType::SIGHT)
+			{
+				AINSWeaponAttachment_Optic* Optic = Cast<AINSWeaponAttachment_Optic>(AttachmentIns);
+				if (Optic)
+				{
+					if (!Optic->GetOpticSightTransform().Equals(FTransform::Identity))
+					{
+						return Optic->GetOpticSightTransform();
+					}
+					break;
+				}
+			}
+		}
+	}
 	return WeaponMesh1PComp->GetSocketTransform(SightAlignerSocketName, ERelativeTransformSpace::RTS_World);
+	
 }
 
 bool AINSWeaponBase::CheckScanTraceRange()
@@ -491,31 +523,47 @@ bool AINSWeaponBase::ClientCreateWeaponCrossHair_Validate()
 	return true;
 }
 
+void AINSWeaponBase::GetWeaponAttachmentInstances(TArray<AINSWeaponAttachment*>& OutAttachmentInstance)
+{
+
+}
+
+float AINSWeaponBase::GetWeaponAimHandIKXLocation()
+{
+	const uint8 NumAttachment = CachedWeaponAttachmentInstances.Num();
+	if (NumAttachment > 0)
+	{
+		for (int i = 0; i < NumAttachment; i++)
+		{
+			const AINSWeaponAttachment* const AttachmentIns = CachedWeaponAttachmentInstances[i];
+			if (AttachmentIns->GetCurrentAttachmentType() == EWeaponAttachmentType::SIGHT)
+			{
+				const AINSWeaponAttachment_Optic* Optic = Cast<AINSWeaponAttachment_Optic>(AttachmentIns);
+				if (Optic)
+				{
+					return Optic->GetHandsIKXValue();
+				}
+			}
+		}
+	}
+	return BaseAimHandIKXLocatioin;
+}
+
 void AINSWeaponBase::OnRep_CurrentWeaponState()
 {
 	switch (CurrentWeaponState)
 	{
 	case EWeaponState::IDLE: break;
 	case EWeaponState::FIRING: break;
-	case EWeaponState::RELOADIND: OnWeaponStartReload();
-		break;
-	case EWeaponState::UNEQUIPED:
-		break;
-	case EWeaponState::EQUIPPING: OnWeaponStartEquip();
-		break;
-	case EWeaponState::FIREMODESWITCHING: OnWeaponSwitchFireMode();
-		break;
-	case EWeaponState::UNEQUIPING:
-		break;
-	case EWeaponState::EQUIPED:
-		break;
-	case EWeaponState::NONE:
-		break;
-	default:
-		break;
+	case EWeaponState::RELOADIND: OnWeaponStartReload(); break;
+	case EWeaponState::UNEQUIPED:break;
+	case EWeaponState::EQUIPPING: OnWeaponStartEquip(); break;
+	case EWeaponState::FIREMODESWITCHING: OnWeaponSwitchFireMode(); break;
+	case EWeaponState::EQUIPED:break;
+	case EWeaponState::NONE:break;
+	default:break;
 	}
-	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green,
-		TEXT("Weapon state replicated," + GetWeaponReadableCurrentState()));
+	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("Weapon state replicated," + GetWeaponReadableCurrentState()));
 }
 
 void AINSWeaponBase::OnRep_AimWeapon()
@@ -530,14 +578,10 @@ void AINSWeaponBase::OnRep_WeaponBasePoseType()
 	Message.Append("Base pose Type Replicated!Current Weapon base type is : ");
 	switch (CurrentWeaponBasePoseType)
 	{
-	case EWeaponBasePoseType::ALTGRIP: Message.Append("Alt Grip");
-		break;
-	case EWeaponBasePoseType::FOREGRIP: Message.Append("Fore Grip");
-		break;
-	case EWeaponBasePoseType::DEFAULT: Message.Append("Default");
-		break;
-	default:
-		break;
+	case EWeaponBasePoseType::ALTGRIP: Message.Append("Alt Grip"); break;
+	case EWeaponBasePoseType::FOREGRIP: Message.Append("Fore Grip"); break;
+	case EWeaponBasePoseType::DEFAULT: Message.Append("Default"); break;
+	default:break;
 	}
 #if WITH_EDITOR
 	GEngine->AddOnScreenDebugMessage(-1, 5.0f, FColor::Red, Message);
@@ -546,13 +590,11 @@ void AINSWeaponBase::OnRep_WeaponBasePoseType()
 	UpdateCharAnimationBasePoseType(CurrentWeaponBasePoseType);
 	if (WeaponMesh1PComp->AnimScriptInstance)
 	{
-		Cast<UINSWeaponAnimInstance>(WeaponMesh1PComp->AnimScriptInstance)->SetWeaponBasePoseType(
-			CurrentWeaponBasePoseType);
+		Cast<UINSWeaponAnimInstance>(WeaponMesh1PComp->AnimScriptInstance)->SetWeaponBasePoseType(CurrentWeaponBasePoseType);
 	}
 	if (WeaponMesh3PComp->AnimScriptInstance)
 	{
-		Cast<UINSWeaponAnimInstance>(WeaponMesh3PComp->AnimScriptInstance)->SetWeaponBasePoseType(
-			CurrentWeaponBasePoseType);
+		Cast<UINSWeaponAnimInstance>(WeaponMesh3PComp->AnimScriptInstance)->SetWeaponBasePoseType(CurrentWeaponBasePoseType);
 	}
 }
 
@@ -574,14 +616,14 @@ void AINSWeaponBase::SimulateWeaponFireFX()
 	}
 	if (GetLocalRole() >= ROLE_AutonomousProxy)
 	{
-		SelectedFireSound = FireSound1P;
+		SelectedFireSound = bSupressorEquiped ? SupreessedFireSound1P : FireSound1P;
 		SelectFireParticleTemplate = FireParticle1P;
 		SelectedFXAttachParent = WeaponMesh1PComp;
 		const AINSPlayerController* PlayerController = CastChecked<AINSPlayerController>(GetOwner());
 	}
 	else
 	{
-		SelectedFireSound = FireSound3P;
+		SelectedFireSound = bSupressorEquiped ? SupreessedFireSound3P : FireSound3P;
 		SelectFireParticleTemplate = FireParticle3P;
 		SelectedFXAttachParent = WeaponMesh3PComp;
 	}
@@ -589,16 +631,11 @@ void AINSWeaponBase::SimulateWeaponFireFX()
 	//spawn muzzle emitter
 	if (SelectFireParticleTemplate)
 	{
-		WeaponParticleComp = UGameplayStatics::SpawnEmitterAttached(SelectFireParticleTemplate,
-		                                                            SelectedFXAttachParent,
-		                                                            SelectedFXAttachParent->GetWeaponSockets().
-		                                                            MuzzleFlashSocket);
+		WeaponParticleComp = UGameplayStatics::SpawnEmitterAttached(SelectFireParticleTemplate, SelectedFXAttachParent, SelectedFXAttachParent->GetWeaponSockets().MuzzleFlashSocket);
 	}
 	if (SelectedFireSound)
 	{
-		UGameplayStatics::SpawnSoundAtLocation(GetWorld(), SelectedFireSound,
-		                                       SelectedFXAttachParent->GetMuzzleLocation(),
-		                                       SelectedFXAttachParent->GetMuzzleRotation());
+		UGameplayStatics::SpawnSoundAtLocation(GetWorld(), SelectedFireSound, SelectedFXAttachParent->GetMuzzleLocation(), SelectedFXAttachParent->GetMuzzleRotation());
 	}
 
 	//cast projectile shell
@@ -606,12 +643,9 @@ void AINSWeaponBase::SimulateWeaponFireFX()
 	{
 		return;
 	}
-	const UINSWeaponMeshComponent* SelectedMesh = GetLocalRole() >= ROLE_AutonomousProxy
-		                                              ? WeaponMesh1PComp
-		                                              : WeaponMesh3PComp;
+	const UINSWeaponMeshComponent* SelectedMesh = GetLocalRole() >= ROLE_AutonomousProxy ? WeaponMesh1PComp : WeaponMesh3PComp;
 	const FTransform ShellSpawnTran = SelectedMesh->GetShellSpawnTransform();
-	AINSProjectileShell* ShellActor = GetWorld()->SpawnActorDeferred<AINSProjectileShell>(
-		ProjectileShellClass, ShellSpawnTran, this, GetOwnerCharacter());
+	AINSProjectileShell* ShellActor = GetWorld()->SpawnActorDeferred<AINSProjectileShell>(ProjectileShellClass, ShellSpawnTran, this, GetOwnerCharacter());
 	if (ShellActor)
 	{
 		UGameplayStatics::FinishSpawningActor(ShellActor, ShellSpawnTran);
@@ -644,8 +678,7 @@ void AINSWeaponBase::FindCrossHairHit(FHitResult& Hit)
 		GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Camera, queryParams);
 		if (Hit.bBlockingHit && Hit.GetActor())
 		{
-			UE_LOG(LogINSWeapon, Warning, TEXT("center trace hit result,thing be hit :%s,Hit component %s"),
-			       *Hit.GetActor()->GetName(), *(Hit.GetComponent()->GetName()));
+			UE_LOG(LogINSWeapon, Warning, TEXT("center trace hit result,thing be hit :%s,Hit component %s"), *Hit.GetActor()->GetName(), *(Hit.GetComponent()->GetName()));
 		}
 #if WITH_EDITORONLY_DATA
 		if (bShowDebugTrace && PlayerCharacter->IsLocallyControlled())
@@ -670,9 +703,42 @@ void AINSWeaponBase::CheckAndEquipWeaponAttachment()
 					,this
 					,GetOwnerCharacter()
 					,ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
+				CurrentSlot.GetWeaponAttachmentInstance()->SetWeaponOwner(this);
+				CurrentSlot.GetWeaponAttachmentInstance()->SetOwner(GetOwner());
+				UGameplayStatics::FinishSpawningActor(CurrentSlot.GetWeaponAttachmentInstance(), GetActorTransform());
+				AddAttachmentInstance(CurrentSlot.GetWeaponAttachmentInstance());
+				if (CurrentSlot.GetWeaponAttachmentInstance()->GetCurrentAttachmentType() == EWeaponAttachmentType::SIGHT)
+				{
+					bUsingNoFrontSightMesh = true;
+				}
 			}
 		}
 	}
+}
+
+void AINSWeaponBase::AddAttachmentInstance(class AINSWeaponAttachment* AttachmentToAdd)
+{
+	if (AttachmentToAdd)
+	{
+		CachedWeaponAttachmentInstances.Add(AttachmentToAdd);
+	}
+}
+
+float AINSWeaponBase::GetAimFOV()
+{
+	const uint8 NumAttachment = CachedWeaponAttachmentInstances.Num();
+	if (NumAttachment > 0)
+	{
+		for (int i = 0; i < NumAttachment; i++)
+		{
+			const AINSWeaponAttachment* const AttachmentIns = CachedWeaponAttachmentInstances[i];
+			if (AttachmentIns->GetCurrentAttachmentType() == EWeaponAttachmentType::SIGHT)
+			{
+				return AttachmentIns->GetTargetFOV();
+			}
+		}
+	}
+	return DefaultAimingFOV;
 }
 
 void AINSWeaponBase::GetFireDir(FVector& OutDir)
@@ -706,9 +772,7 @@ void AINSWeaponBase::GetFireDir(FVector& OutDir)
 bool AINSWeaponBase::CheckCanFire()
 {
 	AINSPlayerController* PlayerController = Cast<AINSPlayerController>(GetOwner());
-	AINSPlayerCharacter* PlayerCharacter = PlayerController == nullptr
-		                                       ? nullptr
-		                                       : PlayerController->GetINSPlayerCharacter();
+	AINSPlayerCharacter* PlayerCharacter = PlayerController == nullptr? nullptr: PlayerController->GetINSPlayerCharacter();
 	if (!PlayerController)
 	{
 		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s has no owner player , can't fire"), *GetName());
@@ -781,9 +845,7 @@ bool AINSWeaponBase::CheckCanReload()
 		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s has no owner player , can't reload"), *GetName());
 		return false;
 	}
-	const AINSPlayerCharacter* const PlayerCharacter = PlayerController == nullptr
-		                                                   ? nullptr
-		                                                   : PlayerController->GetINSPlayerCharacter();
+	const AINSPlayerCharacter* const PlayerCharacter = PlayerController == nullptr ? nullptr : PlayerController->GetINSPlayerCharacter();
 	if (!PlayerCharacter)
 	{
 		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s has no owner player character , can't reload"), *GetName());
@@ -791,8 +853,7 @@ bool AINSWeaponBase::CheckCanReload()
 	}
 	if (PlayerCharacter->GetIsDead())
 	{
-		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s and it's owner charcter is dead, cant't reload "),
-		       *GetName());
+		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s and it's owner charcter is dead, cant't reload "), *GetName());
 		return false;
 	}
 	else if (CurrentClipAmmo == WeaponConfigData.AmmoPerClip)
@@ -934,9 +995,7 @@ void AINSWeaponBase::OnWeaponCollide(const FHitResult& CollideResult)
 {
 	if (CollideResult.bBlockingHit)
 	{
-		UE_LOG(LogINSWeapon, Warning,
-		       TEXT("this Weapon :%s collided with other things,collide actor:%s,collide component:%s"), *GetName(),
-		       *CollideResult.GetActor()->GetName(), *CollideResult.Component->GetName());
+		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s collided with other things,collide actor:%s,collide component:%s"), *GetName(),*CollideResult.GetActor()->GetName(), *CollideResult.Component->GetName());
 	}
 	if (GetOwnerCharacter())
 	{
@@ -961,6 +1020,11 @@ void AINSWeaponBase::ApplyWeaponSpread(FVector& OutSpreadDir, const FVector& Bas
 void AINSWeaponBase::GetBarrelStartLoc(FVector& BarrelStartLoc)
 {
 	BarrelStartLoc = WeaponMesh1PComp->GetMuzzleLocation();
+	FWeaponAttachmentSlot* WeaponAttachmentSlot = GetWeaponAttachmentSlot(WeaponAttachmentSlotName::Muzzle);
+	if (WeaponAttachmentSlot && WeaponAttachmentSlot->GetWeaponAttachmentInstance())
+	{
+		BarrelStartLoc = WeaponAttachmentSlot->GetWeaponAttachmentInstance()->GetBarrelLocation();
+	}
 }
 
 void AINSWeaponBase::CalculateAmmoAfterReload()
@@ -968,9 +1032,7 @@ void AINSWeaponBase::CalculateAmmoAfterReload()
 #if WITH_EDITORONLY_DATA
 	if (bInfinityAmmo)
 	{
-		UE_LOG(LogINSWeapon, Warning,
-		       TEXT("this Weapon :%s infinit ammo mode has enabled,reloading will consumes no ammo "), *GetName());
-		CurrentClipAmmo = WeaponConfigData.AmmoPerClip;
+		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s infinit ammo mode has enabled,reloading will consumes no ammo "), *GetName()); CurrentClipAmmo = WeaponConfigData.AmmoPerClip;
 		return;
 	}
 #endif
@@ -1034,9 +1096,7 @@ void AINSWeaponBase::OnRep_WeaponFireCount()
 			}
 			SimulateWeaponFireFX();
 		}
-		WeaponSpreadData.CurrentWeaponSpread = FMath::Clamp<float>(
-			WeaponSpreadData.CurrentWeaponSpread + WeaponSpreadData.SpreadIncrementByShot,
-			WeaponSpreadData.CurrentWeaponSpread, WeaponSpreadData.WeaponSpreadMax);
+		WeaponSpreadData.CurrentWeaponSpread = FMath::Clamp<float>(WeaponSpreadData.CurrentWeaponSpread + WeaponSpreadData.SpreadIncrementByShot,WeaponSpreadData.CurrentWeaponSpread, WeaponSpreadData.WeaponSpreadMax);
 	}
 }
 
@@ -1071,6 +1131,7 @@ void AINSWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AINSWeaponBase, CurrentWeaponFireMode);
 	DOREPLIFETIME(AINSWeaponBase, RepWeaponFireCount);
 	DOREPLIFETIME(AINSWeaponBase, OwnerCharacter);
+	DOREPLIFETIME(AINSWeaponBase, bUsingNoFrontSightMesh);
 	DOREPLIFETIME(AINSWeaponBase, bIsAimingWeapon);
 	DOREPLIFETIME(AINSWeaponBase, bWantsToEquip);
 	DOREPLIFETIME_CONDITION(AINSWeaponBase, CurrentClipAmmo, COND_OwnerOnly);
@@ -1093,6 +1154,7 @@ void AINSWeaponBase::OwnerPlayCameraShake()
 		}
 	}
 }
+
 
 void AINSWeaponBase::UpdateWeaponSpread(float DeltaTimeSeconds)
 {
@@ -1146,6 +1208,20 @@ void AINSWeaponBase::OnRep_WeaponType()
 
 void AINSWeaponBase::OnRep_Equipping()
 {
+}
+
+void AINSWeaponBase::OnRep_MeshType()
+{
+	if (bUsingNoFrontSightMesh)
+	{
+		WeaponMesh1PComp->SetSkeletalMesh(WeaponMeshNoFrontSight);
+		WeaponMesh3PComp->SetSkeletalMesh(WeaponMeshNoFrontSight);
+	}
+	else
+	{
+		WeaponMesh1PComp->SetSkeletalMesh(WeaponMeshWithFrontSight);
+		WeaponMesh3PComp->SetSkeletalMesh(WeaponMeshWithFrontSight);
+	}
 }
 
 void AINSWeaponBase::OnRep_CurrentClipAmmo()
@@ -1298,8 +1374,7 @@ void AINSWeaponBase::UpdateRecoilVertically(float DeltaTimeSeconds, float Recoil
 {
 	if (GetOwnerCharacter() && !GetOwnerCharacter()->GetIsDead() && GetOwnerCharacter()->GetController())
 	{
-		Cast<AINSPlayerController>(GetOwnerCharacter()->GetController())->
-			AddPitchInput(RecoilAmount * DeltaTimeSeconds);
+		Cast<AINSPlayerController>(GetOwnerCharacter()->GetController())->AddPitchInput(RecoilAmount * DeltaTimeSeconds);
 	}
 }
 

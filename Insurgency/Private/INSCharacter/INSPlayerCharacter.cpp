@@ -166,11 +166,25 @@ void AINSPlayerCharacter::OnRep_CurrentWeapon()
 		Get3PAnimInstance()->SetCurrentWeaponAndAnimationData(CurrentWeapon);
 		Get1PAnimInstance()->PlayWeaponStartEquipAnim();
 		Get3PAnimInstance()->PlayWeaponStartEquipAnim();
+		Get1PAnimInstance()->SetBaseHandsIkLocation(CurrentWeapon->GetWeaponBaseIKLocation());
+		Get3PAnimInstance()->SetBaseHandsIkLocation(CurrentWeapon->GetWeaponBaseIKLocation());
+		Get1PAnimInstance()->SetAimHandIKXLocation(CurrentWeapon->GetWeaponAimHandIKXLocation());
 	}
 	else
 	{
 		Get1PAnimInstance()->SetCurrentWeaponAndAnimationData(nullptr);
 		Get3PAnimInstance()->SetCurrentWeaponAndAnimationData(nullptr);
+		Get1PAnimInstance()->SetBaseHandsIkLocation(FVector::ZeroVector);
+		Get3PAnimInstance()->SetBaseHandsIkLocation(FVector::ZeroVector);
+		Get1PAnimInstance()->SetAimHandIKXLocation(0.f);
+	}
+	if (HasAuthority() || GetLocalRole() == ROLE_AutonomousProxy)
+	{
+		AINSPlayerCameraManager* const CameraManager = Cast<AINSPlayerCameraManager>(GetINSPlayerController()->PlayerCameraManager);
+		if (CameraManager)
+		{
+			CameraManager->SetCurrentWeapon(CurrentWeapon);
+		}
 	}
 }
 
@@ -240,10 +254,9 @@ void AINSPlayerCharacter::OnLowHealth()
 void AINSPlayerCharacter::Die()
 {
 	Super::Die();
-	if (HasAuthority() && !GetIsDead())
+	//the dead player pawn will have no controller,so need a null check here
+	if (GetINSPlayerController())
 	{
-		CurrentWeapon->Destroy();
-		SpawnWeaponPickup();
 		GetINSPlayerController()->OnCharacterDead();
 	}
 }
@@ -275,7 +288,9 @@ void AINSPlayerCharacter::OnRep_Dead()
 			const float ShotDirPitchDecompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirPitch);
 			const float ShotDirYawDeCompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirYaw);
 			const FRotator BloodSpawnRotation = FRotator(ShotDirPitchDecompressed, ShotDirYawDeCompressed, 0.f);
-			CharacterMesh3P->AddImpulseToAllBodiesBelow(BloodSpawnRotation.Vector() * 600.f, LastHitInfo.HitBoneName);
+			CharacterMesh3P->AddImpulseToAllBodiesBelow(BloodSpawnRotation.Vector() * 1000.f, LastHitInfo.HitBoneName);
+			CharacterMesh3P->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			CharacterMesh3P->SetCollisionResponseToAllChannels(ECR_Ignore);
 			//CharacterMesh3P->SetSimulatePhysics(true);
 		}
 	}
@@ -308,6 +323,7 @@ void AINSPlayerCharacter::OnRep_Aim()
 	{
 		return;
 	}
+	CameraManager->SetAimingFOV(CurrentWeapon->GetAimFOV());
 	bIsAiming ? CameraManager->OnAim(CurrentWeapon->GetWeaponAimTime()) : CameraManager->OnStopAim(CurrentWeapon->GetWeaponAimTime());
 	if (Get1PAnimInstance())
 	{

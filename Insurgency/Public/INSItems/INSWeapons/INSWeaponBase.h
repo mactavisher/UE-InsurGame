@@ -287,19 +287,19 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY()
 	UINSStaticAnimData* WeaponAnimation;
 
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="Visual")
+	UStaticMesh* WeaponStaticMesh;
+
 	/** current selected active fire mode */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_CurrentFireMode,
-		Category = "FireMode")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_CurrentFireMode,Category = "FireMode")
 	EWeaponFireMode CurrentWeaponFireMode;
 
 	/** current weapon state */
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_CurrentWeaponState,
-		Category = "WeaponState")
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_CurrentWeaponState,Category = "WeaponState")
 	EWeaponState CurrentWeaponState;
 
 	/** rep counter to tell clients fire just happened,mostly used for clients to play cosmetic events like fx */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponFireCount,
-		Category = "WeaponState")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponFireCount,Category = "WeaponState")
 	uint8 RepWeaponFireCount;
 
 	/** stores last fire time , used for validate if weapon can fire it's next shot */
@@ -332,8 +332,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Ammo")
 	uint8 bDryReload : 1;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_Equipping,
-		Category = "Equipping")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_Equipping,Category = "Equipping")
 	uint8 bWantsToEquip : 1;
 
 	/** how much time it's gonna take to finish aim weapon  */
@@ -374,6 +373,14 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
 	USoundCue* FireSound3P;
 
+	/** fire sound 1p*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
+	USoundCue* SupreessedFireSound1P;
+
+	/** fire sound 3p*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
+	USoundCue* SupreessedFireSound3P;
+
 	/** sound played when enters ads*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
 	USoundCue* ADSInSound;
@@ -382,7 +389,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
 	USoundCue* ADSOutSound;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
+	UPROPERTY(VisibleDefaultsOnly,BlueprintReadOnly,Category="Aim")
 	float ADSAlpha;
 
 	/** fire Particle 1p*/
@@ -398,8 +405,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	TSubclassOf<AINSProjectileShell> ProjectileShellClass;
 
 	/** simulate fire muzzle particles effects */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponFireCount,
-		Category = "Effects")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite,Category = "Effects")
 	UParticleSystemComponent* WeaponParticleComp;
 
 	/** projectile class that be fired by this weapon */
@@ -407,12 +413,10 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	TSubclassOf<AINSProjectile> ProjectileClass;
 
 	/** pawn that owns this weapon */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_OwnerCharacter,
-		Category = "OwnerCharacter")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_OwnerCharacter,Category = "OwnerCharacter")
 	AINSCharacter* OwnerCharacter;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponBasePoseType,
-		Category = "WeaponPose")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponBasePoseType,Category = "WeaponPose")
 	EWeaponBasePoseType CurrentWeaponBasePoseType;
 
 	/** current used weapon Spread */
@@ -435,6 +439,9 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSpread")
 	FWeaponSpreadData WeaponSpreadData;
 
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="IK")
+	FVector BaseHandsOffSetLoc;
+
 	/** Cross hair class that be used by this weapon */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CrossHair")
 	TSubclassOf<UINSCrossHairBase> CrossHairClass;
@@ -452,11 +459,32 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	uint8 InventorySlotIndex;
 
 	/** weapon type of this weapon */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponType,
-		Category = "WeaponConfig")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponType,Category = "WeaponConfig")
 	EWeaponType WeaponType;
+	
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="WeaponMesh")
+	class USkeletalMesh* WeaponMeshWithFrontSight;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponMesh")
+		class USkeletalMesh* WeaponMeshNoFrontSight;
 
 	FActorTickFunction WeaponSpreadTickFunction;
+
+	UPROPERTY()
+	uint8 bSupressorEquiped:1;
+
+	UPROPERTY(ReplicatedUsing = "OnRep_MeshType")
+	uint8 bUsingNoFrontSightMesh:1;
+
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="IK")
+	float BaseAimHandIKXLocatioin;
+
+	/** cache the existing weapon attachment for easy access */
+	UPROPERTY()
+	TArray<AINSWeaponAttachment*> CachedWeaponAttachmentInstances;
+
+	UPROPERTY()
+	float DefaultAimingFOV;
 
 #if WITH_EDITORONLY_DATA
 	uint8 bShowDebugTrace : 1;
@@ -544,6 +572,9 @@ protected:
 
 	UFUNCTION()
 	virtual void OnRep_Equipping();
+
+	UFUNCTION()
+	virtual void OnRep_MeshType();
 
 	/** current clip ammo Rep notify ,only relevant to owner  */
 	UFUNCTION()
@@ -633,6 +664,8 @@ public:
 	/** convert weapon state enum to a String ,make it easier to read */
 	virtual FString GetWeaponReadableCurrentState();
 
+	virtual UStaticMesh* GetWeaponStaticMesh() const { return WeaponStaticMesh; }
+
 	/** finish equip this weapon */
 	virtual void FinishEquippingWeapon();
 
@@ -684,7 +717,7 @@ public:
 	 * @param SlotName   the desired attachment Slot name
 	 * @param OutWeaponAttachmentSlot produces the slot
 	 */
-	virtual void GetWeaponAttachmentSlotStruct(FName SlotName, FWeaponAttachmentSlot& OutWeaponAttachmentSlot);
+	virtual FWeaponAttachmentSlot* GetWeaponAttachmentSlot(FName SlotName);
 
 	/**
 	 * @desc  fire a projectile
@@ -712,6 +745,7 @@ public:
 	 * @Param NewWeaponState new weapon state to set
 	 */
 	virtual void SetWeaponState(EWeaponState NewWeaponState);
+
 	UFUNCTION(Server, Unreliable, WithValidation)
 	virtual void ServerSetWeaponState(EWeaponState NewWeaponState);
 
@@ -741,6 +775,11 @@ public:
 
 	virtual void CheckAndEquipWeaponAttachment();
 
+	virtual void AddAttachmentInstance(class AINSWeaponAttachment* AttachmentToAdd);
+
+	/** returns the target FOV when aiming */
+	virtual float  GetAimFOV();
+
 	/**
 	 * @Desc adjust projectile spawn rotation to hit center of the screen
 	 */
@@ -764,7 +803,7 @@ public:
 	/**
 	 * return the sight socket transform,in world space
 	 */
-	virtual FTransform GetSightsTransform() const;
+	virtual FTransform GetSightsTransform();
 
 	/** performs a line trace to check as a HitScan */
 	virtual bool CheckScanTraceRange();
@@ -828,5 +867,16 @@ public:
 
 	virtual EWeaponBasePoseType GetCurrentWeaponBasePose() const { return CurrentWeaponBasePoseType; }
 
+	virtual float GetWeaponBaseDamage()const { return WeaponConfigData.BaseDamage; }
+
 	virtual void SetWeaponBasePoseType(const EWeaponBasePoseType NewPoseType) { CurrentWeaponBasePoseType = NewPoseType; }
+
+	virtual void GetWeaponAttachmentInstances(TArray<AINSWeaponAttachment*>& OutAttachmentInstance);
+
+	virtual float GetWeaponAimHandIKXLocation();
+
+	virtual FVector GetWeaponBaseIKLocation()const { return BaseHandsOffSetLoc; }
+
+	FORCEINLINE UINSWeaponMeshComponent* GetWeapon1PMeshComp()const { return WeaponMesh1PComp; }
+	FORCEINLINE UINSWeaponMeshComponent* GetWeapon3PMeshComp()const { return WeaponMesh3PComp; }
 };

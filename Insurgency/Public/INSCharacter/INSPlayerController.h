@@ -24,7 +24,7 @@ class INSURGENCY_API AINSPlayerController : public APlayerController
 
 protected:
 
-	/** INS Character that possessed by this controller */
+	/** INSCharacter that possessed by this controller */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "INSPlayerCharacter")
 		AINSPlayerCharacter* PossessedINSCharacter;
 

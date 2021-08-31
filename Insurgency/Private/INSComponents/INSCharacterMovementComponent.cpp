@@ -14,7 +14,7 @@ UINSCharacterMovementComponent::UINSCharacterMovementComponent(const FObjectInit
 	SprintSpeedModifier = 2.0f;
 	CrouchSpeedModifier = 0.8f;
 	ProneSpeedModifier = 0.1f;
-	AimSpeedModifier = 0.3f;
+	AimSpeedModifier = 0.5f;
 	MaxAcceleration = 500.f;
 	AccumulatedIdleTime = 0.f;
 	IdleStateTime = 0.2f;

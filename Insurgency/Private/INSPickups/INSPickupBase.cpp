@@ -4,6 +4,7 @@
 #include "INSPickups/INSPickupBase.h"
 #include "Components/SphereComponent.h"
 #include "Components/BoxComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "INSCharacter/INSPlayerCharacter.h"
 #ifndef  AINSPlayerController
@@ -15,18 +16,36 @@ DEFINE_LOG_CATEGORY(LogINSPickup);
 AINSPickupBase::AINSPickupBase(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
 {
 	SimpleCollisionComp = ObjectInitializer.CreateDefaultSubobject<UBoxComponent>(this, TEXT("ColisionComp"));
-	SimpleCollisionComp->SetBoxExtent(FVector(40.f, 3.f, 5.f));
+	SimpleCollisionComp->SetBoxExtent(FVector(50.f, 3.f, 10.f));
 	RootComponent = SimpleCollisionComp;
 	InteractionComp = ObjectInitializer.CreateDefaultSubobject<USphereComponent>(this, TEXT("InteractComp"));
 	InteractionComp->SetSphereRadius(100.f);
-	InteractionComp->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-	InteractionComp->SetCollisionResponseToAllChannels(ECR_Ignore);
-	InteractionComp->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	InteractionComp->SetupAttachment(RootComponent);
+	SimpleCollisionComp->SetCollisionEnabled(ECollisionEnabled::PhysicsOnly);
+	SimpleCollisionComp->SetCollisionProfileName(FName(TEXT("pickupphysics")));
+	InteractionComp->SetCollisionProfileName(FName(TEXT("PickupsInteract")));
+	VisualMeshComp = ObjectInitializer.CreateDefaultSubobject<UStaticMeshComponent>(this,TEXT("VisualMeshComp"));
+	VisualMeshComp->SetupAttachment(RootComponent);
+	VisualMeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	VisualMeshComp->SetCollisionResponseToAllChannels(ECR_Ignore);
 	bReplicates = true;
     SetReplicatingMovement(true);
 	bAutoPickup = false;
 	bAutoDestroy = true;
+	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.SetTickFunctionEnable(true);
+}
+
+void AINSPickupBase::OnRep_PickupInfo()
+{
+	if (!RepPickupInfo.VisualAssetPath.IsEmpty() && !RepPickupInfo.VisualAssetPath.Equals("None", ESearchCase::IgnoreCase))
+	{
+		UStaticMesh* VisualMesh = LoadObject<UStaticMesh>(nullptr, *RepPickupInfo.VisualAssetPath);
+		if (VisualMesh)
+		{
+			VisualMeshComp->SetStaticMesh(VisualMesh);
+		}
+	}
 }
 
 void AINSPickupBase::BeginPlay()
@@ -61,13 +80,8 @@ void AINSPickupBase::SetOwner(AActor* NewOwner)
 void AINSPickupBase::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-	DisableTick();
 	if (HasAuthority())
 	{
-		FRepMovement* const RepedMovement = (FRepMovement*)&GetReplicatedMovement();
-		RepedMovement->LocationQuantizationLevel = EVectorQuantization::RoundOneDecimal;
-		RepedMovement->VelocityQuantizationLevel = EVectorQuantization::RoundOneDecimal;
-		RepedMovement->bRepPhysics = true;
 		SetLifeSpan(120.f);
 	}
 	// query collision is no needed for dedicated server
@@ -80,10 +94,6 @@ void AINSPickupBase::PostInitializeComponents()
 
 void AINSPickupBase::OnRep_ReplicatedMovement()
 {
-	//unpack the replicated movement data
-	FRepMovement* RepedMovement = (FRepMovement*)&GetReplicatedMovement();
-	RepedMovement->Location = RepedMovement->Location / 10.f;
-	RepedMovement->LinearVelocity = RepedMovement->LinearVelocity / 10.f;
 	Super::OnRep_ReplicatedMovement();
 }
 
@@ -96,6 +106,7 @@ void AINSPickupBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AINSPickupBase, bIsActive);
+	DOREPLIFETIME(AINSPickupBase, RepPickupInfo);
 }
 
 void AINSPickupBase::OnRep_bIsActive()

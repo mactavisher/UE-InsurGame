@@ -325,7 +325,7 @@ void AINSHUDBase::DrawScore()
 
 void AINSHUDBase::DrawWeaponFireMode()
 {
-	if (CurrentWeapon.Get() && !GetINSOwingPlayerController()->GetINSPlayerCharacter()->GetIsDead())
+	if (CurrentWeapon.Get() && GetINSOwingPlayerController()->GetINSPlayerCharacter()&&!GetINSOwingPlayerController()->GetINSPlayerCharacter()->GetIsDead())
 	{
 		FString FireMode;
 		EWeaponFireMode CurrentWeaponFireMode = CurrentWeapon->GetCurrentWeaponFireMode();

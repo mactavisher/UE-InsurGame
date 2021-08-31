@@ -2,16 +2,16 @@
 
 
 #include "INSCharacter/INSPlayerCameraManager.h"
+#include "INSItems/INSWeapons/INSWeaponBase.h"
 
 AINSPlayerCameraManager::AINSPlayerCameraManager(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
 {
 	ViewPitchMin = -70.f;
 	ViewPitchMax = 70.f;
 	bWantsToADS = false;
-	ADSFov = 75.f;
-	FOVBlendTime = 0.2f;
+	ADSFov = 65.f;
+	DefaultFOVBlendTime = 0.2f;
 	LockedFOV = DefaultFOV;
-	FOVBlendSpeed = (DefaultFOV - ADSFov) / (FOVBlendTime == 0.f ? 0.5f : FOVBlendTime);
 }
 void AINSPlayerCameraManager::LimitViewPitch(FRotator& ViewRotation, float InViewPitchMin, float InViewPitchMax)
 {
@@ -20,10 +20,10 @@ void AINSPlayerCameraManager::LimitViewPitch(FRotator& ViewRotation, float InVie
 
 void AINSPlayerCameraManager::UpdateCamera(float DeltaTime)
 {
-	if (!IsNetMode(NM_DedicatedServer))
+	if (!IsNetMode(NM_DedicatedServer) && CurrentWeapon.Get())
 	{
 		Super::UpdateCamera(DeltaTime);
-		FOVBlendSpeed = (DefaultFOV - ADSFov) / (FOVBlendTime == 0.f ? 0.5f : FOVBlendTime);
+		FOVBlendSpeed = (DefaultFOV - CurrentWeapon.Get()->GetAimFOV()) / (CurrentWeapon.Get()->GetWeaponAimTime() == 0.f ? DefaultFOVBlendTime : CurrentWeapon.Get()->GetWeaponAimTime());
 		if (bWantsToADS)
 		{
 			SetFOV(LockedFOV - DeltaTime * FOVBlendSpeed);
@@ -46,11 +46,14 @@ void AINSPlayerCameraManager::UpdateCamera(float DeltaTime)
 void AINSPlayerCameraManager::OnAim(float AimTime)
 {
 	bWantsToADS = true;
-	FOVBlendTime = AimTime;
 }
 
 void AINSPlayerCameraManager::OnStopAim(float AimTime)
 {
 	bWantsToADS = false;
-	FOVBlendTime = AimTime;
+}
+
+void AINSPlayerCameraManager::SetCurrentWeapon(class AINSWeaponBase* NewWeapon)
+{
+	CurrentWeapon = NewWeapon;
 }

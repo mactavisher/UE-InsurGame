@@ -129,10 +129,10 @@ void AINSProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* 
 			AINSCharacter* HitCharacter = CastChecked<AINSCharacter>(OtherActor);
 			FPointDamageEvent PointDamageEvent;
 			PointDamageEvent.HitInfo = Hit;
-			PointDamageEvent.Damage = DamageBase;
+			PointDamageEvent.Damage = GetOwnerWeapon()->GetWeaponBaseDamage();
 			PointDamageEvent.DamageTypeClass = UINSDamageType_Projectile::StaticClass();
 			PointDamageEvent.ShotDirection = this->GetVelocity().GetSafeNormal();
-			HitCharacter->TakeDamage(DamageBase, PointDamageEvent, InstigatorPlayer.Get(), this);
+			HitCharacter->TakeDamage(PointDamageEvent.Damage, PointDamageEvent, InstigatorPlayer.Get(), this);
 			ProjectileLiftTimeData.ImpactPlayer = HitCharacter->GetController();
 			ProjectileLiftTimeData.EndLoc = GetActorLocation();
 		}

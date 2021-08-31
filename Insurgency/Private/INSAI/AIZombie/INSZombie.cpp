@@ -204,7 +204,7 @@ void AINSZombie::OnRep_LastHitInfo()
 		const float ShotDirYawDeCompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirYaw);
 		const FRotator BloodSpawnRotation = FRotator(ShotDirPitchDecompressed, ShotDirYawDeCompressed, 0.f);
 		//GetMesh()->GetBodyInstance(LastHitInfo.HitBoneName)->AddImpulseAtPosition(BloodSpawnRotation.Vector(),LastHitInfo.RelHitLocation);
-		GetMesh()->AddImpulseAtLocation(BloodSpawnRotation.Vector() * 2000.f, LastHitInfo.RelHitLocation, LastHitInfo.HitBoneName);
+		GetMesh()->AddImpulseAtLocation(BloodSpawnRotation.Vector() * 2500.f, LastHitInfo.RelHitLocation, LastHitInfo.HitBoneName);
 		//GetMesh()->AddForceAtLocation(BloodSpawnRotation.Vector()*800.f,LastHitInfo.RelHitLocation,LastHitInfo.HitBoneName);
 	}
 }

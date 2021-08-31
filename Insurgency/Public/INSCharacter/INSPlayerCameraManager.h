@@ -22,10 +22,12 @@ protected:
 		uint8 bWantsToADS;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "FOVConfig")
-		uint8 FOVBlendTime;
+		float DefaultFOVBlendTime;
 
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="FOVConfig")
 	    float FOVBlendSpeed;
+
+	TWeakObjectPtr<class AINSWeaponBase> CurrentWeapon;
 
 
 protected:
@@ -35,5 +37,9 @@ protected:
 public:
 	virtual void OnAim(float AimTime);
 
+	virtual void SetAimingFOV(const float NewFOV) { ADSFov = NewFOV; }
+
 	virtual void OnStopAim(float AimTime);
+
+	virtual void SetCurrentWeapon(class AINSWeaponBase* NewWeapon);
 };

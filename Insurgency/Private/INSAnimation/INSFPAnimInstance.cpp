@@ -29,8 +29,8 @@ UINSFPAnimInstance::UINSFPAnimInstance(const FObjectInitializer& ObjectInitializ
 	WeaponSwayLocation = FVector::ZeroVector;
 	MaxWeaponSwayDelta = 6.5f;
 	WeaponSwaySpeed = 12.f;
-	MaxWeaponSwayDeltaAimingModifier = 0.4f;
-	WeaponSwayLocationFactor = 10.f;
+	MaxWeaponSwayDeltaAimingModifier = 0.6f;
+	WeaponSwayLocationFactor = 0.5f;
 }
 
 void UINSFPAnimInstance::UpdateAdsAlpha(float DeltaSeconds)
@@ -56,6 +56,7 @@ void UINSFPAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	UpdateSight();
 	UpdateCanEnterSprint();
 	FPPlayIdleAnim();
+	UpdateAimHandsIKXLocation(DeltaSeconds);
 }
 
 void UINSFPAnimInstance::NativeInitializeAnimation()
@@ -76,6 +77,22 @@ void UINSFPAnimInstance::NativeBeginPlay()
 			LastRotation = OwnerPlayerController->GetControlRotation();
 		}
 	}
+}
+
+void UINSFPAnimInstance::UpdateAimHandsIKXLocation(float DeltaTimeSeconds)
+{
+
+	const float TargetValue = AimHandIKXLocationValue - BaseHandIKEffector.X;
+	const float InterpSpeed = FMath::Abs(TargetValue / (ADSTime * (1.f / DeltaTimeSeconds)));
+	if (bIsAiming)
+	{
+		CurrentAimHandIKXLocationValue = FMath::Clamp<float>(CurrentAimHandIKXLocationValue - InterpSpeed, TargetValue, CurrentAimHandIKXLocationValue);
+	}
+	else
+	{
+		CurrentAimHandIKXLocationValue = FMath::Clamp<float>(CurrentAimHandIKXLocationValue + InterpSpeed, CurrentAimHandIKXLocationValue, 0.f);
+	}
+	ADSHandIKEffector.X = CurrentAimHandIKXLocationValue;
 }
 
 void UINSFPAnimInstance::FPStopIdleAnim()

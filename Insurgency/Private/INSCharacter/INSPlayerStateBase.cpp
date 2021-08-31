@@ -121,7 +121,6 @@ void AINSPlayerStateBase::AddDeath(const int32 DeathToAdd /*= 1*/)
 
 void AINSPlayerStateBase::UpdateKDRatio()
 {
-	UE_LOG(LogINSPlayerState, Log, TEXT("start update k/d ration for player %s,last k/d ration:%s"), *GetName(), *FString::SanitizeFloat(KDRatio));
 	if (Deaths == 0)
 	{
 		KDRatio = Kills;
@@ -130,7 +129,7 @@ void AINSPlayerStateBase::UpdateKDRatio()
 	{
 		KDRatio = Kills / Deaths;
 	}
-	UE_LOG(LogINSPlayerState, Log, TEXT("end update k/d ration for player %s,updated k/d ration:%s"), *GetName(), *FString::SanitizeFloat(KDRatio));
+	UE_LOG(LogINSPlayerState, Log, TEXT("update k/d ration for player %s,updated k/d ration:%s"), *GetName(), *FString::SanitizeFloat(KDRatio));
 }
 
 
@@ -167,6 +166,13 @@ void AINSPlayerStateBase::TickRespawnTime()
 void AINSPlayerStateBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	if (GetLocalRole() == ROLE_AutonomousProxy || IsNetMode(NM_ListenServer) || IsNetMode(NM_Standalone))
+	{
+		if (GetWorld()->GetTimeSeconds() - ComboKillInfo.LastKillTime > ComboKillInfo.ComboBreakTime)
+		{
+			ComboKillInfo.ComboBreakTime = 0;
+		}
+	}
 }
 
 void AINSPlayerStateBase::OnPawnCharDeath()

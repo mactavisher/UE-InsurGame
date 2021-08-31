@@ -24,14 +24,10 @@ UINSCharacterAimInstance::UINSCharacterAimInstance(const FObjectInitializer& Obj
 	CustomNotIsFallingAlpha = 1.f;
 	LeftHandIkAlpha = 1.f;
 	RightHandIkAlpha = 1.f;
-	WeaponIKRootOffSetEffector = FVector::ZeroVector;
-	WeaponIKLeftHandOffSetEffector = FVector::ZeroVector;
-	WeaponIKRightHandOffSetEffector = FVector::ZeroVector;
 	WeaponIKSwayRotation = FRotator::ZeroRotator;
 	bIsMoving = false;
 	bStartJump = false;
 	bIsCrouching = false;
-	WeaponIKSwayRotationAlpha = 0.f;
 	bCanEnterSprint = false;
 	CurrentWeaponBaseType = EWeaponBasePoseType::FOREGRIP;
 #if WITH_EDITORONLY_DATA
@@ -39,6 +35,9 @@ UINSCharacterAimInstance::UINSCharacterAimInstance(const FObjectInitializer& Obj
 #endif
 	bIdleState = false;
 	bBoredState = false;
+	AimHandIKXLocationValue = 0.f;
+	CurrentAimHandIKXLocationValue = 0.f;
+	BaseHandIKEffector = FVector::ZeroVector;
 }
 
 void UINSCharacterAimInstance::NativeInitializeAnimation()
@@ -117,7 +116,7 @@ bool UINSCharacterAimInstance::CheckValid()
 
 bool UINSCharacterAimInstance::IsFPPlayingWeaponIdleAnim()
 {
-	return CurrentWeaponAnimData&&Montage_IsPlaying(CurrentWeaponAnimData->FPIdleAnim);
+	return CurrentWeaponAnimData && Montage_IsPlaying(CurrentWeaponAnimData->FPIdleAnim);
 }
 
 void UINSCharacterAimInstance::StopFPPlayingWeaponIdleAnim()
@@ -304,6 +303,11 @@ void UINSCharacterAimInstance::SetBoredState(bool NewBoredState)
 	}
 }
 
+void UINSCharacterAimInstance::SetBaseHandsIkLocation(const FVector NewLocation)
+{
+	BaseHandIKEffector = NewLocation;
+}
+
 void UINSCharacterAimInstance::OnWeaponAnimDelegateBindingFinished()
 {
 	bWeaponAnimDelegateBindingFinished = true;
@@ -369,9 +373,7 @@ void UINSCharacterAimInstance::PlayBoredAnim()
 void UINSCharacterAimInstance::SetCurrentWeaponAndAnimationData(class AINSWeaponBase* NewWeapon)
 {
 	CurrentWeapon = NewWeapon;
-	CurrentWeaponAnimData = CurrentWeapon == nullptr
-		? nullptr
-		: CurrentWeapon->GetWeaponAnimDataPtr();
+	CurrentWeaponAnimData = CurrentWeapon == nullptr? nullptr: CurrentWeapon->GetWeaponAnimDataPtr();
 }
 
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING

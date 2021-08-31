@@ -59,8 +59,8 @@ bool UINSHealthComponent::OnTakingDamage(float ReduceAmount, class AActor* Damag
 		else
 		{
 			const APlayerState* const PlayerState = GetOwnerCharacter()->GetController()->GetPlayerState<APlayerState>();
-			
-			if(PlayerState&&!PlayerState->IsABot())
+
+			if (PlayerState && !PlayerState->IsABot())
 			{
 				GetWorld()->GetTimerManager().SetTimer(HealthRestoreTimerHandle, this, &UINSHealthComponent::ReGenerateHealth, 0.1f, true, TimeBeforeHealthRestore);
 			}
@@ -71,7 +71,7 @@ bool UINSHealthComponent::OnTakingDamage(float ReduceAmount, class AActor* Damag
 
 void UINSHealthComponent::ReGenerateHealth()
 {
-	if(GetOwnerCharacter()&&GetOwnerCharacter()->GetLocalRole()==ROLE_Authority)
+	if (GetOwnerCharacter() && GetOwnerCharacter()->GetLocalRole() == ROLE_Authority)
 	{
 		CurrentHealth = FMath::Clamp<float>(CurrentHealth += 1, CurrentHealth, MaximunHealth);
 		if (CurrentHealth == MaximunHealth)

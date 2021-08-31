@@ -4,8 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameMode.h"
+#include "INSDamageModifier/INSDamageModifierBase.h"
 #include "INSGameModeBase.generated.h"
-
 
 class AINSWeaponBase;
 class AINSTeamInfo;
@@ -134,6 +134,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TestWeaponClasses")
 		TArray<TSubclassOf< AINSWeaponBase>> GameModeAvailableWeaponsClasses;
 
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="DamageModifier")
+	TArray<TSubclassOf<UINSDamageModifierBase>> DamageModifiers;
+
+	UPROPERTY()
+	TArray<UINSDamageModifierBase*> DamageModifierInstances;
+	   
+
 protected:
 
 	//~ Begin AActor interface
@@ -175,6 +182,9 @@ protected:
 	/** creates a terrorist Team for this game */
 	virtual void SpawnTerrorisTeam();
 
+	/** create the damage modifiers that will be used in game */
+	virtual void InitDamageModifiers();
+
 	/** creates a counterTerroristTeam for this game  */
 	virtual void SpawnCounterTerroristTeam();
 
@@ -192,7 +202,7 @@ public:
 	 * @Param Damage event associate with this damage
 	 * @Param BoneName The bone that hit with this damage
 	 */
-	virtual void ModifyDamage(float& OutDamage, const float& OriginDamage, class AController* PlayerInstigator, class AController* Victim, const FDamageEvent& DamageEvent, const FName BoneName);
+	virtual float ModifyDamage(float InDamage,class AController* PlayerInstigator, class AController* Victim, const struct FDamageEvent& DamageEvent);
 
 	/**
 	 * @Desc  confirms a player kill

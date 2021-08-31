@@ -20,6 +20,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Net/RepLayout.h"
 #include "INSDamageTypes/INSDamageType_Falling.h"
+#include "Components/BoxComponent.h"
+#include "Components/SphereComponent.h"
 #include "PhysicsEngine/PhysicalAnimationComponent.h"
 #ifndef GEngine
 #endif // !GEngine
@@ -57,6 +59,7 @@ AINSCharacter::AINSCharacter(const FObjectInitializer& ObjectInitializer) :Super
 	CharacterAudioComp->SetupAttachment(RootComponent);
 	CachedTakeHitArray.SetNum(10);
 	GetMesh()->SetReceivesDecals(false);
+	WeaponPickupClass = AINSPickup_Weapon::StaticClass();
 #if WITH_EDITORONLY_DATA
 	bShowDebugTrace = true;
 #endif
@@ -136,7 +139,17 @@ void AINSCharacter::HandleOnTakeRadiusDamage(AActor* DamagedActor, float Damage,
 {
 }
 
-float AINSCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+bool AINSCharacter::ShouldTakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) const
+{
+	// ignore any kind of damage if we are in damage immune state
+	if (bDamageImmuneState)
+	{
+		return false;
+	}
+	return Super::ShouldTakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
+}
+
+float AINSCharacter::TakeDamage(float Damage, const struct FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	if (HasAuthority())
 	{
@@ -148,11 +161,7 @@ float AINSCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, A
 			// modify any damage according to game rules and other settings
 			if (GameMode)
 			{
-				GameMode->ModifyDamage(DamageAfterModify
-				                       , Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser)
-				                       , EventInstigator, this->GetController()
-				                       , DamageEvent
-				                       , PointDamageEventPtr->HitInfo.BoneName);
+				DamageAfterModify = GameMode->ModifyDamage(Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser), EventInstigator, this->GetController(), DamageEvent);
 			}
 			if (PointDamageEventPtr)
 			{
@@ -189,16 +198,6 @@ float AINSCharacter::TakeDamage(float Damage, FDamageEvent const& DamageEvent, A
 	return 0.f;
 }
 
-bool AINSCharacter::ShouldTakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) const
-{
-	// ignore any kind of damage if we are in damage immune state
-	if (bDamageImmuneState)
-	{
-		return false;
-	}
-	return Super::ShouldTakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
-}
-
 void AINSCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -222,13 +221,11 @@ void AINSCharacter::Landed(const FHitResult& Hit)
 		if (GM && GM->GetAllowFallingDamage())
 		{
 			const float LandZVelocity = FMath::Abs(GetVelocity().Z);
-
 			float Damage = 0.f;
 			if (LandZVelocity > 800.f)
 			{
 				Damage = FallingDamageCurve == nullptr ? 15.f : FallingDamageCurve->GetFloatValue(LandZVelocity);
 			}
-
 			if (LandZVelocity >= FatalFallingSpeed)
 			{
 				Damage = 90.f;
@@ -269,17 +266,13 @@ void AINSCharacter::CastBloodDecal(FVector HitLocation, FVector HitDir)
 				const int RandomIdx = FMath::RandHelper(DecalNums);
 				FRotator RandomDecalRotation = TraceHit.ImpactNormal.ToOrientationRotator();
 				RandomDecalRotation.Roll = FMath::FRandRange(-180.0f, 180.0f);
-				UGameplayStatics::SpawnDecalAttached(BloodSprayDecalMaterials[RandomIdx]
-				                                     , FVector(12.f, 12.f, 12.f)
-				                                     , TraceHit.Component.Get()
-				                                     , TraceHit.BoneName
+				UGameplayStatics::SpawnDecalAttached(BloodSprayDecalMaterials[RandomIdx], FVector(12.f, 12.f, 12.f), TraceHit.Component.Get(), TraceHit.BoneName
 				                                     , TraceHit.ImpactPoint
 				                                     , RandomDecalRotation
 				                                     , EAttachLocation::KeepWorldPosition
 				                                     , 10.f);
 			}
-			UE_LOG(LogINSCharacter, Warning,
-			       TEXT("No blood decal to spawn,please config at least one in your blueprint setting!"));
+			UE_LOG(LogINSCharacter, Warning,TEXT("No blood decal to spawn,please config at least one in your blueprint setting!"));
 		}
 	}
 #if WITH_EDITORONLY_DATA&&!UE_BUILD_SHIPPING
@@ -290,6 +283,48 @@ void AINSCharacter::CastBloodDecal(FVector HitLocation, FVector HitDir)
 #endif
 }
 
+
+void AINSCharacter::TossCurrentWeapon()
+{
+	if (CurrentWeapon && WeaponPickupClass)
+	{
+		class AINSPickup_Weapon* WeaponPickup = GetWorld()->SpawnActorDeferred<AINSPickup_Weapon>(WeaponPickupClass,
+			CurrentWeapon->GetActorTransform(),
+			nullptr,
+			nullptr,
+			ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+
+		const FVector WeaponLocation = CurrentWeapon->GetActorLocation();
+		const FTransform PickupSpawnTransform(CurrentWeapon->GetActorRotation(),
+			WeaponLocation + FVector(0.f, 0.f, 50.f),
+			FVector::OneVector);
+
+		if (WeaponPickup)
+		{
+			WeaponPickup->SetActualWeaponClass(CurrentWeapon->GetClass());
+			WeaponPickup->SetAmmoLeft(CurrentWeapon->AmmoLeft);
+			WeaponPickup->SetLootableAmmo(CurrentWeapon->CurrentClipAmmo);
+			FStringAssetReference AssetsRef(CurrentWeapon->GetWeaponStaticMesh());
+			//UClass* const MeshClass = CurrentWeapon->WeaponMesh1PComp->SkeletalMesh->GetClass();
+			//USkeletalMesh* WeaponMesh = DuplicateObject<USkeletalMesh>(CurrentWeapon->WeaponMesh1PComp->SkeletalMesh, this);
+			UStaticMesh* WeaponMesh = LoadObject<UStaticMesh>(nullptr, *AssetsRef.ToString());
+			//WeaponPickup->GetSimpleCollisionComp()->SetCollisionProfileName(FName(TEXT("pickupphysics")));
+			//WeaponPickup->GetInteractComp()->SetCollisionProfileName(FName(TEXT("PickupsInteract")));
+			UGameplayStatics::FinishSpawningActor(WeaponPickup, PickupSpawnTransform);
+			FRepPickupInfo RepPickupInfo;
+			RepPickupInfo.VisualAssetPath = AssetsRef.ToString();
+			WeaponPickup->SetRepPickupInfo(RepPickupInfo);
+			WeaponPickup->GetVisualMeshComp()->SetStaticMesh(WeaponMesh);
+			CurrentWeapon->Destroy(true);
+#if WITH_EDITOR
+			WeaponPickup->GetSimpleCollisionComp()->SetHiddenInGame(false);
+#endif
+			WeaponPickup->GetSimpleCollisionComp()->SetSimulatePhysics(true);
+			WeaponPickup->GetSimpleCollisionComp()->AddImpulseAtLocation(WeaponPickup->GetActorForwardVector() * 500.f + FVector(0.f, 0.f, 200.f), WeaponPickup->GetActorLocation(), NAME_None);
+			WeaponPickup->GetSimpleCollisionComp()->AddAngularImpulse(FVector(100.f, 300.f, 20.f));
+		}
+	}
+}
 
 void AINSCharacter::OnCauseDamage(const FTakeHitInfo& HitInfo)
 {
@@ -561,11 +596,21 @@ void AINSCharacter::UnCrouch(bool bClientSimulation /* = false */)
 
 void AINSCharacter::Die()
 {
-	if (HasAuthority() && !GetIsDead())
+	if (!HasAuthority())
 	{
-		bIsDead = true;
-		OnRep_Dead();
+		return;
 	}
+	if (GetIsDead())
+	{
+		return;
+	}
+	bIsDead = true;
+	if (CurrentWeapon)
+	{
+		TossCurrentWeapon();
+	}
+	TornOff();
+	OnRep_Dead();
 }
 
 void AINSCharacter::OnRep_Dead()
@@ -576,10 +621,16 @@ void AINSCharacter::OnRep_Dead()
 		GetINSCharacterMovement()->StopMovementImmediately();
 		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
+		if (GetMesh())
+		{
+			GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			GetMesh()->SetCollisionResponseToAllChannels(ECR_Ignore);
+		}
 		if (!IsNetMode(NM_DedicatedServer) && GetCharacterAudioComp())
 		{
 			GetCharacterAudioComp()->OnDeath();
 		}
+		SetLifeSpan(10.f);
 	}
 }
 
@@ -587,11 +638,7 @@ void AINSCharacter::OnRep_IsCrouched()
 {
 	if (INSCharacterMovementComp)
 	{
-		UE_LOG(LogINSCharacter
-		       , Log
-		       , TEXT("Character % s crouch state replicated,is in crouch state:")
-		       , *GetName()
-		       , *UKismetStringLibrary::Conv_BoolToString(bIsCrouched));
+		UE_LOG(LogINSCharacter, Log, TEXT("Character % s crouch state replicated,is in crouch state:") , *GetName(), *UKismetStringLibrary::Conv_BoolToString(bIsCrouched));
 
 		if (bIsCrouched)
 		{
@@ -618,7 +665,16 @@ void AINSCharacter::HandleStartSprintRequest()
 		Forward.Z = 0.0f;
 		MoveDirection.Z = 0.0f;
 		const float VelocityDot = FVector::DotProduct(Forward, MoveDirection);
-		bIsSprint = VelocityDot > 0.8f && !GetCharacterMovement()->IsFalling();
+		const bool bCanEnterSprint = VelocityDot > 0.8f && !GetCharacterMovement()->IsFalling();
+		if (bCanEnterSprint)
+		{
+			//if we are currently Aiming ,stop it
+			if (bIsAiming)
+			{
+				HandleStopAimWeaponRequest();
+				bIsSprint = true;
+			}
+		}
 		OnRep_Sprint();
 	}
 }
@@ -657,31 +713,7 @@ void AINSCharacter::HandleItemEquipRequest(const uint8 SlotIndex)
 
 void AINSCharacter::SpawnWeaponPickup()
 {
-	if (CurrentWeapon && WeaponPickupClass)
-	{
-		class AINSPickup_Weapon* WeaponPickup = GetWorld()->SpawnActorDeferred<AINSPickup_Weapon>(WeaponPickupClass,
-		                                                                                          CurrentWeapon->GetActorTransform(),
-		                                                                                          nullptr,
-		                                                                                          nullptr,
-		                                                                                          ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
 
-		const FVector WeaponLocation = CurrentWeapon->GetActorLocation();
-		const FTransform PickupSpawnTransform(CurrentWeapon->GetActorRotation(),
-		                                      WeaponLocation + FVector(0.f, 0.f, 50.f),
-		                                      FVector::OneVector);
-
-		if (WeaponPickup)
-		{
-			WeaponPickup->SetActualWeaponClass(CurrentWeapon->GetClass());
-			WeaponPickup->SetAmmoLeft(CurrentWeapon->AmmoLeft);
-			WeaponPickup->SetLootableAmmo(CurrentWeapon->CurrentClipAmmo);
-			UClass* const MeshClass = CurrentWeapon->WeaponMesh1PComp->SkeletalMesh->GetClass();
-			WeaponPickup->SetViualMesh(NewObject<USkeletalMesh>(MeshClass));
-			WeaponPickup->GetVisualMeshComp()->RegisterComponent();
-			UGameplayStatics::FinishSpawningActor(WeaponPickup, PickupSpawnTransform);
-		}
-	}
-	CurrentWeapon->Destroy(true);
 }
 
 void AINSCharacter::SetWeaponBasePoseType(const EWeaponBasePoseType NewType)

@@ -89,29 +89,19 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Blend")
 		float SprintPlaySpeed;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControl")
-		FVector WeaponIKRootOffSetEffector;
-
+	/** base hands IK effector ,relative to origin hands position */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControl")
 		FVector BaseHandIKEffector;
 
+	/** ads hands IK effector ,relative to origin hands position */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControl")
 		FVector ADSHandIKEffector;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControl")
-		FVector CurrentHandIKEffector;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControl")
-		FVector WeaponIKLeftHandOffSetEffector;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControl")
-		FVector WeaponIKRightHandOffSetEffector;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControl")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Procedure")
 		FRotator WeaponIKSwayRotation;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControl")
-		float  WeaponIKSwayRotationAlpha;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite,Category="Procedure")
+		FVector WeaponSwayLocation;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AnimationMode")
 		EViewMode CurrentViewMode;
@@ -131,6 +121,14 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IKControl")
 		float  BoredAnimPlayTimeInterval;
 
+	/** target x scale when aim ,relative to origin hands position */
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="IK")
+	    float AimHandIKXLocationValue;
+
+	/** current interpolated x scale when aim ,relative to origin hands position */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IK")
+		float CurrentAimHandIKXLocationValue;
+
 
 
 protected:
@@ -142,6 +140,7 @@ protected:
 		uint8 bShowDebugTrace : 1;
 #endif
 
+	/** timer for bored animation play */
 	FTimerHandle BoredAnimPlayTimer;
 
 protected:
@@ -267,6 +266,10 @@ public:
 	virtual void SetIdleState(bool NewIdleState);
 
 	virtual void SetBoredState(bool NewBoredState);
+
+	virtual void SetBaseHandsIkLocation(const FVector NewLocation);
+
+	virtual void SetAimHandIKXLocation(const float NewVal) { AimHandIKXLocationValue = NewVal; }
 
 	UFUNCTION()
 		virtual void StopFPPlayingWeaponIdleAnim();

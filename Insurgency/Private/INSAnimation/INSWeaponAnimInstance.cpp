@@ -12,6 +12,7 @@ DEFINE_LOG_CATEGORY(LogINSWeaponAimInstance);
 UINSWeaponAnimInstance::UINSWeaponAnimInstance(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	bWeaponAnimDelegateBindingFinished = false;
+	bOpticEquipped = false;
 }
 
 void UINSWeaponAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
@@ -57,6 +58,7 @@ float UINSWeaponAnimInstance::PlayFireAnim()
 	}
 	return Montage_Play(SelectedPullTriggerAnim);
 }
+
 
 float UINSWeaponAnimInstance::PlayReloadAnim(bool bIsDry)
 {
@@ -115,14 +117,11 @@ float UINSWeaponAnimInstance::PlayWeaponBasePose()
 	UAnimMontage* SelectedBasePoseAnim = nullptr;
 	switch (CurrentWeaponBasePoseType)
 	{
-	case EWeaponBasePoseType::ALTGRIP: SelectedBasePoseAnim = WeaponAnimData->FPWeaponAltGripAnim.BasePoseAnim.
-	                                                                          WeaponAnim;
+	case EWeaponBasePoseType::ALTGRIP: SelectedBasePoseAnim = WeaponAnimData->FPWeaponAltGripAnim.BasePoseAnim.WeaponAnim;
 		break;
-	case EWeaponBasePoseType::FOREGRIP: SelectedBasePoseAnim = WeaponAnimData->FPWeaponForeGripAnim.BasePoseAnim.
-	                                                                           WeaponAnim;
+	case EWeaponBasePoseType::FOREGRIP: SelectedBasePoseAnim = WeaponAnimData->FPWeaponForeGripAnim.BasePoseAnim.WeaponAnim;
 		break;
-	case EWeaponBasePoseType::DEFAULT: SelectedBasePoseAnim = WeaponAnimData->FPWeaponDefaultPoseAnim.BasePoseAnim.
-	                                                                          WeaponAnim;
+	case EWeaponBasePoseType::DEFAULT: SelectedBasePoseAnim = WeaponAnimData->FPWeaponDefaultPoseAnim.BasePoseAnim. WeaponAnim;
 		break;
 	default: SelectedBasePoseAnim = nullptr;
 		break;
@@ -144,14 +143,11 @@ float UINSWeaponAnimInstance::PlayWeaponStartEquipAnim()
 	UAnimMontage* SelectedEquipAnim = nullptr;
 	switch (CurrentWeaponBasePoseType)
 	{
-	case EWeaponBasePoseType::ALTGRIP: SelectedEquipAnim =
-			WeaponAnimData->FPWeaponAltGripAnim.DeployAnim.WeaponAnim;
+	case EWeaponBasePoseType::ALTGRIP: SelectedEquipAnim = WeaponAnimData->FPWeaponAltGripAnim.DeployAnim.WeaponAnim;
 		break;
-	case EWeaponBasePoseType::FOREGRIP: SelectedEquipAnim =
-			WeaponAnimData->FPWeaponForeGripAnim.DeployAnim.WeaponAnim;
+	case EWeaponBasePoseType::FOREGRIP: SelectedEquipAnim = WeaponAnimData->FPWeaponForeGripAnim.DeployAnim.WeaponAnim;
 		break;
-	case EWeaponBasePoseType::DEFAULT: SelectedEquipAnim =
-			WeaponAnimData->FPWeaponDefaultPoseAnim.DeployAnim.WeaponAnim;
+	case EWeaponBasePoseType::DEFAULT: SelectedEquipAnim = WeaponAnimData->FPWeaponDefaultPoseAnim.DeployAnim.WeaponAnim;
 		break;
 	default: SelectedEquipAnim = nullptr;
 		break;
@@ -163,16 +159,12 @@ bool UINSWeaponAnimInstance::CheckValid()
 {
 	if (!OwnerWeapon)
 	{
-		UE_LOG(LogINSWeaponAimInstance
-		       , Warning
-		       , TEXT("Missing Current Weapon Ref,invalid for playing any weapon anim"));
+		//UE_LOG(LogINSWeaponAimInstance, Warning, TEXT("Missing Current Weapon Ref,invalid for playing any weapon anim"));
 		return false;
 	}
 	if (!WeaponAnimData)
 	{
-		UE_LOG(LogINSWeaponAimInstance
-		       , Warning
-		       , TEXT("Missing Current Weapon asstes Ref,invalid for playing any weapon anim"));
+		//UE_LOG(LogINSWeaponAimInstance, Warning , TEXT("Missing Current Weapon asstes Ref,invalid for playing any weapon anim"));
 		return false;
 	}
 	return true;

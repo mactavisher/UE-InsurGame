@@ -9,7 +9,7 @@
 #include "INSWeaponAttachment.generated.h"
 
 class AINSWeaponBase;
-class USkeletalMeshComponent;
+class UStaticMeshComponent;
 
 /**
  * weapon attachment for weapon to equip
@@ -23,49 +23,49 @@ class INSURGENCY_API AINSWeaponAttachment : public AINSItems
 protected:
 	/** attachment visual skeletal component , should have no collision(Physics) enabled */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AttachmentMeshComp", meta = (AllowPrivateAccess = "true"))
-	USkeletalMeshComponent* AttachmentMesh;
+		UStaticMeshComponent* AttachmentMeshComp;
 
 	/** weapon that own this attachment */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_OwnerWeapon, Category = "WeaponOwner")
-	AINSWeaponBase* WeaponOwner;
+		AINSWeaponBase* WeaponOwner;
 
 	/** in which slot can this attachment attach to, e.g. underBarrel,muzzle */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
-	TArray<EWeaponAttachmentType> CompatibleWeaponSlots;
+		TArray<EWeaponAttachmentType> CompatibleWeaponSlots;
 
 	/** in which slot can this attachment attach to, e.g. underBarrel,muzzle */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
-	EWeaponAttachmentType CurrentAttachmentType;
+		EWeaponAttachmentType AttachmentType;
 
-	UPROPERTY()
-	AINSWeaponAttachment* ClientVisualAttachment;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "WeaponAttachments")
+		uint8 AttachedSlotIndex;
 
-	UPROPERTY()
-	uint8 bClientVisualAttachment:1;
-
-	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="WeaponAttachments")
-	uint8 AttachedSlotIndex;
+	/** Target FOV value,for optics only */
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="FOV")
+	   float TargetFOV;
 
 
 protected:
+	/** for grips typically, such as fore grips */
 	UPROPERTY()
-	uint8 bChangeWeaponBasePoseType:1;
+		uint8 bChangeWeaponBasePoseType : 1;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="WeaponAttachments")
-	EWeaponBasePoseType TargetWeaponBasePoseType;
+	/** for bolt rifles typically,indicates if this attachment will block weapon quick reloading */
+	UPROPERTY()
+		uint8 bBlockQuickBoltRifileReloading : 1;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponAttachments")
+		EWeaponBasePoseType TargetWeaponBasePoseType;
 
 
 protected:
 	/** attach the attachment to weapon attachment slot */
 	virtual void AttachToWeaponSlot();
 
-	/** create attachment for client visual only */
-	virtual void CreateClientVisualAttachment();
-
 	UFUNCTION()
-	virtual void OnRep_OwnerWeapon();
+		virtual void OnRep_OwnerWeapon();
 
-	virtual void UpdateWeaponBasePoseType();
+	virtual void CheckAndUpdateWeaponBasePoseType();
 
 protected:
 	// ~ Begin AActor interface
@@ -84,27 +84,28 @@ public:
 	FORCEINLINE virtual class AINSWeaponBase* GetWeaponOwner() const { return WeaponOwner; }
 
 	/** set the weapon that own this attachment */
-	virtual void SetWeaponOwner(class AINSWeaponBase* NewWeaponOwner) { this->WeaponOwner = NewWeaponOwner; }
+	virtual void SetWeaponOwner(class AINSWeaponBase* NewWeaponOwner);
 
-    /**get the client fake attachment instance */
-	FORCEINLINE virtual AINSWeaponAttachment* GetClientVisualAttachment() const { return ClientVisualAttachment; }
 
-    /** get the attachmentmesh comp*/
-	FORCEINLINE virtual class USkeletalMeshComponent* GetAttachmentMeshComp() const;
+	/** get the attachment mesh comp*/
+	FORCEINLINE virtual class UStaticMeshComponent* GetAttachmentMeshComp() const;
 
-	virtual void SetClientVisualAttachment(class AINSWeaponAttachment* NewClientAttachment) { ClientVisualAttachment = NewClientAttachment; }
+	/** gets the target FOV of this attachment ,for optics only */
+	virtual float GetTargetFOV()const { return TargetFOV; }
 
 	inline virtual EWeaponBasePoseType GetTargetWeaponBasePoseType() const { return TargetWeaponBasePoseType; }
+
+	virtual FVector GetBarrelLocation() { return FVector::ZeroVector; }
 
 	virtual void SetTargetWeaponBasePoseType(const EWeaponBasePoseType NewTargetWeaponBasePoseType) { this->TargetWeaponBasePoseType = TargetWeaponBasePoseType; }
 
 	virtual EWeaponAttachmentType GetCurrentAttachmentType() const
 	{
-		return CurrentAttachmentType;
+		return AttachmentType;
 	}
 
 	virtual void SetCurrentAttachmentType(const EWeaponAttachmentType NewCurrentAttachmentType)
 	{
-		this->CurrentAttachmentType = NewCurrentAttachmentType;
+		this->AttachmentType = NewCurrentAttachmentType;
 	}
 };

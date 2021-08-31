@@ -31,6 +31,7 @@
 #define SurfaceType_Armor                                          SurfaceType20
 
 #define ECC_Penetrate                                              ECC_EngineTraceChannel1
+#define ECC_Projectile                                             ECC_GameTraceChannel1
 
 /** ~~--------------------------------------------------------------
    define INS Game Types-------------------------------------------*/

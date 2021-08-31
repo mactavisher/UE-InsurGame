@@ -14,10 +14,11 @@ class AINSItems_Pickup;
 class USkeletalMeshComponent;
 class USkeletalMesh;
 
+
 /**
  *  weapon pickup
  */
-UCLASS(Abstract, Blueprintable)
+UCLASS(Blueprintable)
 class INSURGENCY_API AINSPickup_Weapon : public AINSPickupBase
 {
 	GENERATED_UCLASS_BODY()
@@ -28,13 +29,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = "PickupClass")
 		TSubclassOf<AINSWeaponBase> ActualWeaponClass;
 
-	/** create a visual mesh for this weapon pick up actor */
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"), Category = "VisualMesh")
-		USkeletalMeshComponent* VisualMeshComp;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PickupClass")
-		USkeletalMesh* VisualMesh;
-
 	/** how many ammo stored in current clip ,the current clip ammo should stay the same after picked up*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Ammo")
 		int32 CurrentClipAmmo;
@@ -43,12 +37,16 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Ammo")
 		int32 AmmoLeft;
 
+	
+
 protected:
 	//~ begin AActor interface
 	virtual void BeginPlay()override;
 	virtual void PostInitializeComponents()override;
+	virtual void Tick(float DeltaTime)override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
 	//~ end AActor interface
+
 
 public:
 
@@ -75,13 +73,4 @@ public:
 
 	/** return ammo left this weapon pick up should have stored */
 	inline virtual int32 GetAmmoLeft()const { return AmmoLeft; }
-
-	/** set the visual mesh of this visual mesh comp */
-	virtual void SetViualMesh(class USkeletalMesh* NewVisualMesh);
-
-	/** set the visual skin mesh for the skeletal mesh component */
-	virtual void SetSkinMeshComp(USkeletalMeshComponent* NewVisualMeshComp) { VisualMeshComp = NewVisualMeshComp; }
-
-	/** returns the Visual mesh */
-	FORCEINLINE virtual USkinnedMeshComponent* GetVisualMeshComp()const { return VisualMeshComp; }
 };

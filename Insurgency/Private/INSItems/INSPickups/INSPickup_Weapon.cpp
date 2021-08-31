@@ -15,12 +15,13 @@
 
 AINSPickup_Weapon::AINSPickup_Weapon(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
 {
-
+	
 }
 
 void AINSPickup_Weapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	
 }
 
 
@@ -35,14 +36,14 @@ void AINSPickup_Weapon::BeginPlay()
 	Super::BeginPlay();
 }
 
-void AINSPickup_Weapon::SetViualMesh(class USkeletalMesh* NewVisualMesh)
-{
-	VisualMesh = NewVisualMesh;
-}
 
 void AINSPickup_Weapon::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 }
 
+void AINSPickup_Weapon::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+}
 

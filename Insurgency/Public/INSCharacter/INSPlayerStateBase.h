@@ -40,6 +40,33 @@ public:
 };
 
 /**
+ * struct to track combo kill
+ */
+USTRUCT(BlueprintType)
+struct FComboKillInfo
+{
+	GENERATED_USTRUCT_BODY()
+public:
+	UPROPERTY()
+		int32 CombokillCount;
+
+	UPROPERTY()
+		float LastKillTime;
+
+	UPROPERTY()
+		float ComboBreakTime;
+
+public:
+	FComboKillInfo()
+		: CombokillCount(0)
+		, LastKillTime(0.f)
+		, ComboBreakTime(5.f)
+	{
+	}
+};
+
+
+/**
  * Player state
  */
 UCLASS()
@@ -81,6 +108,9 @@ protected:
 	/** k/d ratio,not this is NOT replicated so client will need to update this it self  */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = PlayerState)
 		float KDRatio;
+
+	UPROPERTY()
+	   FComboKillInfo ComboKillInfo;
 
 protected:
 	//~ Begin AActor interface
