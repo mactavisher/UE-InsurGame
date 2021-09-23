@@ -16,13 +16,13 @@
 #include "INSItems/INSWeapons/INSWeaponBase.h"
 #include "INSCharacter/INSPlayerController.h"
 #include "INSItems/INSPickups/INSPickup_Weapon.h"
-#include "INSComponents/INSWeaponMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/RepLayout.h"
 #include "INSDamageTypes/INSDamageType_Falling.h"
 #include "Components/BoxComponent.h"
 #include "Components/SphereComponent.h"
 #include "PhysicsEngine/PhysicalAnimationComponent.h"
+#include "INSAssets/INSStaticAnimData.h"
 #ifndef GEngine
 #endif // !GEngine
 #ifndef UWorld
@@ -59,6 +59,7 @@ AINSCharacter::AINSCharacter(const FObjectInitializer& ObjectInitializer) :Super
 	CharacterAudioComp->SetupAttachment(RootComponent);
 	CachedTakeHitArray.SetNum(10);
 	GetMesh()->SetReceivesDecals(false);
+	DeathTime = 0.f;
 	WeaponPickupClass = AINSPickup_Weapon::StaticClass();
 #if WITH_EDITORONLY_DATA
 	bShowDebugTrace = true;
@@ -166,6 +167,7 @@ float AINSCharacter::TakeDamage(float Damage, const struct FDamageEvent& DamageE
 			if (PointDamageEventPtr)
 			{
 				CharacterHealthComp->OnTakingDamage(DamageAfterModify, DamageCauser, EventInstigator);
+				LastHitInfo.bValidShot = true;
 				LastHitInfo.Damage = GetIsDead() ? 0.f : DamageAfterModify;
 				LastHitInfo.DamageCauser = DamageCauser;
 				LastHitInfo.Victim = this;
@@ -230,12 +232,9 @@ void AINSCharacter::Landed(const FHitResult& Hit)
 			{
 				Damage = 90.f;
 			}
-			UE_LOG(LogINSCharacter
-			       , Log
+			UE_LOG(LogINSCharacter , Log
 			       , TEXT("Character %s is taking land damage falling from high,initial damage taken:%f,landing speed %f")
-			       , *GetName()
-			       , *UKismetStringLibrary::Conv_FloatToString(Damage)
-			       , LandZVelocity);
+			       , *GetName(), *UKismetStringLibrary::Conv_FloatToString(Damage), LandZVelocity);
 			FPointDamageEvent FallingDamageEvent;
 			FallingDamageEvent.DamageTypeClass = UINSDamageType_Falling::StaticClass();
 			FallingDamageEvent.ShotDirection = Hit.ImpactNormal;
@@ -304,12 +303,8 @@ void AINSCharacter::TossCurrentWeapon()
 			WeaponPickup->SetActualWeaponClass(CurrentWeapon->GetClass());
 			WeaponPickup->SetAmmoLeft(CurrentWeapon->AmmoLeft);
 			WeaponPickup->SetLootableAmmo(CurrentWeapon->CurrentClipAmmo);
-			FStringAssetReference AssetsRef(CurrentWeapon->GetWeaponStaticMesh());
-			//UClass* const MeshClass = CurrentWeapon->WeaponMesh1PComp->SkeletalMesh->GetClass();
-			//USkeletalMesh* WeaponMesh = DuplicateObject<USkeletalMesh>(CurrentWeapon->WeaponMesh1PComp->SkeletalMesh, this);
+			const FStringAssetReference AssetsRef(CurrentWeapon->GetWeaponStaticMesh());
 			UStaticMesh* WeaponMesh = LoadObject<UStaticMesh>(nullptr, *AssetsRef.ToString());
-			//WeaponPickup->GetSimpleCollisionComp()->SetCollisionProfileName(FName(TEXT("pickupphysics")));
-			//WeaponPickup->GetInteractComp()->SetCollisionProfileName(FName(TEXT("PickupsInteract")));
 			UGameplayStatics::FinishSpawningActor(WeaponPickup, PickupSpawnTransform);
 			FRepPickupInfo RepPickupInfo;
 			RepPickupInfo.VisualAssetPath = AssetsRef.ToString();
@@ -321,9 +316,18 @@ void AINSCharacter::TossCurrentWeapon()
 #endif
 			WeaponPickup->GetSimpleCollisionComp()->SetSimulatePhysics(true);
 			WeaponPickup->GetSimpleCollisionComp()->AddImpulseAtLocation(WeaponPickup->GetActorForwardVector() * 500.f + FVector(0.f, 0.f, 200.f), WeaponPickup->GetActorLocation(), NAME_None);
-			WeaponPickup->GetSimpleCollisionComp()->AddAngularImpulse(FVector(100.f, 300.f, 20.f));
+			WeaponPickup->GetSimpleCollisionComp()->AddAngularImpulseInRadians(FVector(100.f, 300.f, 20.f));
 		}
 	}
+}
+
+bool AINSCharacter::CheckCharacterIsReady()
+{
+	if(GetMesh()&&GetMesh()->HasBegunPlay())
+	{
+		return true;
+	}
+	return false;
 }
 
 void AINSCharacter::OnCauseDamage(const FTakeHitInfo& HitInfo)
@@ -340,6 +344,11 @@ void AINSCharacter::SetLastHitStateInfo(class AActor* LastHitActor)
 {
 	LastHitState.LastHitActor = LastHitActor;
 	LastHitState.CurrentHitStateLastTime = LastHitState.HitStateTime;
+}
+
+void AINSCharacter::SetCurrentAnimData(UINSStaticAnimData* AnimData)
+{
+	CurrentAnimPtr = AnimData;
 }
 
 
@@ -389,6 +398,7 @@ void AINSCharacter::OnRep_LastHitInfo()
 	}
 	ApplyPhysicAnimation();
 	CachedTakeHitArray.Add(LastHitInfo);
+	DeathTime = GetWorld()->TimeSeconds;
 }
 
 void AINSCharacter::OnRep_CurrentStance()
@@ -489,24 +499,26 @@ void AINSCharacter::OnWeaponCollide(const FHitResult& Hit)
 
 void AINSCharacter::TickHitStateTime(const float DeltaTime)
 {
-	if (!IsNetMode(NM_DedicatedServer))
+	if(IsNetMode(NM_DedicatedServer))
 	{
-		if (LastHitState.CurrentHitStateLastTime > 0.f)
-		{
-			LastHitState.CurrentHitStateLastTime = FMath::Clamp<float>(LastHitState.CurrentHitStateLastTime - DeltaTime,
-			                                                           0.f, LastHitState.CurrentHitStateLastTime);
-		}
+		return;
+	}
+
+	if (LastHitState.CurrentHitStateLastTime > 0.f)
+	{
+		LastHitState.CurrentHitStateLastTime = FMath::Clamp<float>(LastHitState.CurrentHitStateLastTime - DeltaTime,0.f, LastHitState.CurrentHitStateLastTime);
 	}
 }
 
 void AINSCharacter::HandleAimWeaponRequest()
 {
-	if (HasAuthority())
+	if (!HasAuthority())
 	{
-		if (CurrentWeapon && CurrentWeapon->GetWeaponCurrentState() != EWeaponState::RELOADIND)
-		{
-			CurrentWeapon->StartWeaponAim();
-		}
+		return;
+	}
+	if (CurrentWeapon && CurrentWeapon->GetWeaponCurrentState() != EWeaponState::RELOADIND)
+	{
+		CurrentWeapon->StartWeaponAim();
 	}
 }
 
@@ -548,6 +560,36 @@ void AINSCharacter::HandleSwitchFireModeRequest()
 	if (CurrentWeapon)
 	{
 		CurrentWeapon->StartSwitchFireMode();
+	}
+}
+
+void AINSCharacter::HandleSingleAmmoInsertRequest()
+{
+	if(CurrentWeapon)
+	{
+		if(HasAuthority())
+		{
+			  CurrentWeapon->InsertSingleAmmo();
+		}
+		if(GetLocalRole()==ROLE_AutonomousProxy)
+		{
+			CurrentWeapon->ServerInsertSingleAmmo();
+		}
+	}
+}
+
+void AINSCharacter::HandleFinishReloadingRequest()
+{
+	if(CurrentWeapon)
+	{
+		if(HasAuthority())
+		{
+			CurrentWeapon->FinishReloadWeapon();
+		}
+		if(GetLocalRole()==ROLE_AutonomousProxy)
+		{
+			CurrentWeapon->ServerFinishReloadWeapon();
+		}
 	}
 }
 
@@ -596,11 +638,7 @@ void AINSCharacter::UnCrouch(bool bClientSimulation /* = false */)
 
 void AINSCharacter::Die()
 {
-	if (!HasAuthority())
-	{
-		return;
-	}
-	if (GetIsDead())
+	if (!HasAuthority() && GetIsDead())
 	{
 		return;
 	}
@@ -664,16 +702,14 @@ void AINSCharacter::HandleStartSprintRequest()
 		//Ignore vertical movement
 		Forward.Z = 0.0f;
 		MoveDirection.Z = 0.0f;
-		const float VelocityDot = FVector::DotProduct(Forward, MoveDirection);
-		const bool bCanEnterSprint = VelocityDot > 0.8f && !GetCharacterMovement()->IsFalling();
-		if (bCanEnterSprint)
+		if ( FVector::DotProduct(Forward, MoveDirection) > 0.8f && !GetCharacterMovement()->IsFalling())
 		{
 			//if we are currently Aiming ,stop it
 			if (bIsAiming)
 			{
 				HandleStopAimWeaponRequest();
-				bIsSprint = true;
 			}
+			bIsSprint = true;
 		}
 		OnRep_Sprint();
 	}
@@ -681,11 +717,12 @@ void AINSCharacter::HandleStartSprintRequest()
 
 void AINSCharacter::HandleStopSprintRequest()
 {
-	if (HasAuthority())
+	if (!HasAuthority())
 	{
-		bIsSprint = false;
-		OnRep_Sprint();
+		return;
 	}
+	bIsSprint = false;
+	OnRep_Sprint();
 }
 
 void AINSCharacter::HandleJumpRequest()
@@ -714,6 +751,10 @@ void AINSCharacter::HandleItemEquipRequest(const uint8 SlotIndex)
 void AINSCharacter::SpawnWeaponPickup()
 {
 
+}
+
+void AINSCharacter::SetAimHandsXLocation(const float Value)
+{
 }
 
 void AINSCharacter::SetWeaponBasePoseType(const EWeaponBasePoseType NewType)

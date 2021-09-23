@@ -17,6 +17,8 @@
 #include "DrawDebugHelpers.h"
 #include "INSHud/INSHUDBase.h"
 #include "Components/CapsuleComponent.h"
+#include "INSAnimation/INSFPAnimInstance.h"
+#include "INSAnimation/INSTPAnimInstance.h"
 #include "INSCharacter/INSPlayerCameraManager.h"
 #include "INSComponents/INSInventoryComponent.h"
 #ifndef GEngine
@@ -70,9 +72,13 @@ void AINSPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	SetupMeshVisibility();
-	if (HasAuthority())
+	if (GetLocalRole() == ROLE_Authority || GetLocalRole() == ROLE_AutonomousProxy && !IsNetMode(NM_DedicatedServer))
 	{
-		GetWorldTimerManager().SetTimer(EquipDefaultWeaponHandle, this, &AINSPlayerCharacter::EquipGameModeDefaultWeapon, 1.f, false, 0.1f);
+		CharacterReadyTick.bCanEverTick = true;
+		CharacterReadyTick.TickInterval = 0.3f;
+		CharacterReadyTick.SetTickFunctionEnable(true);
+		CharacterReadyTick.Target = this;
+		CharacterReadyTick.RegisterTickFunction(GetLevel());
 	}
 }
 
@@ -94,11 +100,39 @@ void AINSPlayerCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 }
 
+void AINSPlayerCharacter::TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction)
+{
+	Super::TickActor(DeltaTime, TickType, ThisTickFunction);
+	if(&ThisTickFunction==&CharacterReadyTick)
+	{
+		if(CheckCharacterIsReady())
+		{
+			if(CurrentWeapon)
+			{
+				if(HasAuthority())
+				{
+					CurrentWeapon->SetWeaponState(EWeaponState::EQUIPPING);
+				}else
+				{
+					CurrentWeapon->ServerSetWeaponState(EWeaponState::EQUIPPING);
+				}
+			}
+			CharacterReadyTick.bCanEverTick = false;
+			CharacterReadyTick.SetTickFunctionEnable(false);
+			CharacterReadyTick.UnRegisterTickFunction();
+			UE_LOG(LogINSCharacter, Log, TEXT("Character:%s is ready for action,and check ready tick function is unregistered"), *GetName());
+		}
+	}
+}
+
 void AINSPlayerCharacter::OnCauseDamage(const FTakeHitInfo& HitInfo)
 {
 	Super::OnCauseDamage(HitInfo);
-	if (!IsNetMode(NM_DedicatedServer))
+	if(IsNetMode(NM_DedicatedServer))
 	{
+		return;
+	}
+	
 		if (GetCharacterAudioComp())
 		{
 			GetCharacterAudioComp()->OnCauseDamage(HitInfo.bIsTeamDamage, HitInfo.bVictimDead);
@@ -116,7 +150,6 @@ void AINSPlayerCharacter::OnCauseDamage(const FTakeHitInfo& HitInfo)
 				PC->PlayerCauseDamage(LastHitInfo);
 			}
 		}
-	}
 }
 
 void AINSPlayerCharacter::PossessedBy(AController* NewController)
@@ -127,6 +160,10 @@ void AINSPlayerCharacter::PossessedBy(AController* NewController)
 	if (GetNetMode() == NM_Standalone || GetNetMode() == NM_ListenServer)
 	{
 		OnRep_TeamType();
+	}
+	if(HasAuthority())
+	{
+		EquipGameModeDefaultWeapon();
 	}
 }
 
@@ -162,22 +199,24 @@ void AINSPlayerCharacter::OnRep_CurrentWeapon()
 	if (CurrentWeapon)
 	{
 		SetupWeaponAttachment();
-		Get1PAnimInstance()->SetCurrentWeaponAndAnimationData(CurrentWeapon);
-		Get3PAnimInstance()->SetCurrentWeaponAndAnimationData(CurrentWeapon);
-		Get1PAnimInstance()->PlayWeaponStartEquipAnim();
-		Get3PAnimInstance()->PlayWeaponStartEquipAnim();
+		Get1PAnimInstance()->SetCurrentWeapon(CurrentWeapon);
+		Get3PAnimInstance()->SetCurrentWeapon(CurrentWeapon);
+		SetCurrentAnimData(CurrentWeapon->GetWeaponAnimDataPtr());
 		Get1PAnimInstance()->SetBaseHandsIkLocation(CurrentWeapon->GetWeaponBaseIKLocation());
 		Get3PAnimInstance()->SetBaseHandsIkLocation(CurrentWeapon->GetWeaponBaseIKLocation());
 		Get1PAnimInstance()->SetAimHandIKXLocation(CurrentWeapon->GetWeaponAimHandIKXLocation());
 	}
 	else
 	{
-		Get1PAnimInstance()->SetCurrentWeaponAndAnimationData(nullptr);
-		Get3PAnimInstance()->SetCurrentWeaponAndAnimationData(nullptr);
+		Get1PAnimInstance()->SetCurrentWeapon(nullptr);
+		Get3PAnimInstance()->SetCurrentWeapon(nullptr);
+		SetCurrentAnimData(nullptr);
 		Get1PAnimInstance()->SetBaseHandsIkLocation(FVector::ZeroVector);
 		Get3PAnimInstance()->SetBaseHandsIkLocation(FVector::ZeroVector);
 		Get1PAnimInstance()->SetAimHandIKXLocation(0.f);
 	}
+	CharacterReadyTick.bCanEverTick = true;
+	CharacterReadyTick.SetTickFunctionEnable(true);
 	if (HasAuthority() || GetLocalRole() == ROLE_AutonomousProxy)
 	{
 		AINSPlayerCameraManager* const CameraManager = Cast<AINSPlayerCameraManager>(GetINSPlayerController()->PlayerCameraManager);
@@ -216,20 +255,13 @@ void AINSPlayerCharacter::OnEnterBoredState()
 	Super::OnEnterBoredState();
 	if (!GetCurrentWeapon())
 	{
-		UE_LOG(LogINSCharacter
-		       , Log
-		       , TEXT("Character:%s with no weapon is not moving for too much time ,enter bored state")
-		       , *GetName());
+		UE_LOG(LogINSCharacter, Log, TEXT("Character:%s with no weapon is not moving for too much time ,enter bored state"), *GetName());
 		Get1PAnimInstance()->SetBoredState(true);
 		Get3PAnimInstance()->SetBoredState(true);
 	}
 	if (GetCurrentWeapon() && GetCurrentWeapon()->GetCurrentWeaponState() == EWeaponState::IDLE)
 	{
-		UE_LOG(LogINSCharacter
-		       , Log
-		       , TEXT("Character:%s with weapon %s is not moving and not using weapon for too much time ,enter bored state")
-		       , *GetName(),
-		       *(GetCurrentWeapon()->GetName()));
+		UE_LOG(LogINSCharacter, Log, TEXT("Character:%s with weapon %s is not moving and not using weapon for too much time ,enter bored state"), *GetName(),*(GetCurrentWeapon()->GetName()));
 		Get1PAnimInstance()->SetBoredState(true);
 		Get3PAnimInstance()->SetBoredState(true);
 	}
@@ -390,6 +422,23 @@ void AINSPlayerCharacter::UnCrouch(bool bClientSimulation)
 	Super::UnCrouch(bClientSimulation);
 }
 
+void AINSPlayerCharacter::SetAimHandsXLocation(const float Value)
+{
+	if(Get1PAnimInstance())
+	{
+		Get1PAnimInstance()->SetAimHandIKXLocation(Value);
+	}
+}
+
+bool AINSPlayerCharacter::CheckCharacterIsReady()
+{
+	if(Get1PAnimInstance()->GetIsAnimInitialized()&&Get1PAnimInstance()->GetIsValidPlayAnim())
+	{
+		return true;
+	}
+	return false;
+}
+
 void AINSPlayerCharacter::HandleCrouchRequest()
 {
 	Super::HandleCrouchRequest();
@@ -415,11 +464,7 @@ void AINSPlayerCharacter::HandleItemEquipRequest(const uint8 SlotIndex)
 			UClass* ItemClass = SelectedSlot->SlotWeaponClass;
 			if (ItemClass)
 			{
-				class AINSWeaponBase* NewWeapon = GetWorld()->SpawnActorDeferred<AINSWeaponBase>(ItemClass
-				                                                                                 , GetActorTransform()
-				                                                                                 , GetOwner()
-				                                                                                 , this
-				                                                                                 , ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+				class AINSWeaponBase* NewWeapon = GetWorld()->SpawnActorDeferred<AINSWeaponBase>(ItemClass, GetActorTransform(), GetOwner(), this , ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 				if (NewWeapon)
 				{
 					NewWeapon->SetAutonomousProxy(true);
@@ -443,6 +488,13 @@ void AINSPlayerCharacter::PutCurrentWeaponBackToSlot()
 	}
 }
 
+void AINSPlayerCharacter::SetCurrentAnimData(UINSStaticAnimData* AnimData)
+{
+	Super::SetCurrentAnimData(AnimData);
+	Get1PAnimInstance()->SetCurrentWeaponAnimData(CurrentAnimPtr);
+	Get3PAnimInstance()->SetCurrentWeaponAnimData(CurrentAnimPtr);
+}
+
 void AINSPlayerCharacter::EquipGameModeDefaultWeapon()
 {
 	UClass* CurrentWeaponClass = GetINSPlayerController()->GetGameModeRandomWeapon();
@@ -450,11 +502,7 @@ void AINSPlayerCharacter::EquipGameModeDefaultWeapon()
 	{
 		return;
 	}
-	class AINSWeaponBase* NewWeapon = GetWorld()->SpawnActorDeferred<AINSWeaponBase>(CurrentWeaponClass
-	                                                                                 , GetActorTransform()
-	                                                                                 , GetOwner()
-	                                                                                 , this
-	                                                                                 , ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+	class AINSWeaponBase* NewWeapon = GetWorld()->SpawnActorDeferred<AINSWeaponBase>(CurrentWeaponClass, GetActorTransform(), GetOwner(), this, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 	if (NewWeapon)
 	{
 		NewWeapon->SetAutonomousProxy(true);
@@ -540,7 +588,8 @@ void AINSPlayerCharacter::GetPlayerCameraSocketWorldTransform(FTransform& OutCam
 {
 	if (GetLocalRole() == ROLE_Authority || GetLocalRole() == ROLE_AutonomousProxy)
 	{
-		OutCameraSocketTransform = CharacterMesh1P->GetSocketTransform("Bip01_CameraBoneSocket", RTS_World);
+		//OutCameraSocketTransform = CharacterMesh1P->GetSocketTransform("Bip01_CameraBoneSocket", RTS_Component);
+		OutCameraSocketTransform = FirstPersonCamera->GetComponentTransform();
 	}
 	else
 	{
@@ -550,12 +599,12 @@ void AINSPlayerCharacter::GetPlayerCameraSocketWorldTransform(FTransform& OutCam
 
 FORCEINLINE UINSCharacterAimInstance* AINSPlayerCharacter::Get1PAnimInstance()
 {
-	return Cast<UINSCharacterAimInstance>(CharacterMesh1P->AnimScriptInstance);
+	return Cast<UINSFPAnimInstance>(CharacterMesh1P->AnimScriptInstance);
 }
 
 FORCEINLINE UINSCharacterAimInstance* AINSPlayerCharacter::Get3PAnimInstance()
 {
-	return Cast<UINSCharacterAimInstance>(CharacterMesh3P->AnimScriptInstance);
+	return Cast<UINSTPAnimInstance>(CharacterMesh3P->AnimScriptInstance);
 }
 
 void AINSPlayerCharacter::SetCurrentWeapon(class AINSWeaponBase* NewWeapon)

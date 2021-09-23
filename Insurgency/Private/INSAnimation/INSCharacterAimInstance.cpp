@@ -5,6 +5,7 @@
 #include "INSCharacter/INSPlayerCharacter.h"
 #include "INSCharacter/INSPlayerController.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "INSComponents/INSCharacterMovementComponent.h"
 #include "DrawDebugHelpers.h"
 #include "Engine/Engine.h"
 #include "Kismet/KismetMathLibrary.h"
@@ -14,7 +15,7 @@
 
 DEFINE_LOG_CATEGORY(LogINSCharacterAimInstance);
 
-UINSCharacterAimInstance::UINSCharacterAimInstance(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
+UINSCharacterAimInstance::UINSCharacterAimInstance(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	bWeaponAnimDelegateBindingFinished = false;
 	bIsAiming = false;
@@ -38,13 +39,13 @@ UINSCharacterAimInstance::UINSCharacterAimInstance(const FObjectInitializer& Obj
 	AimHandIKXLocationValue = 0.f;
 	CurrentAimHandIKXLocationValue = 0.f;
 	BaseHandIKEffector = FVector::ZeroVector;
+	bInitialized = false;
+	CurrentWeaponAnimData = nullptr;
+	bIsFalling =false;
+	bIsArmed = false;
+	bIsSprinting = false;
 }
 
-void UINSCharacterAimInstance::NativeInitializeAnimation()
-{
-	Super::NativeInitializeAnimation();
-	
-}
 
 void UINSCharacterAimInstance::NativeBeginPlay()
 {
@@ -52,25 +53,30 @@ void UINSCharacterAimInstance::NativeBeginPlay()
 	OwnerPlayerCharacter = Cast<AINSPlayerCharacter>(TryGetPawnOwner());
 	if (OwnerPlayerCharacter)
 	{
-		CharacterMovementComponent = OwnerPlayerCharacter->GetCharacterMovement();
+		CharacterMovementComponent = OwnerPlayerCharacter->GetINSCharacterMovement();
 	}
+	bInitialized = true;
+	UE_LOG(LogINSCharacterAimInstance, Log, TEXT("native begin play called,and set up animation finished ,character:%s,CharacterMoveMent:%s")
+	       , OwnerPlayerCharacter==nullptr?TEXT("None"):*OwnerPlayerCharacter->GetName()
+	       , CharacterMovementComponent==nullptr?TEXT("None"):*CharacterMovementComponent->GetName());
 }
 
 void UINSCharacterAimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
-	if (OwnerPlayerCharacter && CharacterMovementComponent && !OwnerPlayerCharacter->GetIsDead())
+	if(!CheckValid())
 	{
-		UpdateDirection();
-		UpdateHorizontalSpeed();
-		UpdateVerticalSpeed();
-		UpdatePitchAndYaw();
-		UpdateIsMoving();
-		UpdateSprintPlaySpeed();
-		UpdateIsFalling();
-		UpdateIsAiming();
-		UpdateWeaponBasePoseType();
+		return;
 	}
+	UpdateDirection();
+	UpdateHorizontalSpeed();
+	UpdateVerticalSpeed();
+	UpdatePitchAndYaw();
+	UpdateIsMoving();
+	UpdateSprintPlaySpeed();
+	UpdateIsFalling();
+	UpdateIsAiming();
+	UpdateWeaponBasePoseType();
 }
 
 void UINSCharacterAimInstance::UpdateHorizontalSpeed()
@@ -88,29 +94,35 @@ bool UINSCharacterAimInstance::CheckValid()
 	if (OwnerPlayerCharacter == nullptr)
 	{
 		/*UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("Owner character not exist,can't play animations"));*/
-		return false;
+		bValidPlayAnim = false;
+		return bValidPlayAnim;
 	}
 	if (OwnerPlayerCharacter->GetNetMode() == ENetMode::NM_DedicatedServer)
 	{
 		//UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("Owner character runs on Dedicated server,can't play animations"));
-		return false;
+		bValidPlayAnim = false;
+		return bValidPlayAnim;
 
 	}
 	if (OwnerPlayerCharacter->GetIsDead())
 	{
 		//UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("Owner character is dead,can't play animations"));
-		return false;
+		bValidPlayAnim = false;
+		return bValidPlayAnim;
 	}
-	if (!CurrentWeapon)
+	if (CurrentWeapon==nullptr)
 	{
 		UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("Missing Current Weapon Ref,invalid for playing any weapon anim"));
-		return false;
+		bValidPlayAnim = false;
+		return bValidPlayAnim;
 	}
-	if (!CurrentWeaponAnimData)
+	if (CurrentWeaponAnimData==nullptr)
 	{
 		UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("Missing Current Weapon asstes Ref,invalid for playing any weapon anim"));
-		return false;
+		bValidPlayAnim = false;
+		return bValidPlayAnim;
 	}
+	bValidPlayAnim = true;
 	return true;
 }
 
@@ -370,10 +382,14 @@ void UINSCharacterAimInstance::PlayBoredAnim()
 {
 }
 
-void UINSCharacterAimInstance::SetCurrentWeaponAndAnimationData(class AINSWeaponBase* NewWeapon)
+void UINSCharacterAimInstance::SetCurrentWeapon(class AINSWeaponBase* NewWeapon)
 {
 	CurrentWeapon = NewWeapon;
-	CurrentWeaponAnimData = CurrentWeapon == nullptr? nullptr: CurrentWeapon->GetWeaponAnimDataPtr();
+}
+
+void UINSCharacterAimInstance::SetCurrentWeaponAnimData(UINSStaticAnimData* NewAnimData)
+{
+	CurrentWeaponAnimData = NewAnimData;
 }
 
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING

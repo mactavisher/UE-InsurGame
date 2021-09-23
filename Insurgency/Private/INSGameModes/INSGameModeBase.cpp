@@ -19,7 +19,8 @@
 #include "..\..\Public\INSGameModes\INSGameModeBase.h"
 
 DEFINE_LOG_CATEGORY(LogINSGameMode);
-AINSGameModeBase::AINSGameModeBase(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer.DoNotCreateDefaultSubobject(TEXT("Sprite")))
+
+AINSGameModeBase::AINSGameModeBase(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer.DoNotCreateDefaultSubobject(TEXT("Sprite")))
 {
 	PlayerStateClass = AINSPlayerStateBase::StaticClass();
 	PlayerControllerClass = AINSPlayerController::StaticClass();
@@ -56,7 +57,7 @@ void AINSGameModeBase::InitGame(const FString& MapName, const FString& Options, 
 	if (!bIsLobbyGameMode)
 	{
 		SpawnCounterTerroristTeam();
-		SpawnTerrorisTeam();
+		SpawnTerroristTeam();
 	}
 	UE_LOG(LogINSGameMode, Log, TEXT("InitGame Finished"));
 }
@@ -110,13 +111,13 @@ void AINSGameModeBase::PreInitializeComponents()
 	UE_LOG(LogINSGameMode, Log, TEXT("PreInitializeComponents called"));
 }
 
-void AINSGameModeBase::SpawnTerrorisTeam()
+void AINSGameModeBase::SpawnTerroristTeam()
 {
 	if (TeamInfoClass)
 	{
 		FActorSpawnParameters SpawnInfo;
 		SpawnInfo.Instigator = GetInstigator();
-		SpawnInfo.ObjectFlags |= RF_Transient;	// We never want to TeamInfo into a map	
+		SpawnInfo.ObjectFlags |= RF_Transient; // We never want save TeamInfo into a map	
 		TerroristTeam = GetWorld()->SpawnActor<AINSTeamInfo>(TeamInfoClass);
 		TerroristTeam->SetTeamType(ETeamType::REBEL);
 		static const FString TeamKey = TEXT("Rebel");
@@ -127,10 +128,10 @@ void AINSGameModeBase::SpawnTerrorisTeam()
 
 void AINSGameModeBase::InitDamageModifiers()
 {
-	int32 NumDamageModifier = DamageModifiers.Num();
+	const uint8 NumDamageModifier = DamageModifiers.Num();
 	if (NumDamageModifier > 0)
 	{
-		for (int32 i = 0; i < NumDamageModifier; i++)
+		for (uint8 i = 0; i < NumDamageModifier; i++)
 		{
 			DamageModifierInstances.Add(NewObject<UINSDamageModifierBase>(this, DamageModifiers[i]));
 			UE_LOG(LogINSGameMode, Log, TEXT("create game modifiers:%s"), *(DamageModifierInstances[i]->GetName()));
@@ -144,7 +145,7 @@ void AINSGameModeBase::SpawnCounterTerroristTeam()
 	{
 		FActorSpawnParameters SpawnInfo;
 		SpawnInfo.Instigator = GetInstigator();
-		SpawnInfo.ObjectFlags |= RF_Transient;	// We never want to save TeamInfo into a map	
+		SpawnInfo.ObjectFlags |= RF_Transient; // We never want to save TeamInfo into a map	
 		CTTeam = GetWorld()->SpawnActor<AINSTeamInfo>(TeamInfoClass);
 		CTTeam->SetTeamType(ETeamType::ALLIE);
 		static const FString TeamKey = TEXT("Allie");
@@ -154,19 +155,13 @@ void AINSGameModeBase::SpawnCounterTerroristTeam()
 }
 
 
-void AINSGameModeBase::EndMatchPerparing()
+void AINSGameModeBase::EndMatchPreparing()
 {
-
 }
 
-float AINSGameModeBase::ModifyDamage(float InDamage,class AController* PlayerInstigator, class AController* Victim,  const struct FDamageEvent& DamageEvent)
+float AINSGameModeBase::ModifyDamage(float InDamage, class AController* PlayerInstigator, class AController* Victim, const struct FDamageEvent& DamageEvent)
 {
 	if (!Victim)
-	{
-		return 0.f;
-	}
-	AINSCharacter* const Character = CastChecked<AINSCharacter>(Victim->GetPawn());
-	if (!Character)
 	{
 		return 0.f;
 	}
@@ -177,12 +172,17 @@ float AINSGameModeBase::ModifyDamage(float InDamage,class AController* PlayerIns
 		//do not apply any damage when game is not in progress
 		return 0.f;
 	}
+	const AINSCharacter* const Character = CastChecked<AINSCharacter>(Victim->GetPawn());
+	if (!Character || Character->GetIsDead())
+	{
+		return 0.f;
+	}
 
 	float ActualDamageToApply = InDamage;
-	int32 NumDamageModifier = DamageModifierInstances.Num();
-	if (NumDamageModifier > 0) 
+	const uint8 NumDamageModifier = DamageModifierInstances.Num();
+	if (NumDamageModifier > 0)
 	{
-		for (int32 i = 0; i < NumDamageModifier; i++)
+		for (uint8 i = 0; i < NumDamageModifier; i++)
 		{
 			UINSDamageModifierBase* DamageModifier = DamageModifierInstances[i];
 			if (DamageModifier)
@@ -273,15 +273,15 @@ bool AINSGameModeBase::GetIsTeamDamage(class AController* DamageInstigator, clas
 {
 	if (DamageInstigator && Victim)
 	{
-		const UClass* InstigtorClass = DamageInstigator->GetClass();
+		const UClass* InstigatorClass = DamageInstigator->GetClass();
 		const UClass* VictimClass = Victim->GetClass();
-		if (InstigtorClass->IsChildOf(AINSPlayerController::StaticClass()) && VictimClass->IsChildOf(AINSPlayerController::StaticClass()))
+		if (InstigatorClass->IsChildOf(AINSPlayerController::StaticClass()) && VictimClass->IsChildOf(AINSPlayerController::StaticClass()))
 		{
-			const AINSPlayerStateBase* const InstigtorPlayerState = DamageInstigator->GetPlayerState<AINSPlayerStateBase>();
+			const AINSPlayerStateBase* const InstigatorPlayerState = DamageInstigator->GetPlayerState<AINSPlayerStateBase>();
 			const AINSPlayerStateBase* const VictimPlayerState = Victim->GetPlayerState<AINSPlayerStateBase>();
-			const AINSTeamInfo* const InstigatorTeam = InstigtorPlayerState == nullptr ? nullptr : InstigtorPlayerState->GetPlayerTeam();
-			const AINSTeamInfo* const VicmtimTeam = VictimPlayerState == nullptr ? nullptr : VictimPlayerState->GetPlayerTeam();
-			if (InstigtorPlayerState && VictimPlayerState && InstigatorTeam && VicmtimTeam && InstigatorTeam->GetTeamType() == VicmtimTeam->GetTeamType())
+			const AINSTeamInfo* const InstigatorTeam = InstigatorPlayerState == nullptr ? nullptr : InstigatorPlayerState->GetPlayerTeam();
+			const AINSTeamInfo* const VictimTeam = VictimPlayerState == nullptr ? nullptr : VictimPlayerState->GetPlayerTeam();
+			if (InstigatorPlayerState && VictimPlayerState && InstigatorTeam && VictimTeam && InstigatorTeam->GetTeamType() == VictimTeam->GetTeamType())
 			{
 				return true;
 			}
@@ -295,16 +295,16 @@ UClass* AINSGameModeBase::GetRandomGameModeWeaponClass() const
 	const uint8 AvailableWeaponNum = GameModeAvailableWeaponsClasses.Num();
 	if (AvailableWeaponNum > 0)
 	{
-		uint8 Ramdon = FMath::RandHelper(AvailableWeaponNum);
-		return GameModeAvailableWeaponsClasses[Ramdon];
+		const uint8 Random = static_cast<uint8>(FMath::RandHelper(AvailableWeaponNum));
+		return GameModeAvailableWeaponsClasses[Random];
 	}
 	return nullptr;
 }
 
 void AINSGameModeBase::AssignPlayerTeam(class AINSPlayerController* NewPlayer)
 {
-	TArray<AINSPlayerStateBase*> CTTeamPlayers = CTTeam->TeamMembers;
-	TArray<AINSPlayerStateBase*> TTeamPlayers = TerroristTeam->TeamMembers;
+	const TArray<AINSPlayerStateBase*> CTTeamPlayers = CTTeam->TeamMembers;
+	const TArray<AINSPlayerStateBase*> TTeamPlayers = TerroristTeam->TeamMembers;
 	const uint8 CTTeamPlayerNum = CTTeamPlayers.Num();
 	const uint8 TTeamPlayerNum = TTeamPlayers.Num();
 	static const FString RebelsTeamKey = TeamName::Rebel.ToString();
@@ -369,51 +369,47 @@ AActor* AINSGameModeBase::FindPlayerStart_Implementation(AController* Player, co
 	}
 
 	UWorld* const World = GetWorld();
-	AINSPlayerController* const PlayeController = Cast<AINSPlayerController>(Player);
-	if (PlayeController)
+	AINSPlayerController* const PlayerController = Cast<AINSPlayerController>(Player);
+	if (PlayerController)
 	{
-		AINSTeamInfo* PlayerTeam = PlayeController->GetPlayerTeam();
+		AINSTeamInfo* PlayerTeam = PlayerController->GetPlayerTeam();
 		TArray<APlayerStart*> RebelPlayerStarts;
 		TArray<APlayerStart*> AlliePlayerStarts;
 		//Iterate the all player start spots that placed in map in advance,
 		//Match their tags,And categorize them
 		for (TActorIterator<APlayerStart> It(World); It; ++It)
 		{
-			APlayerStart* const Start = *It;
-			if (Start)
+			APlayerStart* const PlayerStart = *It;
+			if (PlayerStart)
 			{
-				if (Start->PlayerStartTag == FName(TEXT("Allie")))
+				if (PlayerStart->PlayerStartTag == FName(TEXT("Allie")))
 				{
-					AlliePlayerStarts.AddUnique(Start);
+					AlliePlayerStarts.AddUnique(PlayerStart);
 				}
-				else if (Start->PlayerStartTag == FName(TEXT("Rebel")))
+				else if (PlayerStart->PlayerStartTag == FName(TEXT("Rebel")))
 				{
-					RebelPlayerStarts.AddUnique(Start);
+					RebelPlayerStarts.AddUnique(PlayerStart);
 				}
 			}
 		}
-		const FName SelectePlayerTag = PlayerTeam->GetTeamType() == ETeamType::REBEL
-			? TeamName::Rebel
-			: TeamName::Allie;
-		const TArray<APlayerStart*> SeletedStarts = PlayerTeam->GetTeamType() == ETeamType::REBEL
-			? RebelPlayerStarts
-			: AlliePlayerStarts;
+		const FName SelectedPlayerTag = PlayerTeam->GetTeamType() == ETeamType::REBEL ? TeamName::Rebel : TeamName::Allie;
+		const TArray<APlayerStart*> SelectedStarts = PlayerTeam->GetTeamType() == ETeamType::REBEL ? RebelPlayerStarts : AlliePlayerStarts;
 		TArray<APlayerStart*> SafePlayerStarts;
-		const TArray<TEnumAsByte <EObjectTypeQuery>> ObjectTypeQueries;
+		const TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypeQueries;
 		TArray<AActor*> ActorsToIgnore;
 		TArray<AActor*> FoundPlayers;
-		if (SeletedStarts.Num() > 0)
+		if (SelectedStarts.Num() > 0)
 		{
-			for (int i = 0; i < SeletedStarts.Num(); i++)
+			for (int i = 0; i < SelectedStarts.Num(); i++)
 			{
-				APlayerStart* CurrentPlayerStart = SeletedStarts[i];
+				APlayerStart* CurrentPlayerStart = SelectedStarts[i];
 				UKismetSystemLibrary::SphereOverlapActors(GetWorld()
-					, CurrentPlayerStart->GetActorLocation()
-					, 2000.f
-					, ObjectTypeQueries
-					, AINSPlayerController::StaticClass()
-					, ActorsToIgnore
-					, FoundPlayers);
+				                                          , CurrentPlayerStart->GetActorLocation()
+				                                          , 2000.f
+				                                          , ObjectTypeQueries
+				                                          , AINSPlayerController::StaticClass()
+				                                          , ActorsToIgnore
+				                                          , FoundPlayers);
 				if (FoundPlayers.Num() == 0)
 				{
 					SafePlayerStarts.AddUnique(CurrentPlayerStart);

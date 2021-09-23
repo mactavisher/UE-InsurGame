@@ -85,6 +85,8 @@ protected:
 
 	virtual void Tick(float DeltaTime) override;
 
+	virtual void TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction) override;
+
 	virtual void OnCauseDamage(const FTakeHitInfo& HitInfo) override;
 
 	virtual void PossessedBy(AController* NewController) override;
@@ -108,6 +110,10 @@ protected:
 	virtual void Crouch(bool bClientSimulation) override;
 
 	virtual void UnCrouch(bool bClientSimulation) override;
+
+	virtual void SetAimHandsXLocation(const float Value) override;
+
+	virtual bool CheckCharacterIsReady() override;
 
 	UFUNCTION()
 	virtual void OnRep_TeamType();
@@ -182,6 +188,8 @@ public:
 	virtual void HandleItemEquipRequest(const uint8 SlotIndex) override;
 
 	virtual void PutCurrentWeaponBackToSlot();
+
+	virtual void SetCurrentAnimData(UINSStaticAnimData* AnimData) override;
 
 	UFUNCTION()
 	virtual void EquipGameModeDefaultWeapon();

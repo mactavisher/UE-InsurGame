@@ -35,9 +35,6 @@ void UINSTPAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	UpdateJogSpeed();
 	UpdateCanEnterJogCondition();
 	UpdateCanEnterSprint();
-	//UpdateIsAiming();
-	
-	//GEngine->AddOnScreenDebugMessage(-1, 0.5f, FColor::Green, bIsAiming ? TEXT("TP anim is aiming") : TEXT(" TP anim not aiming"));
 }
 
 
@@ -46,11 +43,19 @@ void UINSTPAnimInstance::NativeInitializeAnimation()
 	Super::NativeInitializeAnimation();
 }
 
-void UINSTPAnimInstance::SetCurrentWeaponAndAnimationData(class AINSWeaponBase* NewWeapon)
+void UINSTPAnimInstance::SetCurrentWeapon(class AINSWeaponBase* NewWeapon)
 {
-	Super::SetCurrentWeaponAndAnimationData(NewWeapon);
-	StandJogBlendSpace = CurrentWeaponAnimData->StandJogBlendSpace;
-	StandWalkBlendSpace = CurrentWeaponAnimData->StandWalkBlendSpace;
+	Super::SetCurrentWeapon(NewWeapon);
+}
+
+void UINSTPAnimInstance::SetCurrentWeaponAnimData(UINSStaticAnimData* NewAnimData)
+{
+	Super::SetCurrentWeaponAnimData(NewAnimData);
+	if(CurrentWeaponAnimData)
+	{
+		StandJogBlendSpace = CurrentWeaponAnimData->StandJogBlendSpace;
+		StandWalkBlendSpace = CurrentWeaponAnimData->StandWalkBlendSpace;
+	}
 }
 
 

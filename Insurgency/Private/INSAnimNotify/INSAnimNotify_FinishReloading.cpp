@@ -8,32 +8,21 @@
 
 UINSAnimNotify_FinishReloading::UINSAnimNotify_FinishReloading()
 {
-
 }
 
 void UINSAnimNotify_FinishReloading::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
 {
+	Super::Notify(MeshComp, Animation);
 	AActor* Owner = MeshComp->GetOwner();
 	if (!Owner)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("AnimNotify::FinishReloading Triggered but no owner,abort"));
 		return;
 	}
-	const UClass* const OwnerClass = Owner->GetClass();
-	UE_LOG(LogTemp, Log, TEXT("notify mesh comp's owner class name %s"), *OwnerClass->GetName());
-	const AINSCharacter* OwnerCharacter = nullptr;
-	AINSWeaponBase* OwnerWeapon = nullptr;
-	if (OwnerClass->IsChildOf(AINSCharacter::StaticClass()))
+	AINSCharacter* OwnerCharacter = Cast<AINSCharacter>(Owner);
+	if (OwnerCharacter)
 	{
-		OwnerCharacter = Cast<AINSCharacter>(Owner);
-		if (OwnerCharacter&&OwnerCharacter->IsLocallyControlled())
-		{
-			OwnerWeapon = OwnerCharacter->GetCurrentWeapon();
-			if (OwnerWeapon)
-			{
-				OwnerWeapon->GetLocalRole() == ROLE_Authority ? OwnerWeapon->FinishReloadWeapon() : OwnerWeapon->ServerFinishReloadWeapon();
-				UE_LOG(LogTemp, Log, TEXT("weapon %s Finish Reloading notify triggerd and Executed"), *OwnerWeapon->GetName());
-			}
-		}
+		OwnerCharacter->HandleFinishReloadingRequest();
+		UE_LOG(LogTemp, Log, TEXT("Character%s FinishReloading notify triggerd and Executed"), *OwnerCharacter->GetName());
 	}
 }

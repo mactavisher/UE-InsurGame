@@ -22,10 +22,13 @@ protected:
 
 	/** When ads , modify hands IK x value to make scope closer */
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="ADS")
-	    float HandIKXLocationValue;
+	    float BaseHandIKXLocationValue;
 
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite, Category = "SceneCaptureComp", meta = (AllowPrivateAccess = "true"))
 	   USceneCaptureComponent2D* SceneCaptureComp;
+
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="Congfig")
+	  uint8 bEnableDualRenderOptic:1;
 
 	/** returns the ads alpha */
 	virtual float GetADSAlpha();
@@ -46,7 +49,11 @@ public:
 	/** returns the optic mesh comp */
 	FORCEINLINE UStaticMeshComponent* GetOpticMeshComp()const { return OpticMeshComp; }
 
-	virtual float GetHandsIKXValue()const { return HandIKXLocationValue; }
+	/** returns the scene capture comp */
+	FORCEINLINE USceneCaptureComponent2D* GetSceneCaptureComp()const { return SceneCaptureComp; }
+
+	virtual float GetBaseHandsIKXValue()const { return BaseHandIKXLocationValue; }
+
 	/** returns the Optic sight aligner socket transform */
 	virtual FTransform GetOpticSightTransform();
 };

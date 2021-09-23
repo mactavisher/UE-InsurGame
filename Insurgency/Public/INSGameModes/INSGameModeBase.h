@@ -155,7 +155,7 @@ protected:
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	virtual void Logout(AController* Exiting) override;
 	virtual void PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)override;
-	virtual void EndMatchPerparing();
+	virtual void EndMatchPreparing();
 	/**
 	 * @desc  Override spawns player controller and assign the player team and other attribute if need
 	 * @param InRemoteRole RemoteRole
@@ -180,7 +180,7 @@ protected:
 	virtual void AssignPlayerTeam(class AINSPlayerController* NewPlayer);
 
 	/** creates a terrorist Team for this game */
-	virtual void SpawnTerrorisTeam();
+	virtual void SpawnTerroristTeam();
 
 	/** create the damage modifiers that will be used in game */
 	virtual void InitDamageModifiers();

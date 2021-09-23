@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "INSAssets/INSStaticAnimData.h"
 #include "Insurgency/Insurgency.h"
 #include "INSCharacter.generated.h"
 
@@ -21,6 +22,7 @@ class UINSCharacterAudioComponent;
 class AINSPickup_Weapon;
 class UPawnNoiseEmitterComponent;
 class UPhysicalAnimationComponent;
+class UINSStaticAnimData;
 
 INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogINSCharacter, Log, All);
 
@@ -30,6 +32,7 @@ struct FLastHitStateInfo
 {
 	GENERATED_USTRUCT_BODY()
 
+	/** indicates how long will our pawn considered be in hit state*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float HitStateTime;
 
@@ -39,10 +42,18 @@ struct FLastHitStateInfo
 	UPROPERTY()
 	AActor* LastHitActor;
 
+	UPROPERTY()
+	uint8 bDead:1;
+
+	UPROPERTY()
+	float DeathTime;
+
 	FLastHitStateInfo()
 		: HitStateTime(10.f)
 		  , CurrentHitStateLastTime(0.f)
 		  , LastHitActor(nullptr)
+		  , bDead(false)
+		  , DeathTime(0.f)
 	{
 	}
 };
@@ -57,6 +68,7 @@ protected:
 	/** collection of bone mapped damage modifier,could be assigned via blueprint */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BoneDamageMap")
 	TMap<FName, float> BoneMappedDamageModifier;
+
 public:
 	/**
 	 * @Desc   convenient bone mapped damage modifier querier
@@ -123,6 +135,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_LastHitInfo)
 	FTakeHitInfo LastHitInfo;
 
+	UPROPERTY()
+	float DeathTime;
+
 	/** current stance of this character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_CurrentStance, Category = "Stances")
 	ECharacterStance CharacterCurrentStance;
@@ -188,7 +203,7 @@ protected:
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Replicated, ReplicatedUsing = "OnRep_DamageImmuneTime", Category = "Damage")
 	uint8 DamageImmuneLeft;
 
-	/** indicates if character is currently in spawn protection mode */
+	/** indicates if character is currently in spawn protection state */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Damage")
 	uint8 bDamageImmuneState : 1;
 
@@ -209,11 +224,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "WeaponRef")
 	TSubclassOf<AINSPickup_Weapon> WeaponPickupClass;
 
+	UPROPERTY()
+	UINSStaticAnimData* CurrentAnimPtr;
+
 #if WITH_EDITORONLY_DATA
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Debugs")
 	uint8 bShowDebugTrace : 1;
 #endif
 
+	/** check character is ready, after ready is set,this will unregister make sure only called once*/
+	UPROPERTY()
+	FActorTickFunction CharacterReadyTick;
 
 protected:
 	//~ begin AActor interface
@@ -267,6 +288,8 @@ protected:
 	virtual void CastBloodDecal(FVector HitLocation, FVector HitDir);
 
 	virtual void TossCurrentWeapon();
+
+	virtual bool CheckCharacterIsReady();
 
 	/** ~~--------------------------------------------------------------
 	   Rep callbacks-------------------------------------------*/
@@ -390,6 +413,11 @@ public:
 	/** handles switch fire mode request from player */
 	virtual void HandleSwitchFireModeRequest();
 
+	/** handles single ammo insert request ,usually request by anim notify*/
+	virtual void HandleSingleAmmoInsertRequest();
+
+	virtual void HandleFinishReloadingRequest();
+
 	/** return this character is dead or not */
 	virtual bool GetIsDead() const { return bIsDead; };
 
@@ -419,6 +447,12 @@ public:
 
 	/** spawns a weapon pick up  */
 	virtual void SpawnWeaponPickup();
+
+	/**
+	* @desc set hands ik x location when character aim
+	* @param     Value   hands ik x location value to set
+	*/
+	virtual void SetAimHandsXLocation(const float Value);
 
 	virtual void SetWeaponBasePoseType(const EWeaponBasePoseType NewType);
 
@@ -498,4 +532,6 @@ public:
 
 	/** returns if this character is in hit state */
 	virtual bool GetIsInHitState() const { return LastHitState.CurrentHitStateLastTime > 0.f; };
+
+	virtual void SetCurrentAnimData(UINSStaticAnimData* AnimData);
 };

@@ -65,6 +65,9 @@ AINSWeaponBase::AINSWeaponBase(const FObjectInitializer& ObjectInitializer) : Su
 	WeaponMesh3PComp = ObjectInitializer.CreateDefaultSubobject<UINSWeaponMeshComponent>(this, TEXT("WeaponMesh3PComp"));
 	WeaponParticleComp = ObjectInitializer.CreateDefaultSubobject<UParticleSystemComponent>(this, TEXT("ParticelSystemComp"));
 	WeaponFireHandler = ObjectInitializer.CreateDefaultSubobject<UINSWeaponFireHandler>(this, TEXT("WeaponFireHandler"));
+	OpticRail = ObjectInitializer.CreateDefaultSubobject<UStaticMeshComponent>(this,TEXT("OpticRailComp"));
+	OpticRail->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	OpticRail->SetupAttachment(RootComponent);
 	WeaponMesh1PComp->AlwaysLoadOnClient = true;
 	WeaponMesh1PComp->AlwaysLoadOnServer = true;
 	WeaponMesh3PComp->AlwaysLoadOnClient = true;
@@ -80,7 +83,6 @@ AINSWeaponBase::AINSWeaponBase(const FObjectInitializer& ObjectInitializer) : Su
 	PrimaryActorTick.SetTickFunctionEnable(true);
 	bWantsToEquip = false;
 	bEnableAutoReload = true;
-	WeaponAnimationClass = UINSStaticAnimData::StaticClass();
 	CurrentWeaponZoomState = EZoomState::ZOMMEDOUT;
 	WeaponType = EWeaponType::NONE;
 #if WITH_EDITORONLY_DATA
@@ -93,8 +95,8 @@ AINSWeaponBase::AINSWeaponBase(const FObjectInitializer& ObjectInitializer) : Su
 	bSupressorEquiped = false;
 	DefaultAimingFOV = 80.f;
 	bUsingNoFrontSightMesh = false;
-	BaseAimHandIKXLocatioin = -5.f;
-	BaseHandsOffSetLoc = FVector(8.f, 0.f, 0.f);
+	BaseAimHandIKXLocation = 2.f;
+	BaseHandsOffSetLoc = FVector(10.f, 0.f, 0.f);
 }
 
 void AINSWeaponBase::Tick(float DeltaTime)
@@ -113,10 +115,14 @@ void AINSWeaponBase::Tick(float DeltaTime)
 void AINSWeaponBase::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-	InitWeaponAttachmentSlots();
 	WeaponFireHandler->SetOwnerWeapon(this);
 	WeaponFireHandler->SetIsReplicated(true);
 	WeaponConfigData.ForceInitWeaponConfig();
+	if(!WeaponConfigData.bRequireExtraOpticRail&&OpticRail)
+	{
+		OpticRail->DestroyComponent();
+		OpticRail=nullptr;
+	}
 }
 
 void AINSWeaponBase::BeginPlay()
@@ -129,6 +135,18 @@ void AINSWeaponBase::BeginPlay()
 		ClientCreateWeaponCrossHair();
 		OnRep_WeaponBasePoseType();
 		CheckAndEquipWeaponAttachment();
+	}
+	//set up attach ment for optic rail
+	if(OpticRail)
+	{
+		if(IsNetMode(NM_Standalone)||IsNetMode(NM_ListenServer)||GetLocalRole()==ROLE_AutonomousProxy)
+		{
+			OpticRail->AttachToComponent(WeaponMesh1PComp,FAttachmentTransformRules::SnapToTargetIncludingScale,TEXT("OpticRail"));
+		}
+		else
+		{
+			OpticRail->AttachToComponent(WeaponMesh3PComp,FAttachmentTransformRules::SnapToTargetIncludingScale,TEXT("OpticRail"));
+		}
 	}
 	const FWeaponAttachmentSlot* SightSlot = GetWeaponAttachmentSlot(WeaponAttachmentSlotName::Sight);
 	if (SightSlot && SightSlot->GetWeaponAttachmentInstance())
@@ -200,9 +218,10 @@ void AINSWeaponBase::WeaponGoToIdleState()
 void AINSWeaponBase::PreInitializeComponents()
 {
 	Super::PreInitializeComponents();
-	if (WeaponAnimationClass)
+	InitWeaponAttachmentSlots();
+	if(WeaponAnimationClass)
 	{
-		WeaponAnimation = NewObject<UINSStaticAnimData>(this, WeaponAnimationClass);
+		WeaponAnimation = NewObject<UINSStaticAnimData>(this,WeaponAnimationClass);
 	}
 }
 
@@ -354,7 +373,7 @@ FTransform AINSWeaponBase::GetSightsTransform()
 			}
 		}
 	}
-	return WeaponMesh1PComp->GetSocketTransform(SightAlignerSocketName, ERelativeTransformSpace::RTS_World);
+	return WeaponMesh1PComp->GetSocketTransform(SightAlignerSocketName, RTS_World);
 	
 }
 
@@ -385,8 +404,8 @@ bool AINSWeaponBase::CheckScanTraceRange()
 	if (bShowDebugTrace)
 	{
 		DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 2.f);
-		DrawDebugSphere(GetWorld(), TraceStart, 10.f, 8, FColor::Red, false, 2.f);
-		DrawDebugSphere(GetWorld(), TraceEnd, 10.f, 8, FColor::Red, false, 2.f);
+		DrawDebugSphere(GetWorld(), TraceStart, 10.f, 8.f, FColor::Red, false, 2.f);
+		DrawDebugSphere(GetWorld(), TraceEnd, 10.f, 8.f, FColor::Red, false, 2.f);
 	}
 
 #endif
@@ -411,7 +430,7 @@ void AINSWeaponBase::FireShot(const FVector FireLoc, const FRotator ShotRot)
 		{
 			const FVector TraceStart = WeaponMesh1PComp->GetMuzzleLocation();
 			const FVector TraceEnd = TraceStart + ShotRot.Vector() * 1000;
-			DrawDebugLine(GetWorld(), WeaponMesh1PComp->GetMuzzleLocation(), TraceEnd, FColor::Blue, false, 2.0f);
+			DrawDebugLine(GetWorld(), WeaponMesh1PComp->GetMuzzleLocation(), TraceEnd, FColor::Blue, false, 2.f);
 			DrawDebugSphere(GetWorld(), FireLoc, 5.f, 5, FColor::Red, false, 10.f);
 		}
 #endif
@@ -541,12 +560,32 @@ float AINSWeaponBase::GetWeaponAimHandIKXLocation()
 				const AINSWeaponAttachment_Optic* Optic = Cast<AINSWeaponAttachment_Optic>(AttachmentIns);
 				if (Optic)
 				{
-					return Optic->GetHandsIKXValue();
+					return Optic->GetBaseHandsIKXValue();
 				}
 			}
 		}
 	}
-	return BaseAimHandIKXLocatioin;
+	return BaseAimHandIKXLocation;
+}
+
+void AINSWeaponBase::InsertSingleAmmo()
+{
+	if(AmmoLeft<=0)
+	{
+		return;
+	}
+	CurrentClipAmmo+=1;
+	AmmoLeft--;
+}
+
+void AINSWeaponBase::ServerInsertSingleAmmo_Implementation()
+{
+	InsertSingleAmmo();
+}
+
+bool AINSWeaponBase::ServerInsertSingleAmmo_Validate()
+{
+	return true;
 }
 
 void AINSWeaponBase::OnRep_CurrentWeaponState()
@@ -557,13 +596,13 @@ void AINSWeaponBase::OnRep_CurrentWeaponState()
 	case EWeaponState::FIRING: break;
 	case EWeaponState::RELOADIND: OnWeaponStartReload(); break;
 	case EWeaponState::UNEQUIPED:break;
-	case EWeaponState::EQUIPPING: OnWeaponStartEquip(); break;
+	case EWeaponState::EQUIPPING:OnWeaponStartEquip();break;
 	case EWeaponState::FIREMODESWITCHING: OnWeaponSwitchFireMode(); break;
 	case EWeaponState::EQUIPED:break;
 	case EWeaponState::NONE:break;
 	default:break;
 	}
-	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("Weapon state replicated," + GetWeaponReadableCurrentState()));
+	//GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("Weapon state replicated," + GetWeaponReadableCurrentState()));
 }
 
 void AINSWeaponBase::OnRep_AimWeapon()
@@ -616,14 +655,13 @@ void AINSWeaponBase::SimulateWeaponFireFX()
 	}
 	if (GetLocalRole() >= ROLE_AutonomousProxy)
 	{
-		SelectedFireSound = bSupressorEquiped ? SupreessedFireSound1P : FireSound1P;
+		SelectedFireSound = bSupressorEquiped ? SupressedFireSound1P : FireSound1P;
 		SelectFireParticleTemplate = FireParticle1P;
 		SelectedFXAttachParent = WeaponMesh1PComp;
-		const AINSPlayerController* PlayerController = CastChecked<AINSPlayerController>(GetOwner());
 	}
 	else
 	{
-		SelectedFireSound = bSupressorEquiped ? SupreessedFireSound3P : FireSound3P;
+		SelectedFireSound = bSupressorEquiped ? SupressedFireSound3P : FireSound3P;
 		SelectFireParticleTemplate = FireParticle3P;
 		SelectedFXAttachParent = WeaponMesh3PComp;
 	}
@@ -1017,13 +1055,13 @@ void AINSWeaponBase::ApplyWeaponSpread(FVector& OutSpreadDir, const FVector& Bas
 }
 
 
-void AINSWeaponBase::GetBarrelStartLoc(FVector& BarrelStartLoc)
+void AINSWeaponBase::GetBarrelStartLoc(FVector& OutBarrelStartLoc)
 {
-	BarrelStartLoc = WeaponMesh1PComp->GetMuzzleLocation();
+	OutBarrelStartLoc = WeaponMesh1PComp->GetMuzzleLocation();
 	FWeaponAttachmentSlot* WeaponAttachmentSlot = GetWeaponAttachmentSlot(WeaponAttachmentSlotName::Muzzle);
 	if (WeaponAttachmentSlot && WeaponAttachmentSlot->GetWeaponAttachmentInstance())
 	{
-		BarrelStartLoc = WeaponAttachmentSlot->GetWeaponAttachmentInstance()->GetBarrelLocation();
+		OutBarrelStartLoc = WeaponAttachmentSlot->GetWeaponAttachmentInstance()->GetBarrelLocation();
 	}
 }
 
@@ -1108,13 +1146,12 @@ void AINSWeaponBase::OnRep_OwnerCharacter()
 {
 	if (!IsNetMode(NM_DedicatedServer))
 	{
-		const AINSPlayerCharacter* const PlayerCharacter = Cast<AINSPlayerCharacter>(GetOwnerCharacter());
+		AINSPlayerCharacter* PlayerCharacter = Cast<AINSPlayerCharacter>(GetOwnerCharacter());
 		if (PlayerCharacter)
 		{
 			if (PlayerCharacter->IsLocallyControlled())
 			{
-				AINSHUDBase* const PlayerHud = Cast<AINSHUDBase>(
-					Cast<AINSPlayerController>(GetOwnerCharacter()->GetController())->GetHUD());
+				AINSHUDBase* const PlayerHud = Cast<AINSHUDBase>(Cast<AINSPlayerController>(GetOwnerCharacter()->GetController())->GetHUD());
 				if (PlayerHud)
 				{
 					PlayerHud->SetCurrentWeapon(this);

@@ -41,6 +41,7 @@ void UINSFPAnimInstance::UpdateAdsAlpha(float DeltaSeconds)
 	}
 }
 
+
 void UINSFPAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
@@ -48,12 +49,12 @@ void UINSFPAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	{
 		return;
 	}
-	UpdateWeaponIkSwayRotation(DeltaSeconds);
+	UpdateWeaponIkSwayLocationAndRotation(DeltaSeconds);
 	UpdateAdsAlpha(DeltaSeconds);
 	UpdateFiringHandsShift(DeltaSeconds);
 	PlayWeaponBasePose();
 	FPPlayMovingAnim();
-	UpdateSight();
+	UpdateSight(DeltaSeconds);
 	UpdateCanEnterSprint();
 	FPPlayIdleAnim();
 	UpdateAimHandsIKXLocation(DeltaSeconds);
@@ -62,7 +63,6 @@ void UINSFPAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 void UINSFPAnimInstance::NativeInitializeAnimation()
 {
 	Super::NativeInitializeAnimation();
-	
 }
 
 void UINSFPAnimInstance::NativeBeginPlay()
@@ -76,6 +76,36 @@ void UINSFPAnimInstance::NativeBeginPlay()
 		{
 			LastRotation = OwnerPlayerController->GetControlRotation();
 		}
+	}
+}
+
+void UINSFPAnimInstance::UpdateSight(float DeltaTimeSeconds)
+{
+	if (bIsAiming && ADSAlpha == 1.f && !bSighLocReCalculated)
+	{
+		CalculateSight(DeltaAimSightTransform);
+		bSighLocReCalculated = true;
+	}
+	//const float InterpSpeed = 1.f / ADSTime;
+	if (!DeltaAimSightTransform.Equals(FTransform::Identity))
+	{
+		const FVector TargetSightLoc = DeltaAimSightTransform.GetLocation();
+		const float TargetLocX = TargetSightLoc.X;
+		const float TargetLocY = TargetSightLoc.Y;
+		const float TargetLocZ = TargetSightLoc.Z;
+		const float InterpSpeed = FMath::Abs(TargetLocZ/0.05f);
+		//SightLocWhenAiming.Z = FMath::Clamp<float>(SightLocWhenAiming.Z + InterpSpeed, SightLocWhenAiming.Z, TargetLocZ);
+		SightLocWhenAiming.Z = FMath::FInterpTo(SightLocWhenAiming.Z, TargetLocZ, DeltaTimeSeconds, InterpSpeed);
+		ADSHandIKEffector.Z = SightLocWhenAiming.Z;
+		//ADSHandIKEffector.Y = -TargetLocY;
+	}
+	if (!bIsAiming)
+	{
+		SightLocWhenAiming.Z = FMath::Clamp<float>(SightLocWhenAiming.Z - 0.1f, 0.f, SightLocWhenAiming.Z);
+		//SightLocWhenAiming.Z = FMath::FInterpTo(SightLocWhenAiming.Z, 0.f, DeltaTimeSeconds, 0.1f);
+		ADSHandIKEffector.Z = SightLocWhenAiming.Z;
+		bSighLocReCalculated = false;
+		DeltaAimSightTransform = FTransform::Identity;
 	}
 }
 
@@ -94,6 +124,26 @@ void UINSFPAnimInstance::UpdateAimHandsIKXLocation(float DeltaTimeSeconds)
 		CurrentAimHandIKXLocationValue = FMath::Clamp<float>(CurrentAimHandIKXLocationValue + InterpSpeed, CurrentAimHandIKXLocationValue, 0.f);
 	}
 	ADSHandIKEffector.X = CurrentAimHandIKXLocationValue;
+}
+
+void UINSFPAnimInstance::UpdateWeaponIkSwayLocationAndRotation(float DeltaSeconds)
+{
+	if (OwnerPlayerController)
+	{
+		const FRotator CurrentRotation = OwnerPlayerController->GetControlRotation();
+		WeaponIKSwayRotation = FMath::RInterpTo(WeaponIKSwayRotation, CurrentRotation - LastRotation, DeltaSeconds, WeaponSwaySpeed);
+		WeaponIKSwayRotation.Pitch = FMath::Clamp<float>(WeaponIKSwayRotation.Pitch, -MaxWeaponSwayDelta, MaxWeaponSwayDelta);
+		WeaponIKSwayRotation.Roll = FMath::Clamp<float>(WeaponIKSwayRotation.Roll, -MaxWeaponSwayDelta, MaxWeaponSwayDelta);
+		WeaponIKSwayRotation.Yaw = FMath::Clamp<float>(WeaponIKSwayRotation.Yaw, -MaxWeaponSwayDelta, MaxWeaponSwayDelta);
+		if (bIsAiming)
+		{
+			WeaponIKSwayRotation.Yaw = WeaponIKSwayRotation.Yaw * MaxWeaponSwayDeltaAimingModifier;
+			WeaponIKSwayRotation.Roll = WeaponIKSwayRotation.Roll * MaxWeaponSwayDeltaAimingModifier;
+			WeaponIKSwayRotation.Pitch = WeaponIKSwayRotation.Pitch * MaxWeaponSwayDeltaAimingModifier;
+		}
+		WeaponSwayLocation = FVector(WeaponIKSwayRotation.Pitch, WeaponIKSwayRotation.Yaw, WeaponIKSwayRotation.Pitch) * WeaponSwayLocationFactor;
+		LastRotation = CurrentRotation;
+	}
 }
 
 void UINSFPAnimInstance::FPStopIdleAnim()
@@ -117,26 +167,6 @@ void UINSFPAnimInstance::FPStopAimMoveAnim()
 	if (Montage_IsPlaying(CurrentWeaponAnimData->FPAimMoveAnim))
 	{
 		Montage_Stop(0.15f, CurrentWeaponAnimData->FPAimMoveAnim);
-	}
-}
-
-void UINSFPAnimInstance::UpdateWeaponIkSwayRotation(float deltaSeconds)
-{
-	if (OwnerPlayerController)
-	{
-		const FRotator CurrentRotation = OwnerPlayerController->GetControlRotation();
-		WeaponIKSwayRotation = FMath::RInterpTo(WeaponIKSwayRotation, CurrentRotation - LastRotation, deltaSeconds, WeaponSwaySpeed);
-		WeaponIKSwayRotation.Pitch = FMath::Clamp<float>(WeaponIKSwayRotation.Pitch, -MaxWeaponSwayDelta, MaxWeaponSwayDelta);
-		WeaponIKSwayRotation.Roll = FMath::Clamp<float>(WeaponIKSwayRotation.Roll, -MaxWeaponSwayDelta, MaxWeaponSwayDelta);
-		WeaponIKSwayRotation.Yaw = FMath::Clamp<float>(WeaponIKSwayRotation.Yaw, -MaxWeaponSwayDelta, MaxWeaponSwayDelta);
-		if (bIsAiming)
-		{
-			WeaponIKSwayRotation.Yaw = WeaponIKSwayRotation.Yaw * MaxWeaponSwayDeltaAimingModifier;
-			WeaponIKSwayRotation.Roll = WeaponIKSwayRotation.Roll * MaxWeaponSwayDeltaAimingModifier;
-			WeaponIKSwayRotation.Pitch = WeaponIKSwayRotation.Pitch * MaxWeaponSwayDeltaAimingModifier;
-		}
-		WeaponSwayLocation = FVector(WeaponIKSwayRotation.Pitch, WeaponIKSwayRotation.Yaw, WeaponIKSwayRotation.Pitch) * WeaponSwayLocationFactor;
-		LastRotation = CurrentRotation;
 	}
 }
 
@@ -196,29 +226,6 @@ void UINSFPAnimInstance::FPPlayIdleAnim()
 	}
 }
 
-void UINSFPAnimInstance::UpdateSight()
-{
-	if (bIsAiming && ADSAlpha == 1.f && !bSighLocReCalculated)
-	{
-		CalculateSight(SightTransform);
-		bSighLocReCalculated = true;
-	}
-	const float InterpSpeed = 1.f / ADSTime;
-	if (!SightTransform.Equals(FTransform::Identity))
-	{
-		const FVector TargetSightLoc = SightTransform.GetLocation();
-		const float TargetLocX = TargetSightLoc.X;
-		const float TargetLocY = TargetSightLoc.Y;
-		const float TargetLocZ = TargetSightLoc.Z;
-		SightLocWhenAiming.Z = FMath::Clamp<float>(-(SightLocWhenAiming.Z + InterpSpeed), -TargetLocZ, -SightLocWhenAiming.Z);
-	}
-	if (!bIsAiming)
-	{
-		SightLocWhenAiming.Z = FMath::Clamp<float>(SightLocWhenAiming.Z + InterpSpeed, SightLocWhenAiming.Z, 0.f);
-		bSighLocReCalculated = false;
-		SightTransform = FTransform::Identity;
-	}
-}
 
 float UINSFPAnimInstance::PlayWeaponStartEquipAnim()
 {
@@ -250,8 +257,13 @@ void UINSFPAnimInstance::CalculateSight(FTransform& OutRelativeTransform)
 	{
 		FTransform CameraTrans = FTransform::Identity;
 		Cast<AINSPlayerCharacter>(OwnerPlayerCharacter)->GetPlayerCameraSocketWorldTransform(CameraTrans);
+		FTransform targetSightTransform;
+		targetSightTransform.SetLocation(CameraTrans.GetLocation() + 10.f * CameraTrans.GetRotation().Vector());
+		targetSightTransform.SetRotation(CameraTrans.GetRotation());
+		//DrawDebugSphere(GetWorld(), targetSightTransform.GetLocation(), 1.f, 10, FColor::Red,false,10.f);
 		const FTransform SightTrans = CurrentWeapon->GetSightsTransform();
-		OutRelativeTransform = UKismetMathLibrary::MakeRelativeTransform(SightTrans, CameraTrans);
+		OutRelativeTransform = UKismetMathLibrary::MakeRelativeTransform(targetSightTransform, SightTrans);
+		GEngine->AddOnScreenDebugMessage(-1, 10.f, FColor::Red, OutRelativeTransform.GetLocation().ToString());
 #if WITH_EDITOR
 		//DrawDebugSphere(GetWorld(), CameraTrans.GetLocation(), 2, 10, FColor::Red, false, 0.1f);
 		//DrawDebugSphere(GetWorld(), SightTrans.GetLocation(), 2, 10, FColor::Red, false, 0.1f);
@@ -433,11 +445,19 @@ float UINSFPAnimInstance::PlaySwitchFireModeAnim()
 	return Montage_Play(SelectedSwitchFireModeAnim);
 }
 
-void UINSFPAnimInstance::SetCurrentWeaponAndAnimationData(class AINSWeaponBase* NewWeapon)
+void UINSFPAnimInstance::SetCurrentWeapon(class AINSWeaponBase* NewWeapon)
 {
-	Super::SetCurrentWeaponAndAnimationData(NewWeapon);
-	AdjustableAdsPoseRef = CurrentWeaponAnimData->AdjustableAdsRefPose;
+	Super::SetCurrentWeapon(NewWeapon);
 	ADSTime = NewWeapon->AimTime;
+}
+
+void UINSFPAnimInstance::SetCurrentWeaponAnimData(UINSStaticAnimData* NewAnimData)
+{
+	Super::SetCurrentWeaponAnimData(NewAnimData);
+	if(CurrentWeaponAnimData)
+	{
+		AdjustableAdsPoseRef = CurrentWeaponAnimData->AdjustableAdsRefPose;
+	}
 }
 
 float UINSFPAnimInstance::PlayFireAnim()
@@ -461,14 +481,11 @@ float UINSFPAnimInstance::PlayFireAnim()
 	UAnimMontage* SelectedPullTriggerAnim = nullptr;
 	switch (CurrentWeaponBaseType)
 	{
-	case EWeaponBasePoseType::ALTGRIP: SelectedPullTriggerAnim =
-		CurrentWeaponAnimData->FPWeaponAltGripAnim.PullTriggerAnim.CharAnim;
+	case EWeaponBasePoseType::ALTGRIP: SelectedPullTriggerAnim =CurrentWeaponAnimData->FPWeaponAltGripAnim.PullTriggerAnim.CharAnim;
 		break;
-	case EWeaponBasePoseType::FOREGRIP: SelectedPullTriggerAnim =
-		CurrentWeaponAnimData->FPWeaponForeGripAnim.PullTriggerAnim.CharAnim;
+	case EWeaponBasePoseType::FOREGRIP: SelectedPullTriggerAnim =CurrentWeaponAnimData->FPWeaponForeGripAnim.PullTriggerAnim.CharAnim;
 		break;
-	case EWeaponBasePoseType::DEFAULT: SelectedPullTriggerAnim = CurrentWeaponAnimData->FPWeaponDefaultPoseAnim.
-		PullTriggerAnim.CharAnim;
+	case EWeaponBasePoseType::DEFAULT: SelectedPullTriggerAnim = CurrentWeaponAnimData->FPWeaponDefaultPoseAnim.PullTriggerAnim.CharAnim;
 		break;
 	default: SelectedPullTriggerAnim = nullptr;
 		break;

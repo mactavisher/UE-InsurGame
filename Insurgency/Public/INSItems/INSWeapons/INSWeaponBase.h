@@ -62,6 +62,10 @@ struct FWeaponConfigData
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	float ScanTraceRange;
 
+	/** indicates if a extra Optic rail is required when trying to equip a optic */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	uint8 bRequireExtraOpticRail:1;
+
 	FWeaponConfigData()
 		: AmmoPerClip(30)
 		  , MaxAmmo(AmmoPerClip * 3)
@@ -71,6 +75,7 @@ struct FWeaponConfigData
 		  , BaseDamage(20.f)
 		  , MuzzleSpeed(40000.f)
 		  , ScanTraceRange(2500.f)
+		  , bRequireExtraOpticRail(false)
 	{
 	}
 
@@ -269,7 +274,7 @@ public:
 };
 
 static const FName SightAlignerSocketName = FName(TEXT("SightAligner"));
-UCLASS()
+UCLASS(BlueprintType,Blueprintable)
 class INSURGENCY_API AINSWeaponBase : public AINSItems
 {
 	GENERATED_UCLASS_BODY()
@@ -284,22 +289,22 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	TSubclassOf<UINSStaticAnimData> WeaponAnimationClass;
 
 	/** weapon animation data */
-	UPROPERTY()
+	UPROPERTY(VisibleDefaultsOnly,BlueprintReadOnly,Category="Animation")
 	UINSStaticAnimData* WeaponAnimation;
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="Visual")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Visual")
 	UStaticMesh* WeaponStaticMesh;
 
 	/** current selected active fire mode */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_CurrentFireMode,Category = "FireMode")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_CurrentFireMode, Category = "FireMode")
 	EWeaponFireMode CurrentWeaponFireMode;
 
 	/** current weapon state */
-	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_CurrentWeaponState,Category = "WeaponState")
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_CurrentWeaponState, Category = "WeaponState")
 	EWeaponState CurrentWeaponState;
 
 	/** rep counter to tell clients fire just happened,mostly used for clients to play cosmetic events like fx */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponFireCount,Category = "WeaponState")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponFireCount, Category = "WeaponState")
 	uint8 RepWeaponFireCount;
 
 	/** stores last fire time , used for validate if weapon can fire it's next shot */
@@ -332,7 +337,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Ammo")
 	uint8 bDryReload : 1;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_Equipping,Category = "Equipping")
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_Equipping, Category = "Equipping")
 	uint8 bWantsToEquip : 1;
 
 	/** how much time it's gonna take to finish aim weapon  */
@@ -365,6 +370,10 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WeaponFireHandler", meta = (AllowPrivateAccess = "true"))
 	UINSWeaponFireHandler* WeaponFireHandler;
 
+	/** Optic rail comp, used for weapons need a extra rail to hold the optic */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WeaponFireHandler", meta = (AllowPrivateAccess = "true"))
+	UStaticMeshComponent* OpticRail;
+
 	/** fire sound 1p*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
 	USoundCue* FireSound1P;
@@ -375,11 +384,11 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 
 	/** fire sound 1p*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
-	USoundCue* SupreessedFireSound1P;
+	USoundCue* SupressedFireSound1P;
 
 	/** fire sound 3p*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
-	USoundCue* SupreessedFireSound3P;
+	USoundCue* SupressedFireSound3P;
 
 	/** sound played when enters ads*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
@@ -389,7 +398,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
 	USoundCue* ADSOutSound;
 
-	UPROPERTY(VisibleDefaultsOnly,BlueprintReadOnly,Category="Aim")
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category="Aim")
 	float ADSAlpha;
 
 	/** fire Particle 1p*/
@@ -405,7 +414,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	TSubclassOf<AINSProjectileShell> ProjectileShellClass;
 
 	/** simulate fire muzzle particles effects */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite,Category = "Effects")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
 	UParticleSystemComponent* WeaponParticleComp;
 
 	/** projectile class that be fired by this weapon */
@@ -413,10 +422,10 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	TSubclassOf<AINSProjectile> ProjectileClass;
 
 	/** pawn that owns this weapon */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_OwnerCharacter,Category = "OwnerCharacter")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_OwnerCharacter, Category = "OwnerCharacter")
 	AINSCharacter* OwnerCharacter;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponBasePoseType,Category = "WeaponPose")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponBasePoseType, Category = "WeaponPose")
 	EWeaponBasePoseType CurrentWeaponBasePoseType;
 
 	/** current used weapon Spread */
@@ -439,7 +448,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSpread")
 	FWeaponSpreadData WeaponSpreadData;
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="IK")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="IK")
 	FVector BaseHandsOffSetLoc;
 
 	/** Cross hair class that be used by this weapon */
@@ -459,14 +468,14 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	uint8 InventorySlotIndex;
 
 	/** weapon type of this weapon */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponType,Category = "WeaponConfig")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponType, Category = "WeaponConfig")
 	EWeaponType WeaponType;
-	
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="WeaponMesh")
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="WeaponMesh")
 	class USkeletalMesh* WeaponMeshWithFrontSight;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponMesh")
-		class USkeletalMesh* WeaponMeshNoFrontSight;
+	class USkeletalMesh* WeaponMeshNoFrontSight;
 
 	FActorTickFunction WeaponSpreadTickFunction;
 
@@ -476,8 +485,8 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY(ReplicatedUsing = "OnRep_MeshType")
 	uint8 bUsingNoFrontSightMesh:1;
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="IK")
-	float BaseAimHandIKXLocatioin;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="IK")
+	float BaseAimHandIKXLocation;
 
 	/** cache the existing weapon attachment for easy access */
 	UPROPERTY()
@@ -778,7 +787,7 @@ public:
 	virtual void AddAttachmentInstance(class AINSWeaponAttachment* AttachmentToAdd);
 
 	/** returns the target FOV when aiming */
-	virtual float  GetAimFOV();
+	virtual float GetAimFOV();
 
 	/**
 	 * @Desc adjust projectile spawn rotation to hit center of the screen
@@ -867,16 +876,30 @@ public:
 
 	virtual EWeaponBasePoseType GetCurrentWeaponBasePose() const { return CurrentWeaponBasePoseType; }
 
-	virtual float GetWeaponBaseDamage()const { return WeaponConfigData.BaseDamage; }
+	virtual float GetWeaponBaseDamage() const { return WeaponConfigData.BaseDamage; }
 
 	virtual void SetWeaponBasePoseType(const EWeaponBasePoseType NewPoseType) { CurrentWeaponBasePoseType = NewPoseType; }
 
 	virtual void GetWeaponAttachmentInstances(TArray<AINSWeaponAttachment*>& OutAttachmentInstance);
 
+	/**aim hands location,modify hands ik*/
 	virtual float GetWeaponAimHandIKXLocation();
 
-	virtual FVector GetWeaponBaseIKLocation()const { return BaseHandsOffSetLoc; }
+	/** base hands location,modify hands ik*/
+	virtual FVector GetWeaponBaseIKLocation() const { return BaseHandsOffSetLoc; }
 
-	FORCEINLINE UINSWeaponMeshComponent* GetWeapon1PMeshComp()const { return WeaponMesh1PComp; }
-	FORCEINLINE UINSWeaponMeshComponent* GetWeapon3PMeshComp()const { return WeaponMesh3PComp; }
+	/** return the condition if we need a extra optic rail*/
+	virtual bool GetRequireExtraOpticRail()const{return WeaponConfigData.bRequireExtraOpticRail;}
+
+	/** insert a single ammo, usually used with bolt rifle or shot guns by anim notify*/
+	virtual void InsertSingleAmmo();
+	
+	/** send by client to request server to insert a single ammo, usually used with bolt rifle or shot guns by anim notify*/
+	UFUNCTION(Server,Reliable,WithValidation)
+	virtual void ServerInsertSingleAmmo();
+
+	FORCEINLINE UStaticMeshComponent* GetOpticRailComp()const{return OpticRail;}
+
+	FORCEINLINE UINSWeaponMeshComponent* GetWeapon1PMeshComp() const { return WeaponMesh1PComp; }
+	FORCEINLINE UINSWeaponMeshComponent* GetWeapon3PMeshComp() const { return WeaponMesh3PComp; }
 };

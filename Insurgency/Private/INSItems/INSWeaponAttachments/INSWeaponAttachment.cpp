@@ -22,7 +22,6 @@ AINSWeaponAttachment::AINSWeaponAttachment(const FObjectInitializer& ObjectIniti
 	AttachmentMeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	RootComponent = AttachmentMeshComp;
 	AttachmentMeshComp->AlwaysLoadOnClient = true;
-	AttachmentMeshComp->SetupAttachment(RootComponent);
 	AttachmentMeshComp->SetHiddenInGame(false);
 	bChangeWeaponBasePoseType = false;
 	SetReplicatingMovement(false);

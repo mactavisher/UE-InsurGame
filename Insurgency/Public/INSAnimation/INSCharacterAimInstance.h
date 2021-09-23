@@ -14,6 +14,7 @@ class AINSCharacter;
 class AINSPlayerCharacter;
 class AINSPlayerController;
 class UCharacterMovementComponent;
+class UINSCharacterMovementComponent;
 class UINSStaticAnimData;
 class AINSWeaponBase;
 
@@ -22,7 +23,7 @@ INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogINSCharacterAimInstance, Log, All)
 /**
  *
  */
-UCLASS()
+UCLASS(Abstract,NotBlueprintable)
 class INSURGENCY_API UINSCharacterAimInstance : public UAnimInstance, public IINSWeaponAnimInterface
 {
 	GENERATED_UCLASS_BODY()
@@ -129,7 +130,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "IK")
 		float CurrentAimHandIKXLocationValue;
 
+	UPROPERTY()
+	uint8 bInitialized:1;
 
+	UPROPERTY()
+	uint8 bValidPlayAnim:1;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AnimDelegate")
@@ -146,7 +151,7 @@ protected:
 protected:
 	/** cached player character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-		UCharacterMovementComponent* CharacterMovementComponent;
+		UINSCharacterMovementComponent* CharacterMovementComponent;
 
 	/** cached weapon that currently in use */
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly)
@@ -166,7 +171,7 @@ public:
 	 * @Desc  sets the current base pose type
 	 * @Param NewBasePoseType target base pose type
 	 */
-	virtual void SetWeaponBasePoseType(EWeaponBasePoseType NewBasePoseType);
+	virtual void SetWeaponBasePoseType(EWeaponBasePoseType NewBasePoseType)override;
 
 	/** returns if in falling state */
 	virtual bool GetIsFalling()const { return bIsFalling; };
@@ -198,7 +203,9 @@ public:
 	 * Set the currently used weapon and weapon animation data
 	 * @Param NewWeapon   AINSWeaponBase
 	 */
-	virtual void SetCurrentWeaponAndAnimationData(class AINSWeaponBase* NewWeapon);
+	virtual void SetCurrentWeapon(class AINSWeaponBase* NewWeapon);
+
+	virtual void SetCurrentWeaponAnimData(UINSStaticAnimData* NewAnimData);
 
 	/**
 	 * Set the currently view mode could either be FPS or TPS
@@ -218,9 +225,6 @@ protected:
 	/** native update for variables tick */
 	virtual void NativeUpdateAnimation(float DeltaSeconds)override;
 
-	/** native initialize Animation implementation */
-	virtual void NativeInitializeAnimation()override;
-
 	virtual void NativeBeginPlay()override;
 
 	/** calculate horizontal speed */
@@ -228,9 +232,6 @@ protected:
 
 	/** calculate horizontal speed */
 	virtual void UpdateVerticalSpeed();
-
-	/** perform a check before playing any kind of animation */
-	virtual bool CheckValid();
 
 	virtual bool IsFPPlayingWeaponIdleAnim();
 
@@ -250,17 +251,22 @@ protected:
 
 	virtual void UpdateIsFalling();
 
+	virtual bool CheckValid();
+
 	//~ begin INSWeaponAnim Interface
 public:
 
 	virtual float PlayAimAnim()override;
-
+	
+	/** perform a check before playing any kind of animation */
+	
 	virtual float PlayStopAimAnim()override;
 
 	virtual float PlaySprintAnim()override;
 
 	virtual float StopPlaySprintAnim()override;
 
+	virtual bool GetIsValidPlayAnim()const{return bValidPlayAnim;}
 	virtual void OnCharacterJustLanded();
 
 	virtual void SetIdleState(bool NewIdleState);
@@ -292,4 +298,5 @@ public:
 	virtual void AddScreenAminDebugMessage(const UAnimMontage* const Anim);
 #endif
 
+	virtual bool GetIsAnimInitialized()const{return bInitialized;}
 };

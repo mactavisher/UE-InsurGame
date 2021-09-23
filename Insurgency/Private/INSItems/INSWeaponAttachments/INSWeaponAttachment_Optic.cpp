@@ -24,7 +24,8 @@ AINSWeaponAttachment_Optic::AINSWeaponAttachment_Optic(const FObjectInitializer&
 	OpticMeshComp->SetupAttachment(RootComponent);
 	OpticMeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	TargetFOV = 70.f;
-	HandIKXLocationValue = -5.f;
+	BaseHandIKXLocationValue = -4.f;
+	bEnableDualRenderOptic = false;
 }
 
 float AINSWeaponAttachment_Optic::GetADSAlpha()
@@ -52,7 +53,7 @@ void AINSWeaponAttachment_Optic::Tick(float DeltaTime)
 			const APlayerState* PS = PC->PlayerState;
 			if (PS && !PS->IsABot())
 			{
-				if (GetADSAlpha() > 0.65f)
+				if (GetADSAlpha() > 0.5f)
 				{
 					AttachmentMeshComp->SetHiddenInGame(true);
 					OpticMeshComp->SetHiddenInGame(false);
@@ -77,12 +78,26 @@ void AINSWeaponAttachment_Optic::PostInitializeComponents()
 	OpticMeshComp->AttachToComponent(AttachmentMeshComp, FAttachmentTransformRules::SnapToTargetIncludingScale, NAME_None);
 	SceneCaptureComp->AttachToComponent(OpticMeshComp, FAttachmentTransformRules::SnapToTargetIncludingScale, NAME_None);
 	SceneCaptureComp->AddRelativeLocation(FVector(50.f, 0.f, 0.f));
+	if(bEnableDualRenderOptic)
+	{
+		SceneCaptureComp->PrimaryComponentTick.bCanEverTick = true;
+		SceneCaptureComp->PrimaryComponentTick.SetTickFunctionEnable(true);
+	}
+	else
+	{
+		SceneCaptureComp->PrimaryComponentTick.bCanEverTick = false;
+		SceneCaptureComp->PrimaryComponentTick.SetTickFunctionEnable(false);
+	}
+
 }
 
 void AINSWeaponAttachment_Optic::AttachToWeaponSlot()
 {
 	Super::AttachToWeaponSlot();
-	OpticMeshComp->AttachToComponent(AttachmentMeshComp, FAttachmentTransformRules::SnapToTargetIncludingScale, NAME_None);
+	if(WeaponOwner&&WeaponOwner->GetRequireExtraOpticRail())
+	{
+		RootComponent->AttachToComponent(WeaponOwner->GetOpticRailComp(),FAttachmentTransformRules::SnapToTargetIncludingScale,TEXT("Optic"));
+	}
 }
 
 void AINSWeaponAttachment_Optic::OnRep_OwnerWeapon()
@@ -91,19 +106,15 @@ void AINSWeaponAttachment_Optic::OnRep_OwnerWeapon()
 	if (WeaponOwner)
 	{
 		AINSCharacter* OwnerChar = WeaponOwner->GetOwnerCharacter();
-		if (OwnerChar && OwnerChar->GetClass()->IsChildOf(AINSPlayerCharacter::StaticClass()))
+		if(OwnerChar)
 		{
-			AINSPlayerCharacter* PlayerChar = Cast<AINSPlayerCharacter>(OwnerChar);
-			if (PlayerChar)
+			OwnerChar->SetAimHandsXLocation(WeaponOwner->GetWeaponAimHandIKXLocation());
+			const AINSPlayerStateBase* const PS = OwnerChar->GetPlayerState<AINSPlayerStateBase>();
+			if ((PS && PS->IsABot()) || WeaponOwner->GetLocalRole() == ROLE_SimulatedProxy)
 			{
-				PlayerChar->Get1PAnimInstance()->SetAimHandIKXLocation(WeaponOwner->GetWeaponAimHandIKXLocation());
+				OpticMeshComp->DestroyComponent();
+				SceneCaptureComp->DestroyComponent();
 			}
-		}
-		const AINSPlayerStateBase* const PS = OwnerChar->GetPlayerState<AINSPlayerStateBase>();
-		if ((PS && PS->IsABot()) || WeaponOwner->GetLocalRole() == ROLE_SimulatedProxy)
-		{
-			OpticMeshComp->DestroyComponent();
-			SceneCaptureComp->DestroyComponent();
 		}
 	}
 }
@@ -118,7 +129,7 @@ FTransform AINSWeaponAttachment_Optic::GetOpticSightTransform()
 	const FName SightAlignerName = FName(TEXT("SightAligner"));
 	if (OpticMeshComp->DoesSocketExist(SightAlignerName))
 	{
-		return OpticMeshComp->GetSocketTransform(SightAlignerName);
+		return OpticMeshComp->GetSocketTransform(SightAlignerName,RTS_World);
 	}
 	return FTransform::Identity;
 }

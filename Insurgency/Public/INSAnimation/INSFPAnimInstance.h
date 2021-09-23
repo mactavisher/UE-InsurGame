@@ -9,7 +9,7 @@
 /**
  *
  */
-UCLASS()
+UCLASS(Blueprintable,BlueprintType)
 class INSURGENCY_API UINSFPAnimInstance : public UINSCharacterAimInstance
 {
 	GENERATED_UCLASS_BODY()
@@ -20,7 +20,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AnimationMode")
 		float ADSAlpha;
 
-	/** current ads alpha when aim, used to blend aim animation */
+	/** how much time it takes to finish aim or exit aiming,this is also updates ads alpha value*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AnimationMode")
 		float ADSTime;
 
@@ -28,6 +28,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AnimationMode")
 		FVector FiringHandsShift;
 
+	/** ads pose, blend with ads alpha and applied to current pose */
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="ADS")
 	   UAnimSequence* AdjustableAdsPoseRef;
 
@@ -35,7 +36,7 @@ protected:
 		float MaxWeaponSwayDelta;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSway")
-		float WeaponSwaySpeed;
+		float WeaponSwaySpeed;                                  
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSway")
 		float MaxWeaponSwayDeltaAimingModifier;
@@ -48,7 +49,7 @@ protected:
 		FVector SightLocWhenAiming;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSway")
-	    FTransform SightTransform;
+	    FTransform DeltaAimSightTransform;
 
 	UPROPERTY()
 	   uint8 bSighLocReCalculated:1;
@@ -86,7 +87,10 @@ protected:
 
 	virtual void FPStopAimMoveAnim();
 
-	virtual void UpdateWeaponIkSwayRotation(float deltaSeconds);
+	
+
+	/** procedure animation,add some weapon leading offset when view rotates */
+	virtual void UpdateWeaponIkSwayLocationAndRotation(float DeltaSeconds);
 
 	virtual void FPPlayMovingAnim();
 
@@ -95,7 +99,7 @@ protected:
 	/**
 	 * @desc when entering ads, calculate and adjust the hand IK to line up sight with camera
 	 */
-	virtual void UpdateSight();
+	virtual void UpdateSight(float DeltaTimeSeconds);
 
 	virtual float PlayWeaponStartEquipAnim()override;
 
@@ -136,7 +140,9 @@ protected:
 
 	virtual float PlaySwitchFireModeAnim() override;
 
-	virtual void SetCurrentWeaponAndAnimationData(class AINSWeaponBase* NewWeapon)override;
+	virtual void SetCurrentWeapon(class AINSWeaponBase* NewWeapon)override;
+
+	virtual void SetCurrentWeaponAnimData(UINSStaticAnimData* NewAnimData) override;
 
 public:
 	virtual float PlayFireAnim()override;

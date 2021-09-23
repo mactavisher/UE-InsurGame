@@ -9,7 +9,7 @@
 /**
  * 
  */
-UCLASS()
+UCLASS(Blueprintable,BlueprintType)
 class INSURGENCY_API UINSTPAnimInstance : public UINSCharacterAimInstance
 {
 	GENERATED_UCLASS_BODY()
@@ -98,7 +98,9 @@ class INSURGENCY_API UINSTPAnimInstance : public UINSCharacterAimInstance
 	 * 
 	 * @Param NewWeapon Weapon to use in this animation
 	 */
-	virtual void SetCurrentWeaponAndAnimationData(class AINSWeaponBase* NewWeapon)override;
+	virtual void SetCurrentWeapon(class AINSWeaponBase* NewWeapon)override;
+
+	virtual void SetCurrentWeaponAnimData(UINSStaticAnimData* NewAnimData) override;
 
 	/**
 	 * used for entry state for jog

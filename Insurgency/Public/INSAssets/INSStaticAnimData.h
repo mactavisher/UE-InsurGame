@@ -138,7 +138,7 @@ struct FCustomForeGripWeaponAnim
 	FWeaponAnimDataPair BoltQuickReload;
 };
 
-UCLASS(abstract, BlueprintType, Blueprintable)
+UCLASS(BlueprintType, Blueprintable)
 class INSURGENCY_API UINSStaticAnimData : public UObject
 {
 	GENERATED_BODY()

@@ -14,7 +14,6 @@ class AINSItems_Pickup;
 class USkeletalMeshComponent;
 class USkeletalMesh;
 
-
 /**
  *  weapon pickup
  */

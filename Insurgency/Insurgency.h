@@ -188,6 +188,10 @@ struct FTakeHitInfo
 {
 	GENERATED_USTRUCT_BODY()
 
+	/** indicate if this shot has shot a pawn or damageAble actor*/
+	UPROPERTY()
+	uint8 bValidShot:1;
+	
 	/** shot direction pitch, manually compressed and decompressed */
 	UPROPERTY()
 		uint8 ShotDirPitch;
@@ -245,7 +249,8 @@ struct FTakeHitInfo
 		uint8 bIsDirtyData : 1;
 
 	FTakeHitInfo()
-		: ShotDirPitch(0)
+		: bValidShot(false)
+		, ShotDirPitch(0)
 		, ShotDirYaw(0)
 		, DamageCauser(nullptr)
 		, InstigatorPawn(nullptr)
