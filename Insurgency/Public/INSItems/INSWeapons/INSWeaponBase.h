@@ -78,13 +78,6 @@ struct FWeaponConfigData
 		  , bRequireExtraOpticRail(false)
 	{
 	}
-
-	void ForceInitWeaponConfig()
-	{
-		AmmoPerClip = AmmoPerClip;
-		MaxAmmo = AmmoPerClip * 10;
-		TimeBetweenShots = TimeBetweenShots;
-	}
 };
 
 USTRUCT(BlueprintType)
@@ -274,11 +267,10 @@ public:
 };
 
 static const FName SightAlignerSocketName = FName(TEXT("SightAligner"));
-UCLASS(BlueprintType,Blueprintable)
+UCLASS(BlueprintType, Blueprintable)
 class INSURGENCY_API AINSWeaponBase : public AINSItems
 {
 	GENERATED_UCLASS_BODY()
-	friend class UINSWeaponFireHandler;
 
 	/** stores available fire modes to switch between */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FireMode")
@@ -289,7 +281,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	TSubclassOf<UINSStaticAnimData> WeaponAnimationClass;
 
 	/** weapon animation data */
-	UPROPERTY(VisibleDefaultsOnly,BlueprintReadOnly,Category="Animation")
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category="Animation")
 	UINSStaticAnimData* WeaponAnimation;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Visual")
@@ -360,15 +352,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 
 	/** mesh 1p */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WeaponMesh1PComp", meta = (AllowPrivateAccess = "true"))
-	UINSWeaponMeshComponent* WeaponMesh1PComp;
-
-	/** mesh 3p */
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WeaponMesh3PComp", meta = (AllowPrivateAccess = "true"))
-	UINSWeaponMeshComponent* WeaponMesh3PComp;
-
-	/** mesh 3p */
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WeaponFireHandler", meta = (AllowPrivateAccess = "true"))
-	UINSWeaponFireHandler* WeaponFireHandler;
+	UINSWeaponMeshComponent* WeaponMeshComp;
 
 	/** Optic rail comp, used for weapons need a extra rail to hold the optic */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "WeaponFireHandler", meta = (AllowPrivateAccess = "true"))
@@ -493,12 +477,30 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	TArray<AINSWeaponAttachment*> CachedWeaponAttachmentInstances;
 
 	UPROPERTY()
+	AINSWeaponBase* LocalClientCosmeticWeapon;
+
+	UPROPERTY()
+	uint8 bClientCosmeticWeapon:1;
+
+	UPROPERTY()
 	float DefaultAimingFOV;
+
+	UPROPERTY()
+	uint8 bIsFiring:1;
+
+	UPROPERTY()
+	uint8 SemiAutoCount;
+
+	UPROPERTY()
+	FTimerHandle SemiAutoTimerHandle;
+
+	UPROPERTY()
+	FTimerHandle FullAutoTimerHandle;
+
 
 #if WITH_EDITORONLY_DATA
 	uint8 bShowDebugTrace : 1;
 #endif
-
 
 protected:
 	//~ begin Actor interface
@@ -602,6 +604,8 @@ protected:
 
 	virtual void OnRep_Owner() override;
 
+	virtual void Destroyed() override;
+
 
 public:
 	/**
@@ -626,6 +630,9 @@ public:
 	/** stop weapon fire ,will clear any fire timers and reset weapon state */
 	virtual void StopWeaponFire();
 
+	UFUNCTION(Server, Reliable, WithValidation)
+	virtual void ServerStopWeaponFire();
+
 	/** set weapon back to idle state */
 	virtual void SetWeaponReady();
 
@@ -639,7 +646,7 @@ public:
 	virtual void StartEquipWeapon();
 
 	/** update Weapon mesh visibility according to their local role */
-	virtual void UpdateWeaponVisibility();
+	virtual void UpdateWeaponMeshVisibility();
 
 	/**server,start equip this weapon  */
 	UFUNCTION(Server, Unreliable, WithValidation)
@@ -663,12 +670,6 @@ public:
 	 * @Return INSPlayerController
 	 */
 	virtual class AINSPlayerController* GetINSPlayerController();
-
-	/** recoil Vertically when player fires */
-	virtual void UpdateRecoilVertically(float DeltaTimeSeconds, float RecoilAmount);
-
-	/** recoil horizontally when player fires */
-	virtual void UpdateRecoilHorizontally(float DeltaTimeSeconds, float RecoilAmount);
 
 	/** convert weapon state enum to a String ,make it easier to read */
 	virtual FString GetWeaponReadableCurrentState();
@@ -708,7 +709,7 @@ public:
 
 	virtual void WeaponGoToIdleState();
 
-	virtual bool GetIsWeaponInIdleState() { return CurrentWeaponState == EWeaponState::IDLE; }
+	virtual bool GetIsWeaponInIdleState();
 
 	/**
 	 * @desc init and create default attachment slot that this weapon will possess by default
@@ -733,7 +734,7 @@ public:
 	 * @param SpawnLoc   World Location to spawn to projectile
 	 * @param SpawnDir   projectile spawn direction
 	 */
-	virtual void SpawnProjectile(FVector SpawnLoc, FVector SpawnDir);
+	virtual void FireProjectile(FVector_NetQuantize100 SpawnLoc, FVector_NetQuantize100 SpawnDir);
 
 	/**
 	 * @desc  called by autonomous proxy clients to fire a projectile
@@ -741,7 +742,7 @@ public:
 	 * @param SpawnDir   projectile spawn direction
 	 */
 	UFUNCTION(Server, Unreliable, WithValidation)
-	virtual void ServerSpawnProjectile(FVector SpawnLoc, FVector SpawnDir);
+	virtual void ServerFireProjectile(FVector SpawnLoc, FVector SpawnDir);
 
 	/**
 	 * @desc  set the character that own this weapon
@@ -755,6 +756,9 @@ public:
 	 */
 	virtual void SetWeaponState(EWeaponState NewWeaponState);
 
+	/** Checks weapon after each shot fired*/
+	virtual void PostFireShot();
+
 	UFUNCTION(Server, Unreliable, WithValidation)
 	virtual void ServerSetWeaponState(EWeaponState NewWeaponState);
 
@@ -764,9 +768,7 @@ public:
 	 */
 	virtual EWeaponState GetWeaponCurrentState() const { return CurrentWeaponState; }
 
-	FORCEINLINE virtual class UINSWeaponAnimInstance* GetWeapon1PAnimInstance();
-
-	FORCEINLINE virtual class UINSWeaponAnimInstance* GetWeapon3pAnimInstance();
+	FORCEINLINE virtual class UINSWeaponAnimInstance* GetWeaponAnimInstance();
 
 	virtual float GetWeaponCurrentSpread() const { return WeaponSpreadData.CurrentWeaponSpread; }
 
@@ -822,7 +824,8 @@ public:
 	 * @Param FireLoc target spawn location of this shot
 	 * @param ShotRot target spawn Rotation of this shot
 	 */
-	virtual void FireShot(const FVector FireLoc, const FRotator ShotRot);
+	UFUNCTION()
+	virtual void FireShot();
 
 	/** executed cosmetic event when weapon fully zoomed out,clients only */
 	virtual void OnZoomedOut();
@@ -835,16 +838,13 @@ public:
 	 * @Param InCanvas  Canvas to draw Cross Hair on
 	 * @Param DrawColor Draw color
 	 */
-	virtual void DrawCrossHair(class UCanvas* InCavas, const FLinearColor DrawColor);
+	virtual void DrawCrossHair(class UCanvas* InCanvas, const FLinearColor DrawColor);
 
 	/**
 	 * @Desc Update the ads status for client to execute cosmetic event
 	 * @Param DeltaSeconds World DeltaTime
 	 */
 	virtual void UpdateADSStatus(const float DeltaSeconds);
-
-	UFUNCTION(Server, Unreliable, WithValidation)
-	virtual void ServerFireShot(FVector FireLoc, FRotator ShotRot);
 
 	/**
 	 * check to see if the weapon has a extra sight aligner
@@ -889,17 +889,28 @@ public:
 	virtual FVector GetWeaponBaseIKLocation() const { return BaseHandsOffSetLoc; }
 
 	/** return the condition if we need a extra optic rail*/
-	virtual bool GetRequireExtraOpticRail()const{return WeaponConfigData.bRequireExtraOpticRail;}
+	virtual bool GetRequireExtraOpticRail() const { return WeaponConfigData.bRequireExtraOpticRail; }
 
 	/** insert a single ammo, usually used with bolt rifle or shot guns by anim notify*/
 	virtual void InsertSingleAmmo();
-	
+
 	/** send by client to request server to insert a single ammo, usually used with bolt rifle or shot guns by anim notify*/
-	UFUNCTION(Server,Reliable,WithValidation)
+	UFUNCTION(Server, Reliable, WithValidation)
 	virtual void ServerInsertSingleAmmo();
 
-	FORCEINLINE UStaticMeshComponent* GetOpticRailComp()const{return OpticRail;}
+	FORCEINLINE UStaticMeshComponent* GetOpticRailComp() const { return OpticRail; }
 
-	FORCEINLINE UINSWeaponMeshComponent* GetWeapon1PMeshComp() const { return WeaponMesh1PComp; }
-	FORCEINLINE UINSWeaponMeshComponent* GetWeapon3PMeshComp() const { return WeaponMesh3PComp; }
+	virtual bool GetIsFiring() const { return bIsFiring; }
+
+	virtual void SetIsFiring(bool bFiring);
+
+	virtual void ClearFiring(float DeltaSeconds);
+
+	virtual void SetLocalClientCosmeticWeapon(AINSWeaponBase* InWeapon);
+
+	virtual bool GetIsClientCosmeticWeapon()const{return bClientCosmeticWeapon;}
+
+	virtual AINSWeaponBase* GetLocalClientCosmeticWeapon()const{return LocalClientCosmeticWeapon;}
+
+	FORCEINLINE UINSWeaponMeshComponent* GetWeaponMeshComp() const { return WeaponMeshComp; }
 };

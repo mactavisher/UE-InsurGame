@@ -331,7 +331,7 @@ void AINSHUDBase::DrawWeaponFireMode()
 		EWeaponFireMode CurrentWeaponFireMode = CurrentWeapon->GetCurrentWeaponFireMode();
 		switch (CurrentWeaponFireMode)
 		{
-		case EWeaponFireMode::SEMI:FireMode.Append("Semi"); break;
+		case EWeaponFireMode::SINGLE:FireMode.Append("Single"); break;
 		case EWeaponFireMode::SEMIAUTO:FireMode.Append("Semi-Auto"); break;
 		case EWeaponFireMode::FULLAUTO:FireMode.Append("Full-Auto"); break;
 		default:

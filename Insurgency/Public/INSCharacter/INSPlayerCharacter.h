@@ -41,12 +41,12 @@ protected:
 	UINSInventoryComponent* InventoryComp;
 
 	/* Camera arm comp*/
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"), Category = "FirstPersonCamera")
-	USpringArmComponent* SpringArm;
+	// UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"), Category = "FirstPersonCamera")
+	// USpringArmComponent* SpringArm;
 
-	/* a dummy helper aligner to help align the sprint arm*/
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"), Category = "FirstPersonCamera")
-	USceneComponent* SpringArmAligner;
+	// /* a dummy helper aligner to help align the sprint arm*/
+	// UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"), Category = "FirstPersonCamera")
+	// USceneComponent* SpringArmAligner;
 
 	/** player character's 1P mesh comp,only visible to owner player */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "CharacterMesh")
@@ -64,6 +64,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "3PMesh")
 	UINSCharSkeletalMeshComponent* CharacterMesh3P;
 
+	/** Player character's 3P mesh comp,only visible to non-owner player */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "3PMesh")
+	UINSCharSkeletalMeshComponent* CharacterMesh1P_Foot;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing=OnRep_TeamType, Category = "Team")
 	ETeamType MyTeamType;
 
@@ -80,57 +84,39 @@ protected:
 
 protected:
 	virtual void BeginPlay() override;
-
 	virtual void PostInitializeComponents() override;
-
 	virtual void Tick(float DeltaTime) override;
-
 	virtual void TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction) override;
-
 	virtual void OnCauseDamage(const FTakeHitInfo& HitInfo) override;
-
 	virtual void PossessedBy(AController* NewController) override;
-
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
 	virtual void OnRep_CurrentWeapon() override;
-
 	virtual void OnRep_Dead() override;
-
 	virtual void OnRep_Aim() override;
-
 	virtual void OnRep_IsCrouched() override;
-
 	virtual void OnRep_Sprint() override;
-
 	virtual void OnRep_PlayerState() override;
-
 	virtual void OnRep_LastHitInfo() override;
-
 	virtual void Crouch(bool bClientSimulation) override;
-
 	virtual void UnCrouch(bool bClientSimulation) override;
-
 	virtual void SetAimHandsXLocation(const float Value) override;
-
 	virtual bool CheckCharacterIsReady() override;
-
 	UFUNCTION()
 	virtual void OnRep_TeamType();
-
 	virtual void SetupMeshVisibility();
+	virtual void UpdateCharacterMesh1P(float DeltaTime);
 
 
 	/**
 	 * @desc called when owner gets replicated and for controllers , 
-	 *       this will only get called on server or autonomus_proxy clients
+	 *       this will only get called on server or autonomous_proxy clients
 	 */
 	virtual void OnRep_Owner() override;
 
 	virtual void SetOwner(AActor* NewOwner) override;
 
 	/**
-	 * called when player controller gets replicated,this will only be called on Role_Athority or Role_AutonomousProxy
+	 * called when player controller gets replicated,this will only be called on Role_Athourity or Role_AutonomousProxy
 	 */
 	virtual void OnRep_Controller() override;
 
@@ -194,16 +180,6 @@ public:
 	UFUNCTION()
 	virtual void EquipGameModeDefaultWeapon();
 
-	/**
-	 * return if Mesh1p is hidden in game currently
-	 */
-	inline bool GetIsMesh1pHidden() const;
-
-	/**
-	 * return if Mesh3p is hidden in game currently
-	 */
-	inline bool GetIsMesh3pHidden() const;
-
 	virtual void SetTeamType(const ETeamType NewTeamType);
 
 	virtual void OnEnterIdleState() override;
@@ -212,9 +188,13 @@ public:
 
 	virtual void OnEnterBoredState() override;
 
-	virtual void OnOutBoredState()override;
+	virtual void OnOutBoredState() override;
 
 	virtual void OnLowHealth() override;
+
+	virtual void TickRecoil(float DeltaSeconds);
+
+	virtual void OnCameraUpdated(FVector CameraLoc, FRotator CameraRot);
 
 	virtual void Die() override;
 

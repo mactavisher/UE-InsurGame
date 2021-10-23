@@ -8,3 +8,4 @@ UINSCharSkeletalMeshComponent::UINSCharSkeletalMeshComponent(const FObjectInitia
 {
 	SetAnimInstanceClass(UINSCharacterAimInstance::StaticClass());
 }
+

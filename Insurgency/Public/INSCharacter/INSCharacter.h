@@ -135,6 +135,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_LastHitInfo)
 	FTakeHitInfo LastHitInfo;
 
+	/** game time in real seconds when this pawn dead */
 	UPROPERTY()
 	float DeathTime;
 
@@ -153,6 +154,10 @@ protected:
 	/** blood particle spawned when taking hit */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
 	TArray<UParticleSystem*> BloodParticles;
+
+	/** blood particle spawned when taking hit */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
+	TArray<UParticleSystem*> BloodFlowParticles;
 
 	/** Decal materials. provide bullet holes visual on body*/
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Effects")
@@ -247,8 +252,7 @@ protected:
 	virtual void Tick(float DeltaTime) override;
 	virtual void FellOutOfWorld(const class UDamageType& dmgType) override;
 	virtual void TickActor(float DeltaTime, enum ELevelTick TickType, FActorTickFunction& ThisTickFunction) override;
-	virtual bool ShouldTakeDamage(float Damage, const FDamageEvent& DamageEvent, AController* EventInstigator,
-	                              AActor* DamageCauser) const override;
+	virtual bool ShouldTakeDamage(float Damage, const FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser) const override;
 public:
 	virtual float TakeDamage(float Damage, const struct FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 	//~ end AActor interface
@@ -268,21 +272,16 @@ public:
 protected:
 	/** handle take point damage event */
 	UFUNCTION()
-	virtual void HandleOnTakePointDamage(AActor* DamagedActor, float Damage, class AController* InstigatedBy,
-	                                     FVector HitLocation, class UPrimitiveComponent* FHitComponent, FName BoneName,
-	                                     FVector ShotFromDirection, const class UDamageType* DamageType,
-	                                     AActor* DamageCauser);
+	virtual void HandleOnTakePointDamage(AActor* DamagedActor, float Damage, class AController* InstigatedBy, FVector HitLocation, class UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotFromDirection,
+	                                     const class UDamageType* DamageType, AActor* DamageCauser);
 
 	/** handle take any damage event */
 	UFUNCTION()
-	virtual void HandleOnTakeAnyDamage(AActor* DamagedActor, float Damage, const class UDamageType* DamageType,
-	                                   class AController* InstigatedBy, AActor* DamageCauser);
+	virtual void HandleOnTakeAnyDamage(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, class AController* InstigatedBy, AActor* DamageCauser);
 
 	/** handle take radius damage event */
 	UFUNCTION()
-	virtual void HandleOnTakeRadiusDamage(AActor* DamagedActor, float Damage, const class UDamageType* DamageType,
-	                                      FVector Origin, FHitResult HitInfo, class AController* InstigatedBy,
-	                                      AActor* DamageCauser);
+	virtual void HandleOnTakeRadiusDamage(AActor* DamagedActor, float Damage, const class UDamageType* DamageType, FVector Origin, FHitResult HitInfo, class AController* InstigatedBy, AActor* DamageCauser);
 
 	/** Cast Blood decal on static building when take damage */
 	virtual void CastBloodDecal(FVector HitLocation, FVector HitDir);
@@ -364,10 +363,7 @@ public:
 	FORCEINLINE virtual UINSHealthComponent* GetCharacterHealthComp() const { return CharacterHealthComp; }
 
 	/** return ins version of character movement comp */
-	FORCEINLINE virtual UINSCharacterMovementComponent* GetINSCharacterMovement() const
-	{
-		return INSCharacterMovementComp;
-	};
+	FORCEINLINE virtual UINSCharacterMovementComponent* GetINSCharacterMovement() const { return INSCharacterMovementComp; };
 
 	/** returns the character's audio comp */
 	FORCEINLINE virtual class UINSCharacterAudioComponent* GetCharacterAudioComp() const { return CharacterAudioComp; }
@@ -533,5 +529,21 @@ public:
 	/** returns if this character is in hit state */
 	virtual bool GetIsInHitState() const { return LastHitState.CurrentHitStateLastTime > 0.f; };
 
+	/**
+	* @desc Set the Animation data reference,noticed this will also update the animation data referenced by anim instance
+	* @param AnimData the animation data to set
+	*/
 	virtual void SetCurrentAnimData(UINSStaticAnimData* AnimData);
+
+	/** returns if this pawn is a bot ,not player controlled */
+	virtual bool GetIsABot();
+
+	/** returns the death time for this character */
+	virtual float GetCharacterDeathTime() const { return DeathTime; }
+
+	/** checks if the character is already dead to make sure  the death base event will only executed once*/
+	virtual bool GetCharacterIsAlreadyDead();
+
+	/** local client check this distance to the other location before spawn some FX*/
+	virtual float CheckDistance(const FVector OtherLocation);
 };

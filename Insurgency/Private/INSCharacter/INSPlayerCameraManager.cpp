@@ -2,17 +2,21 @@
 
 
 #include "INSCharacter/INSPlayerCameraManager.h"
+
+#include "INSCharacter/INSPlayerCharacter.h"
 #include "INSItems/INSWeapons/INSWeaponBase.h"
 
-AINSPlayerCameraManager::AINSPlayerCameraManager(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
+AINSPlayerCameraManager::AINSPlayerCameraManager(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	ViewPitchMin = -70.f;
-	ViewPitchMax = 70.f;
+	ViewPitchMax = 65.f;
 	bWantsToADS = false;
 	ADSFov = 65.f;
 	DefaultFOVBlendTime = 0.2f;
+	DefaultFOV = 85.f;
 	LockedFOV = DefaultFOV;
 }
+
 void AINSPlayerCameraManager::LimitViewPitch(FRotator& ViewRotation, float InViewPitchMin, float InViewPitchMax)
 {
 	Super::LimitViewPitch(ViewRotation, ViewPitchMin, ViewPitchMax);

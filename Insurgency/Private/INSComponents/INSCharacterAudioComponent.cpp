@@ -71,7 +71,7 @@ void UINSCharacterAudioComponent::SetOwnerCharacter(class AINSCharacter* NewChar
 
 bool UINSCharacterAudioComponent::GetIsPlayValid() const
 {
-	return GetOwnerCharacter() && GetOwnerCharacter()->GetIsDead() && GetPlayState() == EAudioComponentPlayState::Stopped;
+	return GetOwnerCharacter() && !GetOwnerCharacter()->GetIsDead() && GetPlayState() == EAudioComponentPlayState::Stopped;
 }
 
 void UINSCharacterAudioComponent::OnSoundFinishPlay()

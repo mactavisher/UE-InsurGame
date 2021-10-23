@@ -211,13 +211,6 @@ void AINSProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* 
 // Called when the game starts or when spawned
 void AINSProjectile::BeginPlay()
 {
-	if (HasAuthority())
-	{
-		FRepMovement* const RepMovement = (FRepMovement*)&GetReplicatedMovement();
-		RepMovement->LocationQuantizationLevel = MovementQuantizeLevel;
-		RepMovement->RotationQuantizationLevel = ERotatorQuantization::ByteComponents;
-		RepMovement->VelocityQuantizationLevel = MovementQuantizeLevel;
-	}
 	if (!bVisualProjectile)
 	{
 		TracerParticle->DestroyComponent(true);

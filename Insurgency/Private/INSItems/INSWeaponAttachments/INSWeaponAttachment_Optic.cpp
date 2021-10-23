@@ -45,7 +45,7 @@ void AINSWeaponAttachment_Optic::Tick(float DeltaTime)
 		return;
 	}
 	//only we have a weapon owner and player controlled client need to update this
-	if (WeaponOwner)
+	if (WeaponOwner&&!WeaponOwner->GetIsClientCosmeticWeapon())
 	{
 		const AController* const PC = Cast<AController>(WeaponOwner->GetOwner());
 		if (PC)
@@ -53,7 +53,7 @@ void AINSWeaponAttachment_Optic::Tick(float DeltaTime)
 			const APlayerState* PS = PC->PlayerState;
 			if (PS && !PS->IsABot())
 			{
-				if (GetADSAlpha() > 0.5f)
+				if (GetADSAlpha() > 0.65f)
 				{
 					AttachmentMeshComp->SetHiddenInGame(true);
 					OpticMeshComp->SetHiddenInGame(false);
@@ -88,7 +88,6 @@ void AINSWeaponAttachment_Optic::PostInitializeComponents()
 		SceneCaptureComp->PrimaryComponentTick.bCanEverTick = false;
 		SceneCaptureComp->PrimaryComponentTick.SetTickFunctionEnable(false);
 	}
-
 }
 
 void AINSWeaponAttachment_Optic::AttachToWeaponSlot()

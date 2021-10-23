@@ -6,7 +6,8 @@
 #include "INSItems/INSWeapons/INSWeaponBase.h"
 
 DEFINE_LOG_CATEGORY(LogINSCharacterMovementComponent)
-UINSCharacterMovementComponent::UINSCharacterMovementComponent(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
+
+UINSCharacterMovementComponent::UINSCharacterMovementComponent(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	BaseWalkSpeed = 300.f;
 	MaxWalkSpeed = BaseWalkSpeed;
@@ -93,12 +94,12 @@ void UINSCharacterMovementComponent::CheckCharacterIdleState(const float DeltaTi
 	{
 		UE_LOG(LogTemp, Log, TEXT("INScharacterMovementcomp ticking without characterowner"));
 	}
-	if (bEnableBoredState&&!CharacterOwner->IsNetMode(NM_DedicatedServer))
+	if (bEnableBoredState && !CharacterOwner->IsNetMode(NM_DedicatedServer))
 	{
 		if (INSCharacterOwner && !INSCharacterOwner->GetIsDead())
 		{
 			if (FMath::Abs(GetLastUpdateVelocity().Size()) > 0
-				|| (INSCharacterOwner->GetCurrentWeapon() && !INSCharacterOwner->GetCurrentWeapon()->GetIsWeaponInIdleState())
+				|| (INSCharacterOwner->GetCurrentWeapon() && (!INSCharacterOwner->GetCurrentWeapon()->GetIsWeaponInIdleState()))
 				|| INSCharacterOwner->GetIsAiming())
 			{
 				AccumulatedIdleTime = 0.f;
@@ -109,7 +110,6 @@ void UINSCharacterMovementComponent::CheckCharacterIdleState(const float DeltaTi
 			}
 			else
 			{
-
 				AccumulatedIdleTime += DeltaTime;
 				if (!bInIdleState && AccumulatedIdleTime >= IdleStateTime)
 				{

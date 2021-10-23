@@ -212,7 +212,7 @@ public:
 	 * @Param KillerScore  score
 	 * @Param bIsTeamDamage is this kill is team mate kill
 	 */
-	virtual void PlayerScore(class AController* ScorePlayer, class AController* Victim, const FTakeHitInfo& HitInfo);
+	virtual void PlayerScore(class AController* ScorePlayer, class AController* Victim, const struct FTakeHitInfo& HitInfo);
 
 
 	/**

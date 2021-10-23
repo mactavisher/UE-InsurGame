@@ -138,10 +138,6 @@ public:
 	/** fire */
 	virtual void Fire();
 
-	/** server,fire */
-	UFUNCTION(Server, Unreliable, WithValidation)
-		virtual void ServerFire();
-
 	/** stop fire */
 	virtual void StopFire();
 

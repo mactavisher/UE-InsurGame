@@ -134,7 +134,7 @@ void AINSGameModeBase::InitDamageModifiers()
 		for (uint8 i = 0; i < NumDamageModifier; i++)
 		{
 			DamageModifierInstances.Add(NewObject<UINSDamageModifierBase>(this, DamageModifiers[i]));
-			UE_LOG(LogINSGameMode, Log, TEXT("create game modifiers:%s"), *(DamageModifierInstances[i]->GetName()));
+			UE_LOG(LogINSGameMode, Log, TEXT("create game damge modifiers:%s"), *(DamageModifierInstances[i]->GetName()));
 		}
 	}
 }
@@ -184,10 +184,9 @@ float AINSGameModeBase::ModifyDamage(float InDamage, class AController* PlayerIn
 	{
 		for (uint8 i = 0; i < NumDamageModifier; i++)
 		{
-			UINSDamageModifierBase* DamageModifier = DamageModifierInstances[i];
-			if (DamageModifier)
+			if ( DamageModifierInstances[i])
 			{
-				DamageModifier->ModifyDamage(ActualDamageToApply, (FDamageEvent&)DamageEvent, PlayerInstigator, Victim);
+				 DamageModifierInstances[i]->ModifyDamage(ActualDamageToApply, (FDamageEvent&)DamageEvent, PlayerInstigator, Victim);
 			}
 		}
 	}
@@ -213,7 +212,7 @@ float AINSGameModeBase::ModifyDamage(float InDamage, class AController* PlayerIn
 	return ActualDamageToApply;
 }
 
-void AINSGameModeBase::PlayerScore(class AController* ScorePlayer, class AController* Victim, const FTakeHitInfo& HitInfo)
+void AINSGameModeBase::PlayerScore(class AController* ScorePlayer, class AController* Victim, const struct FTakeHitInfo& HitInfo)
 {
 	AINSGameStateBase* GS = GetGameState<AINSGameStateBase>();
 	if (ScorePlayer->GetClass()->IsChildOf(AINSPlayerController::StaticClass()))

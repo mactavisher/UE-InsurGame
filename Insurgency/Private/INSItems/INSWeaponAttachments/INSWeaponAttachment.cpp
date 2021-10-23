@@ -25,7 +25,7 @@ AINSWeaponAttachment::AINSWeaponAttachment(const FObjectInitializer& ObjectIniti
 	AttachmentMeshComp->SetHiddenInGame(false);
 	bChangeWeaponBasePoseType = false;
 	SetReplicatingMovement(false);
-	ItemType = EItemType::WEAPONATTACHMENT;
+	ItemType = EItemType::WEAPONATTACHEMENT;
 	AttachmentType = EWeaponAttachmentType::NONE;
 	AttachedSlotIndex = static_cast<uint8>(0);
 	bBlockQuickBoltRifileReloading = false;
@@ -37,6 +37,21 @@ AINSWeaponAttachment::AINSWeaponAttachment(const FObjectInitializer& ObjectIniti
 void AINSWeaponAttachment::BeginPlay()
 {
 	Super::BeginPlay();
+	if(WeaponOwner)
+	{
+		if(WeaponOwner->GetIsClientCosmeticWeapon())
+		{
+			SetActorHiddenInGame(true);
+			AttachmentMeshComp->bCastHiddenShadow = true;
+		}else
+		{
+			if(WeaponOwner->GetLocalRole()>=ROLE_AutonomousProxy)
+			{
+				AttachmentMeshComp->SetCastShadow(false);
+				AttachmentMeshComp->SetCastHiddenShadow(false);
+			}
+		}
+	}
 }
 
 void AINSWeaponAttachment::PostInitializeComponents()
@@ -49,21 +64,13 @@ void AINSWeaponAttachment::OnRep_Owner()
 	Super::OnRep_Owner();
 }
 
-
 void AINSWeaponAttachment::AttachToWeaponSlot()
 {
 	if (!WeaponOwner)
 	{
 		return;
 	}
-	if (GetWeaponOwner()->GetOwner() == UGameplayStatics::GetPlayerController(GetWorld(), 0))
-	{
-		AttachmentMeshComp->AttachToComponent(GetWeaponOwner()->GetWeapon1PMeshComp(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName(TEXT("Optic")));
-	}
-	else
-	{
-		AttachmentMeshComp->AttachToComponent(GetWeaponOwner()->GetWeapon3PMeshComp(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName(TEXT("Optic")));
-	}
+	AttachmentMeshComp->AttachToComponent(GetWeaponOwner()->GetWeaponMeshComp(), FAttachmentTransformRules::SnapToTargetIncludingScale, FName(TEXT("Optic")));
 }
 
 void AINSWeaponAttachment::OnRep_OwnerWeapon()
@@ -116,4 +123,3 @@ FORCEINLINE class UStaticMeshComponent* AINSWeaponAttachment::GetAttachmentMeshC
 {
 	return AttachmentMeshComp;
 }
-

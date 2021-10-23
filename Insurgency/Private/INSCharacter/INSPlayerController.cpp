@@ -304,18 +304,10 @@ void AINSPlayerController::ReloadWeapon()
 
 void AINSPlayerController::Fire()
 {
-	if (HasAuthority())
+	const AINSGameStateBase* const CurrentGameState  = GetWorld()->GetGameState<AINSGameStateBase>();
+	if (GetINSPlayerCharacter() && CurrentGameState && CurrentGameState->GetAllowFire())
 	{
-		const AINSGameModeBase* const CurrentGameMode = GetWorld()->GetAuthGameMode<AINSGameModeBase>();
-
-		if (GetINSPlayerCharacter() && CurrentGameMode && CurrentGameMode->GetIsAllowFire())
-		{
-			GetINSPlayerCharacter()->HandleFireRequest();
-		}
-	}
-	else
-	{
-		ServerFire();
+		GetINSPlayerCharacter()->HandleFireRequest();
 	}
 }
 
@@ -344,29 +336,12 @@ void AINSPlayerController::AddYawInput(float Val)
 	LastPlayerInputRot = RotationInput;
 }
 
-void AINSPlayerController::ServerFire_Implementation()
-{
-	Fire();
-}
-
-bool AINSPlayerController::ServerFire_Validate()
-{
-	return true;
-}
 
 void AINSPlayerController::StopFire()
 {
-	if (HasAuthority())
+	if (GetINSPlayerCharacter())
 	{
-		if (GetINSPlayerCharacter())
-		{
-			GetINSPlayerCharacter()->HandleStopFireRequest();
-		}
-	}
-	else
-	{
-		ServerStopFire();
-		bPlayerFiring = false;
+		GetINSPlayerCharacter()->HandleStopFireRequest();
 	}
 }
 

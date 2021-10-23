@@ -63,7 +63,7 @@ enum class ECharacterStance :uint8 {
 /** specify a weapon's fire mode */
 UENUM(BlueprintType)
 enum class EWeaponFireMode :uint8 {
-	SEMI,
+	SINGLE,
 	SEMIAUTO,
 	FULLAUTO,
 };
@@ -71,12 +71,12 @@ enum class EWeaponFireMode :uint8 {
 UENUM(BlueprintType)
 enum class EItemType :uint8
 {
-	NONE                                   UMETA(DisplayName = "Empty"),
 	WEAPON                                 UMETA(DisplayName = "Weapon"),
 	AMMO                                   UMETA(DisplayName = "AMMO"),
-	WEAPONATTACHMENT                       UMETA(DisplayName = "WeaponAttahment"),
+	WEAPONATTACHEMENT                      UMETA(DisplayName = "WeaponAttachment"),
 	HEALTH                                 UMETA(DisplayName = "Health"),
 	ARMOR                                  UMETA(DisplayName = "ARMOR"),
+	NONE                                   UMETA(DisplayName = "NONE"),
 };
 
 UENUM(BlueprintType)
@@ -86,7 +86,7 @@ enum class EWeaponType :uint8
 	PISTOL                                 UMETA(DisplayName = "Pistol"),
 	SHOTGUN                                UMETA(DisplayName = "ShotGun"),
 	SMG                                    UMETA(DisplayName = "SMG"),
-	SNIPPER                                UMETA(DisplayName = "Snipper"),
+	SNIPER                                 UMETA(DisplayName = "Snipper"),
 	BOLTRIFLE                              UMETA(DisplayName = "BoltRifle"),
 	NONE                                   UMETA(DisplayName = "None"),
 };
@@ -96,7 +96,6 @@ UENUM(BlueprintType)
 enum class EWeaponState :uint8
 {
 	IDLE,
-	FIRING,
 	RELOADIND,
 	UNEQUIPED,
 	EQUIPPING,

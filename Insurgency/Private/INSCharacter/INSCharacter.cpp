@@ -21,8 +21,10 @@
 #include "INSDamageTypes/INSDamageType_Falling.h"
 #include "Components/BoxComponent.h"
 #include "Components/SphereComponent.h"
+#include "GameFramework/PlayerState.h"
 #include "PhysicsEngine/PhysicalAnimationComponent.h"
 #include "INSAssets/INSStaticAnimData.h"
+#include "Widgets/Text/ISlateEditableTextWidget.h"
 #ifndef GEngine
 #endif // !GEngine
 #ifndef UWorld
@@ -35,7 +37,7 @@
 DEFINE_LOG_CATEGORY(LogINSCharacter);
 
 // Sets default values
-AINSCharacter::AINSCharacter(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer.SetDefaultSubobjectClass<UINSCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
+AINSCharacter::AINSCharacter(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer.SetDefaultSubobjectClass<UINSCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
@@ -68,12 +70,13 @@ AINSCharacter::AINSCharacter(const FObjectInitializer& ObjectInitializer) :Super
 	{
 		CharacterHealthComp->SetIsReplicated(true);
 	}
+	DeathTime = 0.f;
 }
 
 void AINSCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	// we don't need sound comp in dedicated server,actually we can destroy it
+	// we don't need sound comp in dedicated server,so destroy it
 	if (IsNetMode(NM_DedicatedServer))
 	{
 		if (CharacterAudioComp)
@@ -116,27 +119,21 @@ void AINSCharacter::PostInitializeComponents()
 }
 
 
-void AINSCharacter::ApplyDamageMomentum(float DamageTaken, FDamageEvent const& DamageEvent, APawn* PawnInstigator,
-                                        AActor* DamageCauser)
+void AINSCharacter::ApplyDamageMomentum(float DamageTaken, FDamageEvent const& DamageEvent, APawn* PawnInstigator, AActor* DamageCauser)
 {
 	Super::ApplyDamageMomentum(DamageTaken, DamageEvent, PawnInstigator, DamageCauser);
 }
 
-void AINSCharacter::HandleOnTakePointDamage(AActor* DamagedActor, float Damage, AController* InstigatedBy,
-                                            FVector HitLocation, UPrimitiveComponent* FHitComponent, FName BoneName,
-                                            FVector ShotFromDirection, const UDamageType* DamageType,
+void AINSCharacter::HandleOnTakePointDamage(AActor* DamagedActor, float Damage, AController* InstigatedBy, FVector HitLocation, UPrimitiveComponent* FHitComponent, FName BoneName, FVector ShotFromDirection, const UDamageType* DamageType,
                                             AActor* DamageCauser)
 {
 }
 
-void AINSCharacter::HandleOnTakeAnyDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
-                                          AController* InstigatedBy, AActor* DamageCauser)
+void AINSCharacter::HandleOnTakeAnyDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser)
 {
 }
 
-void AINSCharacter::HandleOnTakeRadiusDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType,
-                                             FVector Origin, FHitResult HitInfo, AController* InstigatedBy,
-                                             AActor* DamageCauser)
+void AINSCharacter::HandleOnTakeRadiusDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, FVector Origin, FHitResult HitInfo, AController* InstigatedBy, AActor* DamageCauser)
 {
 }
 
@@ -179,7 +176,7 @@ float AINSCharacter::TakeDamage(float Damage, const struct FDamageEvent& DamageE
 				LastHitInfo.RelHitLocation = PointDamageEventPtr->HitInfo.ImpactPoint;
 				LastHitInfo.DamageType = DamageEvent.DamageTypeClass;
 				const FVector ShotDir = DamageCauser->GetActorForwardVector();
-				const FRotator ShotRot = ShotDir.Rotation();
+				const FRotator ShotRot = PointDamageEventPtr->HitInfo.ImpactNormal.Rotation();
 				LastHitInfo.ShotDirPitch = FRotator::CompressAxisToByte(ShotRot.Pitch);
 				LastHitInfo.ShotDirYaw = FRotator::CompressAxisToByte(ShotRot.Yaw);
 				LastHitInfo.EnsureReplication();
@@ -232,9 +229,7 @@ void AINSCharacter::Landed(const FHitResult& Hit)
 			{
 				Damage = 90.f;
 			}
-			UE_LOG(LogINSCharacter , Log
-			       , TEXT("Character %s is taking land damage falling from high,initial damage taken:%f,landing speed %f")
-			       , *GetName(), *UKismetStringLibrary::Conv_FloatToString(Damage), LandZVelocity);
+			UE_LOG(LogINSCharacter, Log, TEXT("Character %s is taking land damage falling from high,initial damage taken:%f,landing speed %f"), *GetName(), *UKismetStringLibrary::Conv_FloatToString(Damage), LandZVelocity);
 			FPointDamageEvent FallingDamageEvent;
 			FallingDamageEvent.DamageTypeClass = UINSDamageType_Falling::StaticClass();
 			FallingDamageEvent.ShotDirection = Hit.ImpactNormal;
@@ -252,8 +247,7 @@ void AINSCharacter::CastBloodDecal(FVector HitLocation, FVector HitDir)
 	FCollisionQueryParams CollisionQueryParams;
 	CollisionQueryParams.AddIgnoredActor(this);
 	const FVector TraceEnd = HitLocation + HitDir * TraceRange;
-	GetWorld()->LineTraceSingleByChannel(TraceHit, HitLocation, TraceEnd, ECollisionChannel::ECC_Visibility,
-	                                     CollisionQueryParams);
+	GetWorld()->LineTraceSingleByChannel(TraceHit, HitLocation, TraceEnd, ECollisionChannel::ECC_Visibility,CollisionQueryParams);
 	if (TraceHit.bBlockingHit)
 	{
 		const UPrimitiveComponent* HitComp = TraceHit.Component.Get();
@@ -271,7 +265,7 @@ void AINSCharacter::CastBloodDecal(FVector HitLocation, FVector HitDir)
 				                                     , EAttachLocation::KeepWorldPosition
 				                                     , 10.f);
 			}
-			UE_LOG(LogINSCharacter, Warning,TEXT("No blood decal to spawn,please config at least one in your blueprint setting!"));
+			UE_LOG(LogINSCharacter, Warning, TEXT("No blood decal to spawn,please config at least one in your blueprint setting!"));
 		}
 	}
 #if WITH_EDITORONLY_DATA&&!UE_BUILD_SHIPPING
@@ -287,24 +281,16 @@ void AINSCharacter::TossCurrentWeapon()
 {
 	if (CurrentWeapon && WeaponPickupClass)
 	{
-		class AINSPickup_Weapon* WeaponPickup = GetWorld()->SpawnActorDeferred<AINSPickup_Weapon>(WeaponPickupClass,
-			CurrentWeapon->GetActorTransform(),
-			nullptr,
-			nullptr,
-			ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-
+		class AINSPickup_Weapon* WeaponPickup = GetWorld()->SpawnActorDeferred<AINSPickup_Weapon>(WeaponPickupClass, CurrentWeapon->GetActorTransform(), nullptr, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 		const FVector WeaponLocation = CurrentWeapon->GetActorLocation();
-		const FTransform PickupSpawnTransform(CurrentWeapon->GetActorRotation(),
-			WeaponLocation + FVector(0.f, 0.f, 50.f),
-			FVector::OneVector);
-
+		const FTransform PickupSpawnTransform(CurrentWeapon->GetActorRotation(), WeaponLocation + FVector(0.f, 0.f, 50.f), FVector::OneVector);
 		if (WeaponPickup)
 		{
 			WeaponPickup->SetActualWeaponClass(CurrentWeapon->GetClass());
 			WeaponPickup->SetAmmoLeft(CurrentWeapon->AmmoLeft);
 			WeaponPickup->SetLootableAmmo(CurrentWeapon->CurrentClipAmmo);
 			const FStringAssetReference AssetsRef(CurrentWeapon->GetWeaponStaticMesh());
-			UStaticMesh* WeaponMesh = LoadObject<UStaticMesh>(nullptr, *AssetsRef.ToString());
+			UStaticMesh* WeaponMesh = LoadObject<UStaticMesh>(this, *AssetsRef.ToString());
 			UGameplayStatics::FinishSpawningActor(WeaponPickup, PickupSpawnTransform);
 			FRepPickupInfo RepPickupInfo;
 			RepPickupInfo.VisualAssetPath = AssetsRef.ToString();
@@ -323,11 +309,7 @@ void AINSCharacter::TossCurrentWeapon()
 
 bool AINSCharacter::CheckCharacterIsReady()
 {
-	if(GetMesh()&&GetMesh()->HasBegunPlay())
-	{
-		return true;
-	}
-	return false;
+	return GetMesh() && GetMesh()->HasBegunPlay() && IsValid(GetMesh()->SkeletalMesh) && IsValid(GetMesh()->SkeletalMesh->GetSkeleton());
 }
 
 void AINSCharacter::OnCauseDamage(const FTakeHitInfo& HitInfo)
@@ -351,6 +333,21 @@ void AINSCharacter::SetCurrentAnimData(UINSStaticAnimData* AnimData)
 	CurrentAnimPtr = AnimData;
 }
 
+bool AINSCharacter::GetIsABot()
+{
+	return GetPlayerState() && GetPlayerState()->IsABot();
+}
+
+bool AINSCharacter::GetCharacterIsAlreadyDead()
+{
+	return bIsDead && GetWorld()->DeltaTimeSeconds >= DeathTime;
+}
+
+float AINSCharacter::CheckDistance(const FVector OtherLocation)
+{
+	return (GetActorLocation() - OtherLocation).Size();
+}
+
 
 void AINSCharacter::OnRep_LastHitInfo()
 {
@@ -365,12 +362,13 @@ void AINSCharacter::OnRep_LastHitInfo()
 			const float ShotDirPitchDecompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirPitch);
 			const float ShotDirYawDeCompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirYaw);
 			const FRotator BloodSpawnRotation = FRotator(ShotDirPitchDecompressed, ShotDirYawDeCompressed, 0.f);
-			const FTransform BloodSpawnTrans = FTransform(BloodSpawnRotation, BloodSpawnLocation, FVector::OneVector);
+			const FTransform BloodSpawnTrans = FTransform(BloodSpawnRotation, BloodSpawnLocation+GetMesh()->GetComponentLocation(), FVector::OneVector);
 			const int32 BloodParticlesSize = BloodParticles.Num();
 			if (BloodParticlesSize > 0)
 			{
 				const int32 RandomIndex = FMath::RandHelper(BloodParticlesSize - 1);
-				UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), BloodParticles[RandomIndex], BloodSpawnTrans);
+				//UGameplayStatics::SpawnEmitterAttached(GetWorld(), BloodParticles[RandomIndex], BloodSpawnTrans);
+				UGameplayStatics::SpawnEmitterAttached(BloodParticles[RandomIndex],GetMesh(),NAME_None,BloodSpawnLocation,BloodSpawnRotation,FVector::OneVector,EAttachLocation::KeepWorldPosition);
 			}
 			UGameplayStatics::SpawnSoundAtLocation(this, BodyHitSound, LastHitInfo.RelHitLocation);
 			const uint8 RandInt = FMath::RandHelper(10);
@@ -448,6 +446,7 @@ void AINSCharacter::OnRep_Prone()
 
 void AINSCharacter::OnRep_CurrentWeapon()
 {
+  
 }
 
 void AINSCharacter::OnRep_DamageImmuneTime()
@@ -460,7 +459,7 @@ void AINSCharacter::OnRep_DamageImmuneTime()
 
 void AINSCharacter::TickDamageImmune()
 {
-	DamageImmuneLeft = FMath::Clamp<uint8>(DamageImmuneLeft - (uint8)1, 0, DamageImmuneLeft);
+	DamageImmuneLeft = FMath::Clamp<uint8>(DamageImmuneLeft - static_cast<uint8>(1), 0, DamageImmuneLeft);
 	if (DamageImmuneLeft <= 0)
 	{
 		bDamageImmuneState = false;
@@ -477,7 +476,14 @@ void AINSCharacter::HandleWeaponReloadRequest()
 {
 	if (CurrentWeapon)
 	{
-		CurrentWeapon->HandleWeaponReloadRequest();
+		if (HasAuthority())
+		{
+			CurrentWeapon->HandleWeaponReloadRequest();
+		}
+		else
+		{
+			CurrentWeapon->ServerHandleWeaponReloadRequest();
+		}
 	}
 }
 
@@ -499,14 +505,14 @@ void AINSCharacter::OnWeaponCollide(const FHitResult& Hit)
 
 void AINSCharacter::TickHitStateTime(const float DeltaTime)
 {
-	if(IsNetMode(NM_DedicatedServer))
+	if (IsNetMode(NM_DedicatedServer))
 	{
 		return;
 	}
 
 	if (LastHitState.CurrentHitStateLastTime > 0.f)
 	{
-		LastHitState.CurrentHitStateLastTime = FMath::Clamp<float>(LastHitState.CurrentHitStateLastTime - DeltaTime,0.f, LastHitState.CurrentHitStateLastTime);
+		LastHitState.CurrentHitStateLastTime = FMath::Clamp<float>(LastHitState.CurrentHitStateLastTime - DeltaTime, 0.f, LastHitState.CurrentHitStateLastTime);
 	}
 }
 
@@ -565,13 +571,13 @@ void AINSCharacter::HandleSwitchFireModeRequest()
 
 void AINSCharacter::HandleSingleAmmoInsertRequest()
 {
-	if(CurrentWeapon)
+	if (CurrentWeapon)
 	{
-		if(HasAuthority())
+		if (HasAuthority())
 		{
-			  CurrentWeapon->InsertSingleAmmo();
+			CurrentWeapon->InsertSingleAmmo();
 		}
-		if(GetLocalRole()==ROLE_AutonomousProxy)
+		if (GetLocalRole() == ROLE_AutonomousProxy)
 		{
 			CurrentWeapon->ServerInsertSingleAmmo();
 		}
@@ -580,13 +586,13 @@ void AINSCharacter::HandleSingleAmmoInsertRequest()
 
 void AINSCharacter::HandleFinishReloadingRequest()
 {
-	if(CurrentWeapon)
+	if (CurrentWeapon)
 	{
-		if(HasAuthority())
+		if (HasAuthority())
 		{
 			CurrentWeapon->FinishReloadWeapon();
 		}
-		if(GetLocalRole()==ROLE_AutonomousProxy)
+		if (GetLocalRole() == ROLE_AutonomousProxy)
 		{
 			CurrentWeapon->ServerFinishReloadWeapon();
 		}
@@ -661,12 +667,21 @@ void AINSCharacter::OnRep_Dead()
 		GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
 		if (GetMesh())
 		{
-			GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-			GetMesh()->SetCollisionResponseToAllChannels(ECR_Ignore);
+			//GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			//GetMesh()->SetCollisionResponseToAllChannels(ECR_Ignore);
 		}
 		if (!IsNetMode(NM_DedicatedServer) && GetCharacterAudioComp())
 		{
 			GetCharacterAudioComp()->OnDeath();
+		}
+		const uint8 BloodFlowNum = BloodFlowParticles.Num();
+		if (BloodFlowNum > 0)
+		{
+			const float ShotDirPitchDecompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirPitch);
+			const float ShotDirYawDeCompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirYaw);
+			const FRotator BloodSpawnRotation = FRotator(ShotDirPitchDecompressed, ShotDirYawDeCompressed, 0.f);
+			const uint8 RandomNum = FMath::RandHelper(BloodFlowNum - 1);
+			UGameplayStatics::SpawnEmitterAttached(BloodFlowParticles[RandomNum], GetMesh(), NAME_None, LastHitInfo.RelHitLocation, BloodSpawnRotation, FVector::OneVector * 1.5f, EAttachLocation::KeepWorldPosition);
 		}
 		SetLifeSpan(10.f);
 	}
@@ -676,7 +691,7 @@ void AINSCharacter::OnRep_IsCrouched()
 {
 	if (INSCharacterMovementComp)
 	{
-		UE_LOG(LogINSCharacter, Log, TEXT("Character % s crouch state replicated,is in crouch state:") , *GetName(), *UKismetStringLibrary::Conv_BoolToString(bIsCrouched));
+		UE_LOG(LogINSCharacter, Log, TEXT("Character % s crouch state replicated,is in crouch state:"), *GetName(), *UKismetStringLibrary::Conv_BoolToString(bIsCrouched));
 
 		if (bIsCrouched)
 		{
@@ -702,7 +717,7 @@ void AINSCharacter::HandleStartSprintRequest()
 		//Ignore vertical movement
 		Forward.Z = 0.0f;
 		MoveDirection.Z = 0.0f;
-		if ( FVector::DotProduct(Forward, MoveDirection) > 0.8f && !GetCharacterMovement()->IsFalling())
+		if (FVector::DotProduct(Forward, MoveDirection) > 0.8f && !GetCharacterMovement()->IsFalling())
 		{
 			//if we are currently Aiming ,stop it
 			if (bIsAiming)
@@ -736,7 +751,6 @@ void AINSCharacter::HandleJumpRequest()
 	}
 	if (GetLocalRole() == ROLE_AutonomousProxy)
 	{
-
 	}
 	if (CanJump() && !bPressedJump)
 	{
@@ -750,7 +764,6 @@ void AINSCharacter::HandleItemEquipRequest(const uint8 SlotIndex)
 
 void AINSCharacter::SpawnWeaponPickup()
 {
-
 }
 
 void AINSCharacter::SetAimHandsXLocation(const float Value)
@@ -776,10 +789,6 @@ void AINSCharacter::SetCurrentWeapon(class AINSWeaponBase* NewWeapon)
 	if (GetLocalRole() == ROLE_Authority)
 	{
 		OnRep_CurrentWeapon();
-	}
-	if (CurrentWeapon)
-	{
-		CurrentWeapon->StartEquipWeapon();
 	}
 }
 
@@ -813,7 +822,7 @@ bool AINSCharacter::GetIsCharacterMoving() const
 
 void AINSCharacter::OnLowHealth()
 {
-	UE_LOG(LogINSCharacter, Log, TEXT("Character %s received low health,Current health value is:%d"), *GetName(),GetCurrentHealth());
+	UE_LOG(LogINSCharacter, Log, TEXT("Character %s received low health,Current health value is:%d"), *GetName(), GetCurrentHealth());
 }
 
 float AINSCharacter::GetCurrentHealth() const
@@ -823,23 +832,22 @@ float AINSCharacter::GetCurrentHealth() const
 
 void AINSCharacter::ApplyPhysicAnimation()
 {
-	
 }
 
 // Called every frame
 void AINSCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (bIsCrouched)
-	{
-		CurrentEyeHeight = FMath::Clamp<float>(CurrentEyeHeight - 10.f, CrouchedEyeHeight, CurrentEyeHeight);
-	}
-	if (!bIsCrouched)
-	{
-		CurrentEyeHeight = FMath::Clamp<float>(CurrentEyeHeight + 10.f, CurrentEyeHeight, BaseEyeHeight);
-	}
+	// if (bIsCrouched)
+	// {
+	// 	CurrentEyeHeight = FMath::Clamp<float>(CurrentEyeHeight - 10.f, CrouchedEyeHeight, CurrentEyeHeight);
+	// }
+	// if (!bIsCrouched)
+	// {
+	// 	CurrentEyeHeight = FMath::Clamp<float>(CurrentEyeHeight + 10.f, CurrentEyeHeight, BaseEyeHeight);
+	// }
 	TickHitStateTime(DeltaTime);
-	//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Green,UKismetStringLibrary::Conv_BoolToString(bIsAiming));
+	//GEngine->AddOnScreenDebugMessage(-1, 1.0f, FColor::Green,UKismetStringLibrary::Conv_BoolToString(bIsAiming))
 }
 
 void AINSCharacter::TickActor(float DeltaTime, enum ELevelTick TickType, FActorTickFunction& ThisTickFunction)
