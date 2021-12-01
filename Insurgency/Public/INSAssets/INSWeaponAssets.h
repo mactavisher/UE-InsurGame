@@ -3,238 +3,157 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/Canvas.h"
 #include "Engine/DataAsset.h"
+#include "Engine/DataTable.h"
+#include "INSItems/INSItems.h"
+#include "Insurgency/Insurgency.h"
 #include "INSWeaponAssets.generated.h"
 
+class AINSWeaponBase;
 class UAnimMontage;
 class UBlendSpace;
 class UAnimationAsset;
 class UTexture2D;
 
-//montages used for FPS characters
-USTRUCT(BlueprintType)
-struct FCharMovementAnim1p
-{
-	GENERATED_USTRUCT_BODY()
-	/** move montage to use, walk montage */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animation")
-		UAnimMontage* MoveMontage;
-
-	/** sprint montage to use, walk montage */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animation")
-		UAnimMontage* SprintMontage;
-
-	/** move montage to use, walk montage */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Animation")
-		UAnimMontage* AimMoveMontage;
-};
-USTRUCT(BlueprintType)
-struct FBasePoseAnim
-{
-	GENERATED_USTRUCT_BODY()
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
-		UAnimMontage* CharBasePoseMontage;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
-		UAnimMontage* GunBasePoseMontage;
-};
 
 USTRUCT(BlueprintType)
-struct FFireAddtitiveAnimFPTP
+struct FItemInfoData
 {
 	GENERATED_USTRUCT_BODY()
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="Fire")
-	     UAnimMontage* CharPullTriggerMontage;
-	/** used to blend arm shaking when shoot */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
-		TArray<UAnimMontage*> CharFireRecoilMontages;
 
-	/** used for blend arm shaking when ADS shoot */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
-		TArray<UAnimMontage*> CharFireRecoilMontagesADS;
+	/** the item unique id */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	int32 ItemId;
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="Fire")
-	    UAnimMontage* GunFireMontage;
+	/** the path for this item */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	TSubclassOf<AINSItems> ItemClass;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Fire")
-	    UAnimMontage* FireSwayAim;
+	/** icon image path for this item*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	FCanvasIcon ItemIconAsset;
+
+	/** icon image path for this item*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	UTexture2D* ItemTextureAsset;
+
+	/** item type*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	EItemType ItemType;
+
+	/** item Name*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	FName ItemName;
+
+	/** item simple description*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	FName Desc;
 };
 
 USTRUCT(BlueprintType)
-struct FFireModeSwitchAnim
+struct FWeaponInfoData : public FItemInfoData
 {
 	GENERATED_USTRUCT_BODY()
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FireModeSwitch")
-		UAnimMontage* CharSwitchFireModeMontage;
 
-	/** used to blend finger pull trigger */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FireModeSwitch")
-		UAnimMontage* GunSwitchFireModeMontage;
+	/**single clip ammo capacity for this item if it's a weapon*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	int32 BaseClipCapacity;
+
+	/**max ammo can carry this item if it's a weapon*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	int32 MaxAmmoCapacity;
+
+	/**time between each shot if it's a weapon*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float TimeBetweenShots;
+
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
+	float MuzzleVelocity;
+
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
+	float BaseDamage;
+
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
+	float ScanTraceRange;
+	
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
+	uint8 bNeedOpticRail:1;
+
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
+	float BaseAimTime;
 };
 
 USTRUCT(BlueprintType)
-struct FAimAnim
+struct FWeaponTableRows:public FTableRowBase
 {
 	GENERATED_USTRUCT_BODY()
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Aim")
-		UAnimSequence* AdjustableAimRef;
+	/** the item unique id */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	int32 ItemId;
 
-	/** used to blend finger pull trigger */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Aim")
-		UAnimMontage* GunAimAnim;
+	/** the path for this item */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	TSoftClassPtr<AINSWeaponBase> ItemClass;
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="Aim")
-	   float AimTime;
+	/** icon image path for this item*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	FCanvasIcon ItemIconAsset;
+
+	/** icon image path for this item*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	TSoftClassPtr<UTexture2D> ItemTextureAsset;
+
+	/** item type*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	EItemType ItemType;
+
+	/** item Name*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	FName ItemName;
+
+	/** item simple description*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	FName Desc;
+
+	/**single clip ammo capacity for this item if it's a weapon*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	int32 BaseClipCapacity;
+
+	/**max ammo can carry this item if it's a weapon*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	int32 MaxAmmoCapacity;
+
+	/**time between each shot if it's a weapon*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
+	float TimeBetweenShots;
+
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
+	float MuzzleVelocity;
+
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
+	float BaseDamage;
+
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
+	float ScanTraceRange;
+
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
+	uint8 bNeedOpticRail:1;
+	
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
+	float BaseAimTime;
 };
 
 USTRUCT(BlueprintType)
-struct FReloadAnim
+struct FWeaponAttachmentInfoData : public FItemInfoData
 {
 	GENERATED_USTRUCT_BODY()
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Reload")
-		UAnimMontage* CharReloadModeMontage;
-
-	/** used to blend finger pull trigger */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Reload")
-		UAnimMontage* GunReloadMontage;
+	
 };
-
-USTRUCT(BlueprintType)
-struct FReloadDryAnim
-{
-	GENERATED_USTRUCT_BODY()
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ReloadDry")
-		UAnimMontage* CharReloadDryModeMontage;
-
-	/** used to blend finger pull trigger */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ReloadDry")
-		UAnimMontage* GunReloadDryMontage;
-};
-
-USTRUCT(BlueprintType)
-struct FEquipAnim
-{
-	GENERATED_USTRUCT_BODY()
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ReloadDry")
-		UAnimMontage* CharEquipMontage;
-
-	/** used to blend finger pull trigger */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ReloadDry")
-		UAnimMontage* GunEquipMontage;
-};
-
-USTRUCT(BlueprintType)
-struct FIdleAnim
-{
-	GENERATED_USTRUCT_BODY()
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ReloadDry")
-		UAnimMontage* CharIdleMontage;
-};
-
 
 
 UCLASS()
 class INSURGENCY_API UINSWeaponAssets : public UDataAsset
 {
 	GENERATED_BODY()
-	friend class AINSWeaponBase;
-	friend class UINSCharacterAimInstance;
-	friend class UINSWeaponAnimInstance;
-protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FP")
-		FCharMovementAnim1p MoveAnim1P;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FP")
-		FFireAddtitiveAnimFPTP FireAnimFPTP;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FP")
-		FIdleAnim IdleAnimFP;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TP")
-		FIdleAnim IdleAnimTP;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FP")
-		FBasePoseAnim BasePoseAltGripFP;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TP")
-		FBasePoseAnim BasePoseAltGripTP;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FP")
-		FBasePoseAnim BasePoseForeGripFP;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TP")
-		FBasePoseAnim BasePoseForeGripTP;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FP")
-		FAimAnim AimAnimFP;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TP")
-		FAimAnim AimAnimTP;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FP")
-		FFireModeSwitchAnim FireModeSwitchForeGripFP;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TP")
-		FFireModeSwitchAnim FireModeSwitchForeGripTP;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FP")
-		FFireModeSwitchAnim FireModeSwitchAltGripFP;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TP")
-		FFireModeSwitchAnim FireModeSwitchAltGripTP;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FP")
-		FReloadAnim ReloadAltGripFP;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TP")
-		FReloadAnim ReloadAltGripTP;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FP")
-		FReloadAnim ReloadForeGripFP;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TP")
-		FReloadAnim ReloadForeGripTP;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FP")
-		FReloadDryAnim ReloadDryAltGripFP;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TP")
-		FReloadDryAnim ReloadDryAltGripTP;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FP")
-		FReloadDryAnim ReloadDryForeGripFP;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TP")
-		FReloadDryAnim ReloadDryForeGripTP;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FP")
-		FEquipAnim EquipAltGripFP;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TP")
-		FEquipAnim EquipAltGripTP;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FP")
-		FEquipAnim EquipForeGripFP;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TP")
-		FEquipAnim EquipForeGripTP;
-
-	/** TP blendSpaces */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "3P|BlendSpace")
-		UBlendSpace* StandWalkType;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "3P|BlendSpace")
-		UBlendSpace* CrouchWalkType;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "3P|BlendSpace")
-		UBlendSpace* ProneMoveType;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "3P|BlendSpace")
-		UBlendSpace* StandJogType;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "3P|BlendSpace")
-		UBlendSpace* CrouchJogType;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "UI|WeaponIcon")
-		UTexture2D* WeaponIcon;
 };

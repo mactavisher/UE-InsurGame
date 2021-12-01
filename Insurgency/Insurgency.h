@@ -40,21 +40,22 @@
 UENUM(BlueprintType)
 enum class ECharacterGender :uint8
 {
-	MALE                         UMETA(DisplayName = "male"),
-	FEMALE                       UMETA(DisplayName = "female"),
+	MALE UMETA(DisplayName = "male"),
+	FEMALE UMETA(DisplayName = "female"),
 };
 
 /** specify a character' view mode,relative to the local player  */
 UENUM(BlueprintType)
 enum class EViewMode :uint8
 {
-	FPS                         UMETA(DisplayName = "FPS"),
-	TPS                         UMETA(DisplayName = "TPS"),
+	FPS UMETA(DisplayName = "FPS"),
+	TPS UMETA(DisplayName = "TPS"),
 };
 
 /** specify a character' stance types */
 UENUM(BlueprintType)
-enum class ECharacterStance :uint8 {
+enum class ECharacterStance :uint8
+{
 	STAND,
 	CROUCH,
 	PRONE,
@@ -62,7 +63,8 @@ enum class ECharacterStance :uint8 {
 
 /** specify a weapon's fire mode */
 UENUM(BlueprintType)
-enum class EWeaponFireMode :uint8 {
+enum class EWeaponFireMode :uint8
+{
 	SINGLE,
 	SEMIAUTO,
 	FULLAUTO,
@@ -71,24 +73,24 @@ enum class EWeaponFireMode :uint8 {
 UENUM(BlueprintType)
 enum class EItemType :uint8
 {
-	WEAPON                                 UMETA(DisplayName = "Weapon"),
-	AMMO                                   UMETA(DisplayName = "AMMO"),
-	WEAPONATTACHEMENT                      UMETA(DisplayName = "WeaponAttachment"),
-	HEALTH                                 UMETA(DisplayName = "Health"),
-	ARMOR                                  UMETA(DisplayName = "ARMOR"),
-	NONE                                   UMETA(DisplayName = "NONE"),
+	WEAPON UMETA(DisplayName = "Weapon"),
+	AMMO UMETA(DisplayName = "AMMO"),
+	WEAPONATTACHEMENT UMETA(DisplayName = "WeaponAttachment"),
+	HEALTH UMETA(DisplayName = "Health"),
+	ARMOR UMETA(DisplayName = "ARMOR"),
+	NONE UMETA(DisplayName = "NONE"),
 };
 
 UENUM(BlueprintType)
 enum class EWeaponType :uint8
 {
-	ASSULTRIFLE                            UMETA(DisplayName = "AssultRifle"),
-	PISTOL                                 UMETA(DisplayName = "Pistol"),
-	SHOTGUN                                UMETA(DisplayName = "ShotGun"),
-	SMG                                    UMETA(DisplayName = "SMG"),
-	SNIPER                                 UMETA(DisplayName = "Snipper"),
-	BOLTRIFLE                              UMETA(DisplayName = "BoltRifle"),
-	NONE                                   UMETA(DisplayName = "None"),
+	ASSULTRIFLE UMETA(DisplayName = "AssultRifle"),
+	PISTOL UMETA(DisplayName = "Pistol"),
+	SHOTGUN UMETA(DisplayName = "ShotGun"),
+	SMG UMETA(DisplayName = "SMG"),
+	SNIPER UMETA(DisplayName = "Snipper"),
+	BOLTRIFLE UMETA(DisplayName = "BoltRifle"),
+	NONE UMETA(DisplayName = "None"),
 };
 
 /** weapon current state enum */
@@ -119,64 +121,67 @@ enum class EZoomState :uint8
 UENUM(BlueprintType)
 enum class EWeaponBasePoseType :uint8
 {
-	ALTGRIP   UMETA(DisplayName = "alt grip"),
-	FOREGRIP  UMETA(DisplayName = "fore grip"),
-	DEFAULT   UMETA(DisplayName = "custom default"),
+	ALTGRIP UMETA(DisplayName = "alt grip"),
+	FOREGRIP UMETA(DisplayName = "fore grip"),
+	DEFAULT UMETA(DisplayName = "custom default"),
 };
 
 UENUM(BlueprintType)
-enum class ETeamType :uint8 {
-	REBEL           UMETA(DisplayName = "Rebel"),
-	ALLIE           UMETA(DisplayName = "Allie"),
-	CORP            UMETA(DisplayName = "coorperation"),
-	NONE            UMETA(DisplayName = "None"),
+enum class ETeamType :uint8
+{
+	REBEL UMETA(DisplayName = "Rebel"),
+	ALLIE UMETA(DisplayName = "Allie"),
+	CORP UMETA(DisplayName = "coorperation"),
+	NONE UMETA(DisplayName = "None"),
 };
 
 UENUM(BlueprintType)
-enum class EGameType :uint8 {
-	PVP           UMETA(DisplayName = "PVP"),
-	PVE           UMETA(DisplayName = "PVE"),
+enum class EGameType :uint8
+{
+	PVP UMETA(DisplayName = "PVP"),
+	PVE UMETA(DisplayName = "PVE"),
 };
 
 UENUM(BlueprintType)
-enum class EVoiceType :uint8 {
-	TAKE_DAMAGE               UMETA(DisplayName = "TakeDamage"),
-	DIE                       UMETA(DisplayName = "Die"),
-	TAKE_TEAM_DAMAGE          UMETA(DisplayName = "TakeTeamDamage"),
-	KILL_PLAYER               UMETA(DisplayName = "Kill other player"),
-	RELOADING                 UMETA(DisplayName = "Reloading"),
-	SPOT_ENEMY                UMETA(DisplayName = "Spot Enemy"),
-	THROW_GRANADE             UMETA(DisplayName = "Throw Granade"),
-	THROW_SMOKING             UMETA(DisplayName = "Throw Smoking"),
-	MA_NDOWN                  UMETA(DisplayName = "Man down"),
-	CAUSE_FRIENDLY_DAMAGE     UMETA(DisplayName = "cause friendly damage"),
-	CAUSE_FRIENDLY_KILL       UMETA(DisplayName = "cause friendly kill"),
-    NONE                      UMETA(DisplayName="none"),
+enum class EVoiceType :uint8
+{
+	TAKE_DAMAGE UMETA(DisplayName = "TakeDamage"),
+	DIE UMETA(DisplayName = "Die"),
+	TAKE_TEAM_DAMAGE UMETA(DisplayName = "TakeTeamDamage"),
+	KILL_PLAYER UMETA(DisplayName = "Kill other player"),
+	RELOADING UMETA(DisplayName = "Reloading"),
+	SPOT_ENEMY UMETA(DisplayName = "Spot Enemy"),
+	THROW_GRANADE UMETA(DisplayName = "Throw Granade"),
+	THROW_SMOKING UMETA(DisplayName = "Throw Smoking"),
+	MA_NDOWN UMETA(DisplayName = "Man down"),
+	CAUSE_FRIENDLY_DAMAGE UMETA(DisplayName = "cause friendly damage"),
+	CAUSE_FRIENDLY_KILL UMETA(DisplayName = "cause friendly kill"),
+	NONE UMETA(DisplayName="none"),
 };
 
 UENUM(BlueprintType)
 enum class EWeaponAttachmentType :uint8
 {
-	SIGHT                              UMETA(DisplayName = "Sight"),
-	UNDER_BARREL                       UMETA(DisplayName = "Under Barrel"),
-	MUZZLE                             UMETA(DisplayName = "Muzzle"),
-	LEFT_RAIL                          UMETA(DisplayName = "Left Rail"),
-	RIGHT_RAIL                         UMETA(DisplayName = "Right Rail"),
-	NONE                               UMETA(DisplayName = "None"),
+	SIGHT UMETA(DisplayName = "Sight"),
+	UNDER_BARREL UMETA(DisplayName = "Under Barrel"),
+	MUZZLE UMETA(DisplayName = "Muzzle"),
+	LEFT_RAIL UMETA(DisplayName = "Left Rail"),
+	RIGHT_RAIL UMETA(DisplayName = "Right Rail"),
+	NONE UMETA(DisplayName = "None"),
 };
 
 UENUM(BlueprintType)
 enum class EDamageEventID :uint8
 {
-	FALLING                               UMETA(DisplayName = "falling"),
-	SHOT                                  UMETA(DisplayName = "weapon shot"),
-	EXPLOSION                             UMETA(DisplayName = "explosion"),
+	FALLING UMETA(DisplayName = "falling"),
+	SHOT UMETA(DisplayName = "weapon shot"),
+	EXPLOSION UMETA(DisplayName = "explosion"),
 };
 
 namespace TeamName
 {
-	static const FName Rebel = FName(TEXT("Rebel"));	                    // Rebel team name
-	static const FName Allie = FName(TEXT("Allie"));		                // Allie Team name
+	static const FName Rebel = FName(TEXT("Rebel")); // Rebel team name
+	static const FName Allie = FName(TEXT("Allie")); // Allie Team name
 }
 
 /**
@@ -190,79 +195,79 @@ struct FTakeHitInfo
 	/** indicate if this shot has shot a pawn or damageAble actor*/
 	UPROPERTY()
 	uint8 bValidShot:1;
-	
+
 	/** shot direction pitch, manually compressed and decompressed */
 	UPROPERTY()
-		uint8 ShotDirPitch;
+	uint8 ShotDirPitch;
 
 	/** shot direction yaw, manually compressed and decompressed */
 	UPROPERTY()
-		uint8 ShotDirYaw;
+	uint8 ShotDirYaw;
 
 	/** actor that actually cause this damage */
 	UPROPERTY()
-		class AActor* DamageCauser;
+	class AActor* DamageCauser;
 
 	/** pawn instigate this damage */
 	UPROPERTY()
-		class APawn* InstigatorPawn;
+	class APawn* InstigatorPawn;
 
 	/** actor that actually takes this damage */
 	UPROPERTY()
-		class AActor* Victim;
+	class AActor* Victim;
 
 	/** the amount of damage actually applied,after game mode modify the damage */
 	UPROPERTY()
-		int32 Damage;
+	int32 Damage;
 
 	/** the location of the hit (relative to Pawn center) */
 	UPROPERTY()
-		FVector_NetQuantize RelHitLocation;
+	FVector_NetQuantize RelHitLocation;
 
 	/** how much momentum was imparted */
 	UPROPERTY()
-		FVector_NetQuantize Momentum;
+	FVector_NetQuantize Momentum;
 
 	/** the damage type we were hit with */
 	UPROPERTY()
-		TSubclassOf<UDamageType> DamageType;
+	TSubclassOf<UDamageType> DamageType;
 
 	/** has this damage make the victim dead? */
 	UPROPERTY()
-		uint8 bVictimDead : 1;
+	uint8 bVictimDead : 1;
 
 	/** is victim already dead since last damage */
 	UPROPERTY()
-		uint8 bVictimAlreadyDead : 1;
+	uint8 bVictimAlreadyDead : 1;
 
 	/** is this damage caused by team */
 	UPROPERTY()
-		uint8 bIsTeamDamage : 1;
+	uint8 bIsTeamDamage : 1;
 
 	/** hit bone name */
 	UPROPERTY()
-		FName HitBoneName;
+	FName HitBoneName;
 
 	/** the amount of damage actually applied,after game mode modify the damage */
 	UPROPERTY()
-		uint8 bIsDirtyData : 1;
+	uint8 bIsDirtyData : 1;
 
 	FTakeHitInfo()
 		: bValidShot(false)
-		, ShotDirPitch(0)
-		, ShotDirYaw(0)
-		, DamageCauser(nullptr)
-		, InstigatorPawn(nullptr)
-		, Victim(nullptr)
-		, Damage(0)
-		, RelHitLocation(ForceInit)
-		, Momentum(ForceInit)
-		, DamageType(nullptr)
-		, bVictimDead(false)
-		, bVictimAlreadyDead(false)
-		, bIsTeamDamage(false)
-		, HitBoneName(NAME_None)
-		, bIsDirtyData(true)
+		  , ShotDirPitch(0)
+		  , ShotDirYaw(0)
+		  , DamageCauser(nullptr)
+		  , InstigatorPawn(nullptr)
+		  , Victim(nullptr)
+		  , Damage(0)
+		  , RelHitLocation(ForceInit)
+		  , Momentum(ForceInit)
+		  , DamageType(nullptr)
+		  , bVictimDead(false)
+		  , bVictimAlreadyDead(false)
+		  , bIsTeamDamage(false)
+		  , HitBoneName(NAME_None)
+		  , bIsDirtyData(true)
 	{
 	}
 
@@ -271,4 +276,13 @@ public:
 	{
 		bIsDirtyData = false;
 	}
+};
+
+
+UENUM(BlueprintType)
+enum class EGameModeEnum :uint8
+{
+	FREE_FOR_ALL,
+	TEAM_DEATH_MATCH,
+	CAPTURE_THE_FLAG,
 };

@@ -119,6 +119,11 @@ bool AINSZombieController::TrySetTargetEnemy(class AController* NewEnemyTarget)
 	}
 }
 
+AINSZombie* AINSZombieController::GetZombiePawn()
+{
+	return GetPawn<AINSZombie>();
+}
+
 void AINSZombieController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);

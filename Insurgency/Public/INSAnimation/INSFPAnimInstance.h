@@ -122,6 +122,8 @@ protected:
 	 */
 	virtual float PlayReloadAnim(bool bIsDry)override;
 
+	virtual float PlayWeaponStartUnEquipAnim() override;
+
 	/**
 	 * @Desc set is aiming and relative aiming variables
 	 * @Param isAiming  aiming conditions

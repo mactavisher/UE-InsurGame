@@ -32,28 +32,18 @@ AINSPlayerCharacter::AINSPlayerCharacter(const FObjectInitializer& ObjectInitial
 	SetReplicatingMovement(true);
 	GetCapsuleComponent()->SetCapsuleHalfHeight(86.f);
 	GetCapsuleComponent()->SetCapsuleRadius(40.f);
-	BaseEyeHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight()*1.2f;
-	CrouchedEyeHeight = BaseEyeHeight*0.6f;
+	BaseEyeHeight = GetCapsuleComponent()->GetScaledCapsuleHalfHeight() * 1.2f;
+	CrouchedEyeHeight = BaseEyeHeight * 0.6f;
 	CurrentEyeHeight = BaseEyeHeight;
 	RootComponent = GetCapsuleComponent();
 	FirstPersonCamera = ObjectInitializer.CreateDefaultSubobject<UCameraComponent>(this, TEXT("FirstPersonCamera"));
-	// SpringArm = ObjectInitializer.CreateDefaultSubobject<USpringArmComponent>(this, TEXT("SpringArmComp"));
-	// SpringArmAligner = ObjectInitializer.CreateDefaultSubobject<USceneComponent>(this, TEXT("SpringArmDummyAligner"));
-	// SpringArmAligner->SetupAttachment(RootComponent);
-	// SpringArmAligner->AddRelativeLocation(FVector(55.f,0.f,0.f));
-	// SpringArmAligner->AddRelativeLocation(FVector(0.f, 0.f, CurrentEyeHeight));
-	// SpringArm->SetupAttachment(SpringArmAligner);
-	// SpringArm->SetAbsolute(true,false,false);
-	// SpringArm->TargetArmLength = 0.1f;
-	// SpringArm->bUsePawnControlRotation = true;
 	CharacterMesh3P = Cast<UINSCharSkeletalMeshComponent>(GetMesh());
 	CharacterMesh3P->AddRelativeLocation(FVector(0.f, 0.f, -GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight()));
 	CharacterMesh1P = ObjectInitializer.CreateDefaultSubobject<UINSCharSkeletalMeshComponent>(this, TEXT("Character1pMeshComp"));
 	InventoryComp = ObjectInitializer.CreateDefaultSubobject<UINSInventoryComponent>(this, TEXT("InventoryComp"));
-	//CharacterMesh1P->SetupAttachment(SpringArm);
 	CharacterMesh1P->SetupAttachment(GetCapsuleComponent());
-	CharacterMesh1P->AddRelativeLocation(FVector(0.f, -8.f, -CurrentEyeHeight));
-	CharacterMesh1P->SetAbsolute(false, true, false);
+	CharacterMesh1P->AddRelativeLocation(FVector(0.f, -8.f, 0.f));
+	CharacterMesh1P->SetAbsolute(false, false, true);
 	CharacterMesh1P->bCastDynamicShadow = false;
 	CharacterMesh1P->CastShadow = false;
 	CharacterMesh1P->bReceivesDecals = false;
@@ -98,8 +88,6 @@ void AINSPlayerCharacter::BeginPlay()
 	if (GetLocalRole() < ROLE_AutonomousProxy)
 	{
 		CharacterMesh1P->DestroyComponent();
-		// SpringArm->DestroyComponent();
-		// SpringArmAligner->DestroyComponent();
 		FirstPersonCamera->DestroyComponent();
 		CharacterMesh1P_Foot->DestroyComponent();
 		UE_LOG(LogINSCharacter, Log, TEXT("Componens unnesessary for simulated clients get destoryed "));
@@ -124,6 +112,7 @@ void AINSPlayerCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	TickRecoil(DeltaTime);
 	UpdateCharacterMesh1P(DeltaTime);
+	//CheckPendingEquipWeapon(DeltaTime);
 }
 
 void AINSPlayerCharacter::TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction)
@@ -194,7 +183,8 @@ void AINSPlayerCharacter::PossessedBy(AController* NewController)
 	}
 	if (HasAuthority())
 	{
-		EquipGameModeDefaultWeapon();
+		//EquipGameModeDefaultWeapon();
+		EquipBestWeapon();
 	}
 }
 
@@ -310,6 +300,11 @@ void AINSPlayerCharacter::OnEnterIdleState()
 	}
 }
 
+void AINSPlayerCharacter::RecalculateBaseEyeHeight()
+{
+	//Super::RecalculateBaseEyeHeight();
+}
+
 void AINSPlayerCharacter::OnEnterBoredState()
 {
 	Super::OnEnterBoredState();
@@ -365,23 +360,48 @@ void AINSPlayerCharacter::TickRecoil(float DeltaSeconds)
 	}
 }
 
-void AINSPlayerCharacter::OnCameraUpdated(FVector CameraLoc, FRotator CameraRot)
+void AINSPlayerCharacter::EquipFromInventory(const uint8 SlotIndex)
 {
-	// UINSCharSkeletalMeshComponent* DefMesh1P = Cast<UINSCharSkeletalMeshComponent>(GetClass()->GetDefaultSubobjectByName(TEXT("Character1pMeshComp")));
-	// const FMatrix DefMeshLS = FRotationTranslationMatrix(DefMesh1P->GetRelativeRotation(), DefMesh1P->GetRelativeLocation());
-	// const FMatrix LocalToWorld = ActorToWorld().ToMatrixWithScale();
-	//
-	// // Mesh rotating code expect uniform scale in LocalToWorld matrix
-	//
-	// const FRotator RotCameraPitch(CameraRot.Pitch, 0.0f, 0.0f);
-	// const FRotator RotCameraYaw(0.0f, CameraRot.Yaw, 0.0f);
-	//
-	// const FMatrix LeveledCameraLS = FRotationTranslationMatrix(RotCameraYaw, CameraLoc) * LocalToWorld.Inverse();
-	// const FMatrix PitchedCameraLS = FRotationMatrix(RotCameraPitch) * LeveledCameraLS;
-	// const FMatrix MeshRelativeToCamera = DefMeshLS * LeveledCameraLS.Inverse();
-	// const FMatrix PitchedMesh = MeshRelativeToCamera * PitchedCameraLS;
-	//
-	// CharacterMesh1P->SetRelativeLocationAndRotation(PitchedMesh.GetOrigin(), PitchedMesh.Rotator());
+	
+}
+
+void AINSPlayerCharacter::UnEquipItem()
+{
+	Super::UnEquipItem();
+}
+
+void AINSPlayerCharacter::ServerUnEquipItem()
+{
+	Super::ServerUnEquipItem();
+	
+}
+
+void AINSPlayerCharacter::FinishUnEquipItem()
+{
+	Super::FinishUnEquipItem();
+	FInventorySlot* SelectedSlot = InventoryComp->GetItemSlot(CurrentWeapon->GetInventorySlotIndex());
+	if(SelectedSlot)
+	{
+		SelectedSlot->AmmoLeft = CurrentWeapon->AmmoLeft;
+		SelectedSlot->ClipAmmo = CurrentWeapon->GetCurrentClipAmmo();
+	}
+	CurrentWeapon->Destroy();
+	CurrentWeapon=nullptr;
+	if(PendingWeaponEquipEvent.bIsEventActive)
+	{
+		class AINSWeaponBase* NewWeapon = GetWorld()->SpawnActorDeferred<AINSWeaponBase>(PendingWeaponEquipEvent.WeaponClass, GetActorTransform(), GetOwner(), this, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+		if (NewWeapon)
+		{
+			NewWeapon->SetAutonomousProxy(true);
+			NewWeapon->SetOwner(GetOwner());
+			NewWeapon->SetOwnerCharacter(this);
+			NewWeapon->SetInventorySlotIndex(PendingWeaponEquipEvent.WeaponSlotIndex);
+			UGameplayStatics::FinishSpawningActor(NewWeapon, GetActorTransform());
+		}
+		SetCurrentWeapon(NewWeapon);
+		NewWeapon->SetWeaponState(EWeaponState::EQUIPPING);
+		PendingWeaponEquipEvent.bIsEventActive = false;
+	}
 }
 
 void AINSPlayerCharacter::Die()
@@ -537,6 +557,16 @@ void AINSPlayerCharacter::UnCrouch(bool bClientSimulation)
 	Super::UnCrouch(bClientSimulation);
 }
 
+void AINSPlayerCharacter::OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
+{
+	Super::OnStartCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
+}
+
+void AINSPlayerCharacter::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
+{
+	Super::OnEndCrouch(HalfHeightAdjust, ScaledHalfHeightAdjust);
+}
+
 void AINSPlayerCharacter::SetAimHandsXLocation(const float Value)
 {
 	if (Get1PAnimInstance())
@@ -554,6 +584,29 @@ bool AINSPlayerCharacter::CheckCharacterIsReady()
 	return false;
 }
 
+void AINSPlayerCharacter::CheckPendingEquipWeapon(float DeltaTimeSeconds)
+{
+	if (PendingWeaponEquipEvent.bIsEventActive)
+	{
+		PendingWeaponEquipEvent.PendingDuration = FMath::Clamp<float>(PendingWeaponEquipEvent.PendingDuration - DeltaTimeSeconds, 0.f, PendingWeaponEquipEvent.PendingDuration);
+		if (PendingWeaponEquipEvent.PendingDuration == 0.f)
+		{
+			class AINSWeaponBase* NewWeapon = GetWorld()->SpawnActorDeferred<AINSWeaponBase>(PendingWeaponEquipEvent.WeaponClass, GetActorTransform(), GetOwner(), this, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+			if (NewWeapon)
+			{
+				NewWeapon->SetAutonomousProxy(true);
+				NewWeapon->SetWeaponState(EWeaponState::NONE);
+				NewWeapon->SetOwner(GetOwner());
+				NewWeapon->SetOwnerCharacter(this);
+				NewWeapon->SetInventorySlotIndex(PendingWeaponEquipEvent.WeaponSlotIndex);
+				UGameplayStatics::FinishSpawningActor(NewWeapon, GetActorTransform());
+			}
+			SetCurrentWeapon(NewWeapon);
+			PendingWeaponEquipEvent.bIsEventActive = false;
+		}
+	}
+}
+
 void AINSPlayerCharacter::HandleCrouchRequest()
 {
 	Super::HandleCrouchRequest();
@@ -562,44 +615,61 @@ void AINSPlayerCharacter::HandleCrouchRequest()
 void AINSPlayerCharacter::HandleItemEquipRequest(const uint8 SlotIndex)
 {
 	Super::HandleItemEquipRequest(SlotIndex);
-	if (HasAuthority() && InventoryComp)
+	if(HasAuthority())
 	{
-		if (CurrentWeapon && CurrentWeapon->GetInventorySlotIndex() != SlotIndex)
-		{
-			const bool PutSuccess = InventoryComp->PutItemInSlot(CurrentWeapon);
-			if (PutSuccess)
-			{
-				CurrentWeapon->Destroy();
-				CurrentWeapon = nullptr;
-			}
-		}
-		FInvetorySlot* SelectedSlot = InventoryComp->GetItemSlot(SlotIndex);
-		if (SelectedSlot)
-		{
-			UClass* ItemClass = SelectedSlot->SlotWeaponClass;
-			if (ItemClass)
-			{
-				class AINSWeaponBase* NewWeapon = GetWorld()->SpawnActorDeferred<AINSWeaponBase>(ItemClass, GetActorTransform(), GetOwner(), this, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-				if (NewWeapon)
-				{
-					NewWeapon->SetAutonomousProxy(true);
-					NewWeapon->SetWeaponState(EWeaponState::NONE);
-					NewWeapon->SetOwner(GetOwner());
-					NewWeapon->SetOwnerCharacter(this);
-					NewWeapon->SetInventorySlotIndex(SlotIndex);
-					UGameplayStatics::FinishSpawningActor(NewWeapon, GetActorTransform());
-				}
-				SetCurrentWeapon(NewWeapon);
-			}
-		}
+		EquipItem(SlotIndex);
+	}
+	if(GetLocalRole()==ROLE_AutonomousProxy)
+	{
+		ServerEquipItem(SlotIndex);
 	}
 }
 
-void AINSPlayerCharacter::PutCurrentWeaponBackToSlot()
+void AINSPlayerCharacter::HandleItemFinishUnEquipRequest()
 {
+	Super::HandleItemFinishUnEquipRequest();
+}
+
+void AINSPlayerCharacter::ServerEquipItem_Implementation(const uint8 SlotIndex)
+{
+	EquipItem(SlotIndex);
+}
+
+bool AINSPlayerCharacter::ServerEquipItem_Validate(const uint8 SlotIndex)
+{
+	return true;
+}
+
+void AINSPlayerCharacter::EquipItem(const uint8 SlotIndex)
+{
+	FInventorySlot* SelectedSlot = InventoryComp->GetItemSlot(SlotIndex);
 	if (CurrentWeapon)
 	{
-		//FInvetorySlot* TargetSlot = InventoryComp->
+		if (CurrentWeapon->GetInventorySlotIndex() != SlotIndex)
+		{
+			UnEquipItem();
+			PendingWeaponEquipEvent.EventCreateTime = GetWorld()->GetTimeSeconds();
+			PendingWeaponEquipEvent.PendingDuration = 1.f;
+			PendingWeaponEquipEvent.WeaponClass = SelectedSlot->SlotWeaponClass;
+			PendingWeaponEquipEvent.WeaponSlotIndex = SlotIndex;
+			PendingWeaponEquipEvent.bIsEventActive = true;
+		}
+	}
+	else
+	{
+		class AINSWeaponBase* NewWeapon = GetWorld()->SpawnActorDeferred<AINSWeaponBase>(SelectedSlot->SlotWeaponClass, GetActorTransform(), GetOwner(), this, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+		if (NewWeapon)
+		{
+			NewWeapon->SetAutonomousProxy(true);
+			NewWeapon->SetWeaponState(EWeaponState::NONE);
+			NewWeapon->SetOwner(GetOwner());
+			NewWeapon->SetOwnerCharacter(this);
+			NewWeapon->SetInventorySlotIndex(SlotIndex);
+			UGameplayStatics::FinishSpawningActor(NewWeapon, GetActorTransform());
+		}
+		SetCurrentWeapon(NewWeapon);
+		CurrentWeapon->CurrentClipAmmo = SelectedSlot->ClipAmmo;
+		CurrentWeapon->AmmoLeft = SelectedSlot->AmmoLeft;
 	}
 }
 
@@ -630,6 +700,31 @@ void AINSPlayerCharacter::EquipGameModeDefaultWeapon()
 		UGameplayStatics::FinishSpawningActor(NewWeapon, GetActorTransform());
 	}
 	SetCurrentWeapon(NewWeapon);
+	
+}
+
+void AINSPlayerCharacter::EquipBestWeapon()
+{
+	if(InventoryComp)
+	{
+		uint8 ItemSlotIdx = 0;
+		UClass* BestWeaponClass = InventoryComp->GiveBestWeapon(ItemSlotIdx);
+		if (!BestWeaponClass)
+		{
+			return;
+		}
+		class AINSWeaponBase* NewWeapon = GetWorld()->SpawnActorDeferred<AINSWeaponBase>(BestWeaponClass, GetActorTransform(), GetOwner(), this, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+		if (NewWeapon)
+		{
+			NewWeapon->SetAutonomousProxy(true);
+			NewWeapon->SetWeaponState(EWeaponState::NONE);
+			NewWeapon->SetOwner(GetOwner());
+			NewWeapon->SetOwnerCharacter(this);
+			NewWeapon->SetInventorySlotIndex(ItemSlotIdx);
+			UGameplayStatics::FinishSpawningActor(NewWeapon, GetActorTransform());
+		}
+		SetCurrentWeapon(NewWeapon);
+	}
 }
 
 void AINSPlayerCharacter::OnRep_TeamType()
@@ -659,24 +754,25 @@ void AINSPlayerCharacter::UpdateCharacterMesh1P(float DeltaTime)
 {
 	if (GetLocalRole() >= ROLE_AutonomousProxy && !IsNetMode(NM_DedicatedServer))
 	{
-		if(bIsCrouched)
+		CharacterMesh1P->SetRelativeLocation(FVector(0.f, 0.f, -CurrentEyeHeight));
+		if (bIsCrouched)
 		{
-			CurrentEyeHeight = FMath::FInterpTo(CurrentEyeHeight,CrouchedEyeHeight,DeltaTime,1.f);
-			//CurrentEyeHeight = FMath::Clamp<float>(CurrentEyeHeight-0.01f,CrouchedEyeHeight,CurrentEyeHeight);
+			//CurrentEyeHeight = FMath::FInterpTo(CurrentEyeHeight,CrouchedEyeHeight,DeltaTime,1.f);
+			CurrentEyeHeight = FMath::Clamp<float>(CurrentEyeHeight - 0.01f, CrouchedEyeHeight, CurrentEyeHeight);
 		}
 		else
 		{
-			CurrentEyeHeight = FMath::FInterpTo(CurrentEyeHeight,BaseEyeHeight,DeltaTime,1.f);
-			//CurrentEyeHeight = FMath::Clamp<float>(CurrentEyeHeight+0.01f,CrouchedEyeHeight,BaseEyeHeight);
+			//CurrentEyeHeight = FMath::FInterpTo(CurrentEyeHeight,BaseEyeHeight,DeltaTime,1.f);
+			CurrentEyeHeight = FMath::Clamp<float>(CurrentEyeHeight + 0.01f, CrouchedEyeHeight, BaseEyeHeight);
 		}
-		GEngine->AddOnScreenDebugMessage(-1,0.1f,FColor::Green,FString::SanitizeFloat(CurrentEyeHeight));
+		GEngine->AddOnScreenDebugMessage(-1, 0.1f, FColor::Green, FString::SanitizeFloat(CurrentEyeHeight));
 		CharacterMesh1P->SetWorldRotation(GetControlRotation());
 		FTransform Mesh1pPelvisTrans = CharacterMesh1P->GetSocketTransform(TEXT("Bip01_SpineSocket"));
 		FTransform CapsuleTransFrom = GetCapsuleComponent()->GetComponentTransform();
 		FRotator ControlRot = GetControlRotation();
 		float ClampedAngle = FMath::ClampAngle(ControlRot.Pitch, -90.f, 90.f);
 		float PitchOffSetMultiplier = FMath::Abs(ClampedAngle / 90.f);
-		CapsuleTransFrom.SetLocation(CapsuleTransFrom.GetLocation() + FVector(-15.f*PitchOffSetMultiplier, 0.f, CurrentEyeHeight*PitchOffSetMultiplier*0.35f));
+		CapsuleTransFrom.SetLocation(CapsuleTransFrom.GetLocation() + FVector(-15.f * PitchOffSetMultiplier, 0.f, CurrentEyeHeight * PitchOffSetMultiplier * 0.35f));
 		FTransform RelativeTransForm = UKismetMathLibrary::MakeRelativeTransform(Mesh1pPelvisTrans, CapsuleTransFrom);
 		FVector RelLocation = RelativeTransForm.GetLocation();
 		RelLocation.Y = 0.f;

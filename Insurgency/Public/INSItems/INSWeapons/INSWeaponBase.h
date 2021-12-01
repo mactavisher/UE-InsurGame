@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Insurgency/Insurgency.h"
 #include "INSItems/INSItems.h"
+#include "INSAssets/INSWeaponAssets.h"
 #include "INSItems/INSWeaponAttachments/INSWeaponAttachment.h"
 #include "INSWeaponBase.generated.h"
 
@@ -21,6 +22,7 @@ class AINSProjectileShell;
 class UINSStaticAnimData;
 class UINSWeaponFireHandler;
 class UINSCrossHairBase;
+struct FWeaponInfoData;
 
 INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogINSWeapon, Log, All);
 
@@ -295,6 +297,10 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_CurrentWeaponState, Category = "WeaponState")
 	EWeaponState CurrentWeaponState;
 
+	/** weapon info data*/
+	UPROPERTY()
+	FWeaponInfoData WeaponInfoData;
+
 	/** rep counter to tell clients fire just happened,mostly used for clients to play cosmetic events like fx */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponFireCount, Category = "WeaponState")
 	uint8 RepWeaponFireCount;
@@ -328,10 +334,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	/** replicated dry reload state to client for reload animation play purpose */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Ammo")
 	uint8 bDryReload : 1;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_Equipping, Category = "Equipping")
-	uint8 bWantsToEquip : 1;
-
+	
 	/** how much time it's gonna take to finish aim weapon  */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Aiming")
 	float AimTime;
@@ -462,7 +465,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	class USkeletalMesh* WeaponMeshNoFrontSight;
 
 	FActorTickFunction WeaponSpreadTickFunction;
-
+	
 	UPROPERTY()
 	uint8 bSupressorEquiped:1;
 
@@ -516,6 +519,8 @@ protected:
 	 *  @Desc play weapon fire effects
 	 */
 	virtual void SimulateWeaponFireFX();
+
+	virtual void InitWeaponInfoData();
 
 	/**
 	 * @Desc perform a trace from view center to Find what's under cross hair and produce that hit result when fire
@@ -644,6 +649,10 @@ public:
 
 	/**start equip this weapon  */
 	virtual void StartEquipWeapon();
+
+	virtual void StartUnEquipWeapon();
+
+	virtual void OnWeaponUnEquip();
 
 	/** update Weapon mesh visibility according to their local role */
 	virtual void UpdateWeaponMeshVisibility();
@@ -782,7 +791,7 @@ public:
 
 	virtual float GetRecoilHorizontallyFactor() const { return RecoilHorizontallyFactor; }
 
-	virtual float GetTimeBetweenShots() const { return WeaponConfigData.TimeBetweenShots; }
+	virtual float GetTimeBetweenShots() const { return WeaponInfoData.TimeBetweenShots; }
 
 	virtual void CheckAndEquipWeaponAttachment();
 
@@ -809,7 +818,7 @@ public:
 	 * returns the bullet muzzle velocity speed value
 	 * @return WeaponConfigData.MuzzleSpeed    float
 	 */
-	virtual float GetMuzzleSpeedValue() const { return WeaponConfigData.MuzzleSpeed; }
+	virtual float GetMuzzleSpeedValue() const { return WeaponInfoData.MuzzleVelocity; }
 
 	/**
 	 * return the sight socket transform,in world space
@@ -876,7 +885,7 @@ public:
 
 	virtual EWeaponBasePoseType GetCurrentWeaponBasePose() const { return CurrentWeaponBasePoseType; }
 
-	virtual float GetWeaponBaseDamage() const { return WeaponConfigData.BaseDamage; }
+	virtual float GetWeaponBaseDamage() const { return WeaponInfoData.BaseDamage; }
 
 	virtual void SetWeaponBasePoseType(const EWeaponBasePoseType NewPoseType) { CurrentWeaponBasePoseType = NewPoseType; }
 
@@ -912,5 +921,11 @@ public:
 
 	virtual AINSWeaponBase* GetLocalClientCosmeticWeapon()const{return LocalClientCosmeticWeapon;}
 
+	virtual int32 GetCurrentClipAmmo()const{return CurrentClipAmmo;}
+
+	virtual int32 GetAmmoLeft()const{return AmmoLeft;}
+
 	FORCEINLINE UINSWeaponMeshComponent* GetWeaponMeshComp() const { return WeaponMeshComp; }
+
+	virtual void SetWeaponInfoData(FWeaponInfoData NewWeaponInfoData);
 };

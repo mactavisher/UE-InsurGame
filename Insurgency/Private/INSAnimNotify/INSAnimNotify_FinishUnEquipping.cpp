@@ -5,6 +5,7 @@
 #include "INSCharacter/INSPlayerCharacter.h"
 #include "INSItems/INSWeapons/INSWeaponBase.h"
 #include "INSComponents/INSCharSkeletalMeshComponent.h"
+#include "INSCharacter/INSPlayerController.h"
 
 UINSAnimNotify_FinishUnEquipping::UINSAnimNotify_FinishUnEquipping()
 {
@@ -13,31 +14,17 @@ UINSAnimNotify_FinishUnEquipping::UINSAnimNotify_FinishUnEquipping()
 
 void UINSAnimNotify_FinishUnEquipping::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
 {
+	Super::Notify(MeshComp, Animation);
 	AActor* Owner = MeshComp->GetOwner();
 	if (!Owner)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("AnimNotify::FinishUnEquipping Triggered but no owner,abort"));
+		UE_LOG(LogTemp, Warning, TEXT("AnimNotify::FinishUnEquip Triggered but no owner,abort"));
 		return;
 	}
-	const UClass* const OwnerClass = Owner->GetClass();
-	UE_LOG(LogTemp, Log, TEXT("notify mesh comp's owner class name %s"), *OwnerClass->GetName());
-	const AINSCharacter* OwnerCharacter = nullptr;
-	AINSWeaponBase* OwnerWeapon = nullptr;
-	if (OwnerClass->IsChildOf(AINSCharacter::StaticClass()))
+	AINSCharacter* OwnerCharacter = Cast<AINSCharacter>(Owner);
+	if (OwnerCharacter)
 	{
-		OwnerCharacter = Cast<AINSCharacter>(Owner);
-		OwnerWeapon = OwnerCharacter->GetCurrentWeapon();
-		if (OwnerWeapon)
-		{
-			if (OwnerWeapon->HasAuthority())
-			{
-				OwnerWeapon->FinishEquippingWeapon();
-			}
-			else if(OwnerWeapon->GetLocalRole()==ROLE_AutonomousProxy)
-			{
-				OwnerWeapon->ServerFinishEquippingWeapon();
-			}
-			UE_LOG(LogTemp, Log, TEXT("weapon %s FinishUnEquipping notify triggerd and Executed"), *OwnerWeapon->GetName());
-		}
+		OwnerCharacter->HandleItemFinishUnEquipRequest();
+		UE_LOG(LogTemp, Log, TEXT("Character%s FinishUnEquip notify triggerd and Executed"), *OwnerCharacter->GetName());
 	}
 }

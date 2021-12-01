@@ -109,7 +109,7 @@ protected:
 	 * Get The Current zombie that controlled by this zombie controller
 	 * @return ZombiePawn
 	 */
-	inline virtual AINSZombie* GetZombiePawn() { return GetPawn<AINSZombie>(); }
+	inline virtual AINSZombie* GetZombiePawn();
 
 	/**
 	 * override when this zombie controller possess it's zombie pawn happened,allow some logic to set up here

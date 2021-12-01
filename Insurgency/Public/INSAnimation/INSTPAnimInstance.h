@@ -126,6 +126,8 @@ class INSURGENCY_API UINSTPAnimInstance : public UINSCharacterAimInstance
 
 	virtual float PlayFireAnim()override;
 
+	virtual float PlayWeaponStartUnEquipAnim() override;
+
 	virtual float PlaySwitchFireModeAnim() override;
 
 	virtual void UpdateIsAiming();

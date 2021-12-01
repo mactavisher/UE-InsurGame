@@ -3,12 +3,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Engine/DataTable.h"
 #include "GameFramework/GameMode.h"
+#include "Insurgency/Insurgency.h"
 #include "INSDamageModifier/INSDamageModifierBase.h"
 #include "INSGameModeBase.generated.h"
 
 class AINSWeaponBase;
 class AINSTeamInfo;
+class UDataTable;
 /**
  *
  */
@@ -130,6 +133,9 @@ public:
 
 	UPROPERTY()
 		FTimerHandle MatchPrepareTimer;
+
+	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="WeaponInfos")
+	UDataTable* WeaponDataTable;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TestWeaponClasses")
 		TArray<TSubclassOf< AINSWeaponBase>> GameModeAvailableWeaponsClasses;
@@ -276,4 +282,6 @@ public:
 
 	/** get game mode random available weapon class */
 	virtual  UClass* GetRandomGameModeWeaponClass()const;
+
+	virtual UDataTable* GetWeaponDataTable()const;
 };

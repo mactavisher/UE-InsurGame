@@ -181,6 +181,31 @@ float UINSTPAnimInstance::PlayFireAnim()
 	return Montage_Play(SelectedPullTriggerAnim);
 }
 
+float UINSTPAnimInstance::PlayWeaponStartUnEquipAnim()
+{
+	if (!CheckValid())
+	{
+		return 0.f;
+	}
+	UAnimMontage* SelectedUnEquipMontage = nullptr;
+	switch (CurrentWeaponBaseType)
+	{
+	case EWeaponBasePoseType::ALTGRIP:SelectedUnEquipMontage = CurrentWeaponAnimData->TPWeaponAltGripAnim.UnDeployAnim.CharAnim;
+		break;
+	case EWeaponBasePoseType::FOREGRIP:SelectedUnEquipMontage = CurrentWeaponAnimData->TPWeaponForeGripAnim.UnDeployAnim.CharAnim;
+		break;
+	case EWeaponBasePoseType::DEFAULT:SelectedUnEquipMontage = CurrentWeaponAnimData->TPWeaponDefaultPoseAnim.UnDeployAnim.CharAnim;
+		break;
+	default:SelectedUnEquipMontage = nullptr;
+		break;
+	}
+	if(!SelectedUnEquipMontage)
+	{
+		return 0.f;
+	}
+	return Montage_Play(SelectedUnEquipMontage);
+}
+
 float UINSTPAnimInstance::PlaySwitchFireModeAnim()
 {
 	if (!CheckValid())

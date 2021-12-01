@@ -22,26 +22,26 @@ class AINSWeaponBase;
 
 INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogINSProjectile, Log, All);
 
-/*
+/** replicate the projectile hit info explicitly*/
 USTRUCT()
-struct FRepINSProjMovement
+struct FRepINSProjHitInfo
 {
 	GENERATED_USTRUCT_BODY()
 
-		UPROPERTY()
-		FVector_NetQuantize LinearVelocity;
+	//		UPROPERTY()
+	//		FVector_NetQuantize LinearVelocity;
 
 	UPROPERTY()
-		FVector_NetQuantize Location;
+	FVector_NetQuantize Location;
 
 	UPROPERTY()
-		FRotator Rotation;
+	FRotator Rotation;
 
-	FRepINSProjMovement()
-		: LinearVelocity(ForceInit)
-		, Location(ForceInit)
-		, Rotation(ForceInit)
-	{}
+	FRepINSProjHitInfo()
+		: Location(ForceInit)
+		  , Rotation(ForceInit)
+	{
+	}
 
 	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
 	{
@@ -53,18 +53,18 @@ struct FRepINSProjMovement
 		Location.NetSerialize(Ar, Map, bOutSuccessLocal);
 		bOutSuccess &= bOutSuccessLocal;
 		Rotation.SerializeCompressed(Ar);
-		LinearVelocity.NetSerialize(Ar, Map, bOutSuccessLocal);
+		//LinearVelocity.NetSerialize(Ar, Map, bOutSuccessLocal);
 		bOutSuccess &= bOutSuccessLocal;
 
 		return true;
 	}
 
-	bool operator==(const FRepINSProjMovement& Other) const
+	bool operator==(const FRepINSProjHitInfo& Other) const
 	{
-		if (LinearVelocity != Other.LinearVelocity)
-		{
-			return false;
-		}
+		// if (LinearVelocity != Other.LinearVelocity)
+		// {
+		// 	return false;
+		// }
 
 		if (Location != Other.Location)
 		{
@@ -78,11 +78,11 @@ struct FRepINSProjMovement
 		return true;
 	}
 
-	bool operator!=(const FRepINSProjMovement& Other) const
+	bool operator!=(const FRepINSProjHitInfo& Other) const
 	{
 		return !(*this == Other);
 	}
-};*/
+};
 
 USTRUCT(BlueprintType)
 struct FProjectileLiftTimeData
@@ -294,6 +294,11 @@ protected:
 	UPROPERTY()
 	uint8 bReachDesiredLoc;
 
+	/** indicate if the scan trace projectile has reach the desire location */
+	UPROPERTY(Replicated,ReplicatedUsing=OnRep_ProjectileHit)
+	FRepINSProjHitInfo ProjectileHitInfo;
+
+	
 	/** this used to send a initial replication to relevant client immediately if projectile flies fast */
 	UPROPERTY()
 	FActorTickFunction InitRepTickFunc;
@@ -341,6 +346,9 @@ protected:
 	UFUNCTION()
 	virtual void OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
+	UFUNCTION()
+	virtual void OnRep_ProjectileHit();
+
 	/*UFUNCTION()
 		virtual void CalAndSpawnPenetrateProjectile(const FHitResult& OriginHitResult, const FVector& OriginVelocity);*/
 protected:
@@ -355,6 +363,7 @@ protected:
 	virtual void GatherCurrentMovement() override;
 	virtual void PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void Destroyed() override;
 	virtual void OnRep_ReplicatedMovement() override;
 	// ~End AActor interface
 

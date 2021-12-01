@@ -76,6 +76,10 @@ public:
 	UFUNCTION()
 	virtual float PlayWeaponStartEquipAnim() { return 0.f; };
 
+	/** equip weapon interface function */
+	UFUNCTION()
+	virtual float PlayWeaponStartUnEquipAnim() { return 0.f; };
+
 	/** base weapon pose interface function */
 	UFUNCTION()
 	virtual float PlayWeaponBasePose() {return 0.f;};

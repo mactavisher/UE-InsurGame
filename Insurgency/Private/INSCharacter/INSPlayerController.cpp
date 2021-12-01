@@ -20,6 +20,7 @@
 #include "INSCharacter/INSPlayerStateBase.h"
 #include "INSPickups/INSPickupBase.h"
 #include "Components/AudioComponent.h"
+#include "INSAI/AIZombie/INSZombie.h"
 #ifndef GEngine
 #include "Engine/Engine.h"
 #endif
@@ -554,7 +555,10 @@ bool AINSPlayerController::ServerSwitchFireMode_Validate()
 
 void AINSPlayerController::EquipWeapon(const uint8 SlotIndex)
 {
-
+	if (GetINSPlayerCharacter())
+	{
+		GetINSPlayerCharacter()->HandleItemEquipRequest(SlotIndex);
+	}
 }
 
 void AINSPlayerController::Tick(float DeltaSeconds)
@@ -673,33 +677,33 @@ bool AINSPlayerController::IsEnemyFor(class AActor* Other)
 	{
 		return false;
 	}
-	else
+	if (Other->GetClass() == AINSZombie::StaticClass())
 	{
-		bool bIsOtherAEnemy = false;
-		const UClass* const OtherActorClass = Other->GetClass();
-		//UE_LOG(LogAINSPlayerController, Warning, TEXT("Player %s has see something ,other actor class:%s"), *this->GetName(), *Other->GetName())
-		if (OtherActorClass->IsChildOf(AINSPlayerCharacter::StaticClass()))
+		return true;
+	}
+	bool bIsOtherAEnemy = false;
+	const UClass* const OtherActorClass = Other->GetClass();
+	if (OtherActorClass->IsChildOf(AINSPlayerCharacter::StaticClass()))
+	{
+		const AINSPlayerCharacter* const OtherPlayerCharacter = CastChecked<AINSPlayerCharacter>(Other);
+		const AINSPlayerStateBase* const OtherPlayerState = OtherPlayerCharacter->GetPlayerState() == nullptr ? nullptr : OtherPlayerCharacter->GetPlayerStateChecked<AINSPlayerStateBase>();
+		const AINSPlayerStateBase* const MyPlayerState = GetINSPlayerCharacter()->GetPlayerState() == nullptr ? nullptr : GetINSPlayerCharacter()->GetPlayerStateChecked<AINSPlayerStateBase>();
+		if (OtherPlayerState && MyPlayerState)
 		{
-			const AINSPlayerCharacter* const OtherPlayerCharacter = CastChecked<AINSPlayerCharacter>(Other);
-			const AINSPlayerStateBase* const OtherPlayerState = OtherPlayerCharacter->GetPlayerState() == nullptr ? nullptr : OtherPlayerCharacter->GetPlayerStateChecked<AINSPlayerStateBase>();
-			const AINSPlayerStateBase* const MyPlayerState = GetINSPlayerCharacter()->GetPlayerState() == nullptr ? nullptr : GetINSPlayerCharacter()->GetPlayerStateChecked<AINSPlayerStateBase>();
-			if (OtherPlayerState && MyPlayerState)
+			const AINSTeamInfo* const OtherPlayerCharacterTeam = OtherPlayerState->GetPlayerTeam();
+			const AINSTeamInfo* const MyPlayerCharacterTeam = MyPlayerState->GetPlayerTeam();
+			if (OtherPlayerCharacterTeam && MyPlayerCharacterTeam)
 			{
-				const AINSTeamInfo* const OtherPlayerCharacterTeam = OtherPlayerState->GetPlayerTeam();
-				const AINSTeamInfo* const MyPlayerCharacterTeam = MyPlayerState->GetPlayerTeam();
-				if (OtherPlayerCharacterTeam && MyPlayerCharacterTeam)
+				const ETeamType OtherPlayerTeamType = OtherPlayerCharacterTeam->GetTeamType();
+				const ETeamType MyTeamType = MyPlayerCharacterTeam->GetTeamType();
+				if (OtherPlayerTeamType != MyTeamType)
 				{
-					const ETeamType OtherPlayerTeamType = OtherPlayerCharacterTeam->GetTeamType();
-					const ETeamType MyTeamType = MyPlayerCharacterTeam->GetTeamType();
-					if (OtherPlayerTeamType != MyTeamType)
-					{
-						bIsOtherAEnemy = true;
-					}
+					bIsOtherAEnemy = true;
 				}
 			}
 		}
-		return bIsOtherAEnemy;
 	}
+	return bIsOtherAEnemy;
 }
 
 bool AINSPlayerController::HasSeeEnemy()

@@ -16,6 +16,7 @@
 #include "EngineUtils.h"
 #include "Insurgency/Insurgency.h"
 #include "TimerManager.h"
+#include "Engine/DataTable.h"
 #include "..\..\Public\INSGameModes\INSGameModeBase.h"
 
 DEFINE_LOG_CATEGORY(LogINSGameMode);
@@ -298,6 +299,11 @@ UClass* AINSGameModeBase::GetRandomGameModeWeaponClass() const
 		return GameModeAvailableWeaponsClasses[Random];
 	}
 	return nullptr;
+}
+
+UDataTable* AINSGameModeBase::GetWeaponDataTable() const
+{
+	return WeaponDataTable;
 }
 
 void AINSGameModeBase::AssignPlayerTeam(class AINSPlayerController* NewPlayer)

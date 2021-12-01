@@ -28,6 +28,9 @@
 #include "INSAssets/INSStaticAnimData.h"
 #include "INSCharacter/INSPlayerStateBase.h"
 #include "INSComponents/INSCharSkeletalMeshComponent.h"
+#include "INSGameModes/INSGameModeBase.h"
+#include "Engine/DataTable.h"
+#include "INSCore/INSGameInstance.h"
 #include "INSWeaponCrossHair/INSCrossHair_Cross.h"
 #include "INSItems/INSWeaponAttachments/INSWeaponAttachment_Optic.h"
 #ifndef UINSCrossHairBase
@@ -36,6 +39,7 @@
 #ifndef UWorld
 #include "Engine/World.h"
 #endif // !UWorld
+#include "INSCore/INSGameInstance.h"
 
 DEFINE_LOG_CATEGORY(LogINSWeapon);
 
@@ -46,8 +50,7 @@ AINSWeaponBase::AINSWeaponBase(const FObjectInitializer& ObjectInitializer) : Su
 	AvailableFireModes.Add(EWeaponFireMode::FULLAUTO);
 	AvailableFireModes.Add(EWeaponFireMode::SINGLE);
 	CurrentWeaponFireMode = AvailableFireModes[0];
-	CurrentClipAmmo = WeaponConfigData.AmmoPerClip;
-	AmmoLeft = WeaponConfigData.MaxAmmo;
+	
 	CurrentWeaponState = EWeaponState::NONE;
 	CurrentWeaponBasePoseType = EWeaponBasePoseType::DEFAULT;
 	LastFireTime = 0.f;
@@ -142,6 +145,9 @@ void AINSWeaponBase::BeginPlay()
 	{
 		OnRep_MeshType();
 	}
+	InitWeaponInfoData();
+	CurrentClipAmmo = WeaponInfoData.BaseClipCapacity;
+	AmmoLeft = WeaponInfoData.MaxAmmoCapacity;
 }
 
 void AINSWeaponBase::PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker)
@@ -275,12 +281,12 @@ void AINSWeaponBase::FireProjectile(FVector_NetQuantize100 SpawnLoc, FVector_Net
 		{
 			SpawnedProjectile->SetOwnerWeapon(this);
 			SpawnedProjectile->SetIsFakeProjectile(false);
-			SpawnedProjectile->SetMuzzleSpeed(WeaponConfigData.MuzzleSpeed);
+			SpawnedProjectile->SetMuzzleSpeed(WeaponInfoData.MuzzleVelocity);
 			SpawnedProjectile->SetCurrentPenetrateCount(0);
 			SpawnedProjectile->SetInstigatedPlayer(Cast<AController>(GetOwner()));
 			SpawnedProjectile->SetScanTraceProjectile(ScanTraceHitResult.bBlockingHit);
 			SpawnedProjectile->SetScanTraceHitLoc(ScanTraceHitResult.bBlockingHit ? FVector::ZeroVector : ScanTraceHitResult.ImpactPoint);
-			SpawnedProjectile->SetScanTraceTime(WeaponConfigData.ScanTraceRange / WeaponConfigData.MuzzleSpeed);
+			SpawnedProjectile->SetScanTraceTime(WeaponConfigData.ScanTraceRange / WeaponInfoData.MuzzleVelocity);
 			SpawnedProjectile->SetSpawnLocation(SpawnLoc);
 			UGameplayStatics::FinishSpawningActor(SpawnedProjectile, ProjectileSpawnTransform);
 			ConsumeAmmo();
@@ -642,6 +648,7 @@ void AINSWeaponBase::OnRep_CurrentWeaponState()
 	case EWeaponState::FIREMODESWITCHING: OnWeaponSwitchFireMode();
 		break;
 	case EWeaponState::EQUIPED: break;
+	case EWeaponState::UNEQUIPING:OnWeaponUnEquip();break;
 	case EWeaponState::NONE: break;
 	default: break;
 	}
@@ -743,6 +750,33 @@ void AINSWeaponBase::SimulateWeaponFireFX()
 	if (ShellActor)
 	{
 		UGameplayStatics::FinishSpawningActor(ShellActor, ShellSpawnTran);
+	}
+}
+
+void AINSWeaponBase::InitWeaponInfoData()
+{
+	UINSGameInstance* GI = GetWorld()->GetGameInstance<UINSGameInstance>();
+	if(GI)
+	{
+		UDataTable* WeaponTable = GI->GetWeaponDataTable();
+		TArray<FWeaponTableRows*> AllRows;
+		WeaponTable->GetAllRows(TEXT(""),AllRows);
+		for (FWeaponTableRows* WeaponRow : AllRows)
+		{
+			if(WeaponRow->ItemId==GetItemId())
+			{
+				WeaponInfoData.BaseDamage = WeaponRow->BaseDamage;
+				WeaponInfoData.MuzzleVelocity = WeaponRow->MuzzleVelocity;
+				WeaponInfoData.BaseClipCapacity = WeaponRow->BaseClipCapacity;
+				WeaponInfoData.MaxAmmoCapacity = WeaponRow->MaxAmmoCapacity;
+				WeaponInfoData.TimeBetweenShots =WeaponRow->TimeBetweenShots;
+				WeaponInfoData.Desc = WeaponRow->Desc;
+				//WeaponInfoData.ItemClass = WeaponRow->ItemClass;
+				WeaponInfoData.ItemId = WeaponRow->ItemId;
+				WeaponInfoData.ItemIconAsset = WeaponRow->ItemIconAsset;
+				//WeaponInfoData.ItemTextureAsset = WeaponRow->ItemTextureAsset->ClassDefaultObject
+			}
+		} 
 	}
 }
 
@@ -911,7 +945,7 @@ bool AINSWeaponBase::CheckCanFire()
 		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s is un-equiped,can't fire "), *GetName());
 		return false;
 	}
-	if ((GetWorld()->GetTimeSeconds() - LastFireTime) < WeaponConfigData.TimeBetweenShots)
+	if ((GetWorld()->GetTimeSeconds() - LastFireTime) < WeaponInfoData.TimeBetweenShots)
 	{
 		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s fire interval not allowd,can't fire"), *GetName());
 		return false;
@@ -959,7 +993,7 @@ bool AINSWeaponBase::CheckCanReload()
 		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s and it's owner charcter is dead, cant't reload "), *GetName());
 		return false;
 	}
-	if (CurrentClipAmmo == WeaponConfigData.AmmoPerClip)
+	if (CurrentClipAmmo == WeaponInfoData.BaseClipCapacity)
 	{
 		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s current clip is full, No Need reloading"), *GetName());
 		return false;
@@ -1137,12 +1171,12 @@ void AINSWeaponBase::CalculateAmmoAfterReload()
 	if (bInfinityAmmo)
 	{
 		UE_LOG(LogINSWeapon, Warning, TEXT("this Weapon :%s infinit ammo mode has enabled,reloading will consumes no ammo "), *GetName());
-		CurrentClipAmmo = WeaponConfigData.AmmoPerClip;
+		CurrentClipAmmo = WeaponInfoData.BaseClipCapacity;
 		return;
 	}
 #endif
-	const int32 AmmoPerClip = WeaponConfigData.AmmoPerClip;
-	const int32 DeltaAmmoSize = WeaponConfigData.AmmoPerClip - CurrentClipAmmo;
+	const int32 AmmoPerClip =  WeaponInfoData.BaseClipCapacity;
+	const int32 DeltaAmmoSize =  WeaponInfoData.BaseClipCapacity - CurrentClipAmmo;
 	if (AmmoLeft >= DeltaAmmoSize)
 	{
 		CurrentClipAmmo += DeltaAmmoSize;
@@ -1251,7 +1285,7 @@ void AINSWeaponBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AINSWeaponBase, bIsAimingWeapon);
 	DOREPLIFETIME_CONDITION(AINSWeaponBase, CurrentClipAmmo, COND_OwnerOnly);
 	DOREPLIFETIME(AINSWeaponBase, CurrentWeaponBasePoseType);
-	DOREPLIFETIME_CONDITION(AINSWeaponBase, WeaponConfigData, COND_InitialOnly);
+	//DOREPLIFETIME_CONDITION(AINSWeaponBase, WeaponInfoData, COND_InitialOnly);
 	DOREPLIFETIME_CONDITION(AINSWeaponBase, AmmoLeft, COND_OwnerOnly);
 	DOREPLIFETIME_CONDITION(AINSWeaponBase, WeaponType, COND_InitialOnly);
 	DOREPLIFETIME_CONDITION(AINSWeaponBase, bDryReload, COND_SimulatedOnly);
@@ -1299,6 +1333,11 @@ void AINSWeaponBase::UpdateWeaponSpread(float DeltaTimeSeconds)
 			}
 		}
 	}
+}
+
+void AINSWeaponBase::SetWeaponInfoData(FWeaponInfoData NewWeaponInfoData)
+{
+	WeaponInfoData = NewWeaponInfoData;
 }
 
 void AINSWeaponBase::UpdateCharAnimationBasePoseType(EWeaponBasePoseType NewType)
@@ -1374,6 +1413,34 @@ void AINSWeaponBase::SetWeaponReady()
 void AINSWeaponBase::StartEquipWeapon()
 {
 	SetWeaponState(EWeaponState::EQUIPPING);
+}
+
+void AINSWeaponBase::StartUnEquipWeapon()
+{
+	SetWeaponState(EWeaponState::UNEQUIPING);
+}
+
+void AINSWeaponBase::OnWeaponUnEquip()
+{
+	AINSPlayerCharacter* const OwnerPlayerCharacter = GetOwnerCharacter<AINSPlayerCharacter>();
+	if (OwnerPlayerCharacter && !IsNetMode(NM_DedicatedServer))
+	{
+		if (GetLocalRole() >= ROLE_AutonomousProxy)
+		{
+			OwnerPlayerCharacter->Get1PAnimInstance()->StopFPPlayingWeaponIdleAnim();
+			OwnerPlayerCharacter->Get1PAnimInstance()->PlayWeaponStartUnEquipAnim();
+			GetWeaponAnimInstance()->PlayWeaponStartUnEquipAnim();
+			if(LocalClientCosmeticWeapon)
+			{
+				LocalClientCosmeticWeapon->OnWeaponUnEquip();
+			}
+		}
+		else
+		{
+			OwnerPlayerCharacter->Get3PAnimInstance()->PlayWeaponStartUnEquipAnim();
+			GetWeaponAnimInstance()->PlayWeaponStartUnEquipAnim();
+		}
+	}
 }
 
 

@@ -348,7 +348,6 @@ float AINSCharacter::CheckDistance(const FVector OtherLocation)
 	return (GetActorLocation() - OtherLocation).Size();
 }
 
-
 void AINSCharacter::OnRep_LastHitInfo()
 {
 	if (!IsNetMode(NM_DedicatedServer))
@@ -599,6 +598,14 @@ void AINSCharacter::HandleFinishReloadingRequest()
 	}
 }
 
+void AINSCharacter::HandleFinishUnEquipWeaponRequest()
+{
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->SetWeaponState(EWeaponState::UNEQUIPED);
+	}
+}
+
 void AINSCharacter::HandleMoveForwardRequest(float Value)
 {
 	if (Value != 0.0f)
@@ -653,7 +660,8 @@ void AINSCharacter::Die()
 	{
 		TossCurrentWeapon();
 	}
-	TornOff();
+	SetReplicateMovement(false);
+	TearOff();
 	OnRep_Dead();
 }
 
@@ -661,15 +669,18 @@ void AINSCharacter::OnRep_Dead()
 {
 	if (bIsDead)
 	{
+		if(IsNetMode(NM_DedicatedServer))
+		{
+			if (GetMesh())
+			{
+				GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+				GetMesh()->SetCollisionResponseToAllChannels(ECR_Ignore);
+			}
+		}
 		GetCharacterHealthComp()->DisableComponentTick();
 		GetINSCharacterMovement()->StopMovementImmediately();
 		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
-		if (GetMesh())
-		{
-			//GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-			//GetMesh()->SetCollisionResponseToAllChannels(ECR_Ignore);
-		}
 		if (!IsNetMode(NM_DedicatedServer) && GetCharacterAudioComp())
 		{
 			GetCharacterAudioComp()->OnDeath();
@@ -761,6 +772,51 @@ void AINSCharacter::HandleJumpRequest()
 void AINSCharacter::HandleItemEquipRequest(const uint8 SlotIndex)
 {
 }
+
+void AINSCharacter::HandleItemFinishUnEquipRequest()
+{
+	if(HasAuthority())
+	{
+		FinishUnEquipItem();
+	}
+	if(GetLocalRole()==ROLE_AutonomousProxy)
+	{
+		ServerUnEquipItem();
+	}
+	
+}
+
+void AINSCharacter::UnEquipItem()
+{
+	if(CurrentWeapon)
+	{
+		CurrentWeapon->StartUnEquipWeapon();
+	}
+}
+
+void AINSCharacter::FinishUnEquipItem()
+{
+}
+
+void AINSCharacter::ServerFinishUnEquipItem_Implementation()
+{
+	FinishUnEquipItem();
+}
+
+bool AINSCharacter::ServerFinishUnEquipItem_Validate()
+{
+	return true;
+}
+
+void AINSCharacter::ServerUnEquipItem_Implementation()
+{
+}
+
+bool AINSCharacter::ServerUnEquipItem_Validate()
+{
+	return true;
+}
+
 
 void AINSCharacter::SpawnWeaponPickup()
 {

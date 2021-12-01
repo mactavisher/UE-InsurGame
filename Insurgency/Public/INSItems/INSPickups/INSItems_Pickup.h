@@ -27,12 +27,14 @@ class INSURGENCY_API AINSItems_Pickup : public AINSItems
 	/** indicate this pick up will be auto picked up by player who get close enough to it */
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="Config")
 	    uint8 bAutoPickup:1;
-
+protected:
 	/** handle when this pick up is overlapped with characters */
-	virtual void HandleOnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)override;
-
+	UFUNCTION()
+	virtual void HandleOnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	
 	/** handles when when player leave this pick up */
-	virtual void HandleOnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)override;
+	UFUNCTION()
+	virtual void HandleOnEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 	/** give this to a claimed player */
 	virtual void GiveThisToPlayer(class AController* NewClaimedPlayer);

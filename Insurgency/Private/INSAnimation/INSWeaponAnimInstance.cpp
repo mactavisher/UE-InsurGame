@@ -129,6 +129,27 @@ float UINSWeaponAnimInstance::PlayWeaponBasePose()
 	return Montage_Play(SelectedBasePoseAnim);
 }
 
+float UINSWeaponAnimInstance::PlayWeaponStartUnEquipAnim()
+{
+	if (!CheckValid())
+	{
+		return 0.f;
+	}
+	UAnimMontage* SelectedUnEquipAnim = nullptr;
+	switch (CurrentWeaponBasePoseType)
+	{
+	case EWeaponBasePoseType::ALTGRIP: SelectedUnEquipAnim = WeaponAnimData->FPWeaponAltGripAnim.UnDeployAnim.WeaponAnim;
+		break;
+	case EWeaponBasePoseType::FOREGRIP: SelectedUnEquipAnim = WeaponAnimData->FPWeaponForeGripAnim.UnDeployAnim.WeaponAnim;
+		break;
+	case EWeaponBasePoseType::DEFAULT: SelectedUnEquipAnim = WeaponAnimData->FPWeaponDefaultPoseAnim.UnDeployAnim.WeaponAnim;
+		break;
+	default: SelectedUnEquipAnim = nullptr;
+		break;
+	}
+	return Montage_Play(SelectedUnEquipAnim);
+}
+
 void UINSWeaponAnimInstance::SetWeaponBasePoseType(EWeaponBasePoseType NewWeaponBasePoseType)
 {
 	CurrentWeaponBasePoseType = NewWeaponBasePoseType;

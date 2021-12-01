@@ -8,6 +8,7 @@
 #include "Insurgency/Insurgency.h"
 #include "INSCharacter.generated.h"
 
+class AINSCharacter;
 class UDamageType;
 class UPawnNoiseEmitterComponent;
 class UParticleSystem;
@@ -93,6 +94,44 @@ public:
 	static bool GetIsHeadShot(const FName BoneName)
 	{
 		return BoneName.ToString().Contains("Head", ESearchCase::IgnoreCase);
+	}
+};
+
+USTRUCT()
+struct FPendingWeaponEquipEvent
+{
+	GENERATED_USTRUCT_BODY()
+	/** indicate the event create time */
+	UPROPERTY()
+	float EventCreateTime;
+
+	/** indicates how much  time we have to wait to execute this event */
+	UPROPERTY()
+	float PendingDuration;
+
+	/** the time that used to execute this event,after execution complete,all props will get reset*/
+	UPROPERTY()
+	float ExecutingDuration;
+
+	/** the actual weapon class to equip*/
+	UPROPERTY()
+	UClass* WeaponClass;
+
+	/** indicates if this event is currently active,if true,can't be overriden,has to wait until it finishes*/
+	UPROPERTY()
+	uint8 bIsEventActive:1;
+
+	UPROPERTY()
+	uint8 WeaponSlotIndex;
+
+	FPendingWeaponEquipEvent()
+		: EventCreateTime(0.f)
+		  , PendingDuration(0.f)
+		  , ExecutingDuration(0.f)
+		  , WeaponClass(nullptr)
+		  , bIsEventActive(false)
+		  , WeaponSlotIndex(255)
+	{
 	}
 };
 
@@ -414,6 +453,8 @@ public:
 
 	virtual void HandleFinishReloadingRequest();
 
+	virtual void HandleFinishUnEquipWeaponRequest();
+
 	/** return this character is dead or not */
 	virtual bool GetIsDead() const { return bIsDead; };
 
@@ -437,6 +478,18 @@ public:
 
 	/** Handles Weapon Equip Request */
 	virtual void HandleItemEquipRequest(const uint8 SlotIndex);
+
+	/** Handles Weapon UnEquip Request */
+	virtual void HandleItemFinishUnEquipRequest();
+
+	virtual void UnEquipItem();
+
+	virtual void FinishUnEquipItem();
+	UFUNCTION(Server,Unreliable,WithValidation)
+	virtual void ServerFinishUnEquipItem();
+
+	UFUNCTION(Server, Unreliable, WithValidation)
+	virtual void ServerUnEquipItem();
 
 	/** callback when character crouched or un-crouched */
 	virtual void OnRep_IsCrouched() override;

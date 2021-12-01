@@ -40,14 +40,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "FirstPersonCamera", meta = (AllowPrivateAccess = "true"))
 	UINSInventoryComponent* InventoryComp;
 
-	/* Camera arm comp*/
-	// UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"), Category = "FirstPersonCamera")
-	// USpringArmComponent* SpringArm;
-
-	// /* a dummy helper aligner to help align the sprint arm*/
-	// UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"), Category = "FirstPersonCamera")
-	// USceneComponent* SpringArmAligner;
-
 	/** player character's 1P mesh comp,only visible to owner player */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "CharacterMesh")
 	FDefaultPlayerMesh CTDefaultMesh;
@@ -82,6 +74,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PlayerController")
 	AINSPlayerController* INSPlayerController;
 
+	UPROPERTY()
+	FPendingWeaponEquipEvent PendingWeaponEquipEvent;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void PostInitializeComponents() override;
@@ -99,8 +94,11 @@ protected:
 	virtual void OnRep_LastHitInfo() override;
 	virtual void Crouch(bool bClientSimulation) override;
 	virtual void UnCrouch(bool bClientSimulation) override;
+	virtual void OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
+	virtual void OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
 	virtual void SetAimHandsXLocation(const float Value) override;
 	virtual bool CheckCharacterIsReady() override;
+	virtual void CheckPendingEquipWeapon(float DeltaTimeSeconds);
 	UFUNCTION()
 	virtual void OnRep_TeamType();
 	virtual void SetupMeshVisibility();
@@ -173,16 +171,25 @@ public:
 
 	virtual void HandleItemEquipRequest(const uint8 SlotIndex) override;
 
-	virtual void PutCurrentWeaponBackToSlot();
+	virtual void HandleItemFinishUnEquipRequest() override;
+
+	UFUNCTION(Server,Reliable,WithValidation)
+	virtual void ServerEquipItem(const uint8 SlotIndex);
+
+	virtual void EquipItem(const uint8 SlotIndex);
 
 	virtual void SetCurrentAnimData(UINSStaticAnimData* AnimData) override;
 
 	UFUNCTION()
 	virtual void EquipGameModeDefaultWeapon();
 
+	virtual void EquipBestWeapon();
+
 	virtual void SetTeamType(const ETeamType NewTeamType);
 
 	virtual void OnEnterIdleState() override;
+
+	virtual void RecalculateBaseEyeHeight() override;
 
 	virtual void OnOutIdleState() override;
 
@@ -194,7 +201,13 @@ public:
 
 	virtual void TickRecoil(float DeltaSeconds);
 
-	virtual void OnCameraUpdated(FVector CameraLoc, FRotator CameraRot);
+	virtual void EquipFromInventory(const uint8 SlotIndex);
+
+	virtual void UnEquipItem() override;
+
+	virtual void ServerUnEquipItem() override;
+
+	virtual void FinishUnEquipItem() override;
 
 	virtual void Die() override;
 

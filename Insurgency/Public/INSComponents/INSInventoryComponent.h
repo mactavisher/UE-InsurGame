@@ -4,14 +4,17 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "INSCore/INSItemManager.h"
+#include "INSItems/INSItems.h"
 #include "INSInventoryComponent.generated.h"
 
 class UTexture2D;
 class AINSWeaponBase;
 class AINSWeaponAttachment;
+class UINSItemManager;
 
 USTRUCT(BlueprintType)
-struct FInvetorySlot
+struct FInventorySlot
 {
 	GENERATED_USTRUCT_BODY()
 		/** texture represent this item */
@@ -59,7 +62,11 @@ class INSURGENCY_API UINSInventoryComponent : public UActorComponent
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Inventory")
-	TArray<FInvetorySlot> InventorySlots;
+	TArray<FInventorySlot> InventorySlots;
+
+	
+	UPROPERTY()
+	UINSItemManager* ItemManager;
 
 protected:
 	//~ Begin UActorComponent interface
@@ -70,7 +77,11 @@ public:
 	//~ End UActorComponent interface
 
 public:
-	virtual FInvetorySlot* GetItemSlot(uint8 TargetSlotIndex);
+	virtual FInventorySlot* GetItemSlot(uint8 TargetSlotIndex);
 	virtual bool PutItemInSlot(class AINSWeaponBase* Item);
+	virtual UClass* GiveBestWeapon(uint8 &OutSlotIndex);
+	virtual UINSItemManager* GetItemManager()const{return ItemManager;}
+
+	virtual void SetItemManager(UINSItemManager* InItemManger);
 	
 };

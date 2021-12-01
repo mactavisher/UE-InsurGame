@@ -54,6 +54,7 @@ public:
 	virtual float PlaySwitchFireModeAnim()override;
 	virtual void OnWeaponAnimDelegateBindingFinished()override;
 	virtual float PlayWeaponBasePose()override;
+	virtual float PlayWeaponStartUnEquipAnim() override;
 	virtual void SetWeaponBasePoseType(EWeaponBasePoseType NewWeaponBasePoseType);
 	virtual float PlayAimAnim() { return 0.f; };
 	virtual float PlayStopAimAnim() { return 0.f; };

@@ -82,10 +82,10 @@ void AINSProjectile::OnRep_Explode()
 
 void AINSProjectile::OnRep_HitCounter()
 {
-	if (HitCounter > 0)
-	{
-		CheckImpactHit();
-	}
+	// if (HitCounter > 0)
+	// {
+	// 	CheckImpactHit();
+	// }
 }
 
 void AINSProjectile::OnRep_OwnerWeapon()
@@ -137,13 +137,80 @@ void AINSProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* 
 			ProjectileLiftTimeData.EndLoc = GetActorLocation();
 		}
 		UE_LOG(LogINSProjectile, Log, TEXT("Projectile%s Hit Happened,Will Force Send a Movement info to all Conected Clients"), *GetName());
-		if (GetNetMode() == ENetMode::NM_Standalone || GetNetMode() == ENetMode::NM_ListenServer)
+		ProjectileHitInfo.Location = FVector_NetQuantize(Hit.Location);
+		FRotator HitRotator = GetActorRotation();
+		FRotator RepRotator(FRotator::CompressAxisToByte(HitRotator.Pitch), FRotator::CompressAxisToByte(HitRotator.Yaw), FRotator::CompressAxisToByte(HitRotator.Roll));
+		ProjectileHitInfo.Rotation = RepRotator;
+		if (GetLocalRole() == ROLE_Authority && !IsNetMode(NM_DedicatedServer))
 		{
-			OnRep_HitCounter();
+			OnRep_ProjectileHit();
 		}
 		bIsProcessingHit = false;
 		//CalAndSpawnPenetrateProjectile(Hit, GetVelocity());
 		SetLifeSpan(0.1f);
+	}
+}
+
+void AINSProjectile::OnRep_ProjectileHit()
+{
+	//Decompress the axis replicated from server and construct a forward vector based on that
+	const float DeCompressedPitch = FRotator::DecompressAxisFromByte(ProjectileHitInfo.Rotation.Pitch);
+	const float DeCompressedYaw = FRotator::DecompressAxisFromByte(ProjectileHitInfo.Rotation.Yaw);
+	const float DeCompressedRoll = FRotator::DecompressAxisFromByte(ProjectileHitInfo.Rotation.Roll);
+	const FRotator HitRotation = FRotator(DeCompressedPitch, DeCompressedYaw, DeCompressedRoll);
+	FVector ProjectileDir = HitRotation.Vector();
+	const float TraceRange = 100.f;
+
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+	if (VisualFakeProjectile)
+	{
+		QueryParams.AddIgnoredActor(VisualFakeProjectile);
+	}
+	QueryParams.AddIgnoredActor(GetOwnerWeapon());
+	QueryParams.AddIgnoredActor(GetOwnerWeapon() == nullptr ? nullptr : GetOwnerWeapon()->GetOwnerCharacter());
+	QueryParams.bReturnPhysicalMaterial = true;
+	const FVector TraceStart = ProjectileHitInfo.Location - ProjectileDir * 20.f;
+	const FVector TraceEnd = ProjectileHitInfo.Location + ProjectileDir * TraceRange;
+	FHitResult ImpactHit(ForceInit);
+	GetWorld()->LineTraceSingleByChannel(ImpactHit, ProjectileHitInfo.Location, TraceEnd, ECC_Camera, QueryParams);
+	if (ImpactHit.bBlockingHit)
+	{
+		const AActor* HitActor = ImpactHit.Actor.Get();
+		UClass* HitActorClass = HitActor == nullptr ? nullptr : HitActor->GetClass();
+		if (GetVisualFakeProjectile())
+		{
+			GetVisualFakeProjectile()->GetProjectileMovementComp()->StopMovementImmediately();
+		}
+		if (HitActor && HitActorClass && !HitActorClass->IsChildOf(AINSCharacter::StaticClass()) && !HitActorClass->IsChildOf(AINSWeaponBase::StaticClass()))
+		{
+			FTransform EffectActorTransform(ImpactHit.ImpactNormal.ToOrientationRotator(), ImpactHit.ImpactPoint, FVector::OneVector);
+			AINSImpactEffect* EffectActor = GetWorld()->SpawnActorDeferred<AINSImpactEffect>(PointImapactEffectsClass, EffectActorTransform, nullptr, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+			if (EffectActor)
+			{
+				EffectActor->SetImpactHit(ImpactHit);
+				UGameplayStatics::FinishSpawningActor(EffectActor, EffectActorTransform);
+			}
+			if (HitActor->HasAuthority())
+			{
+				UPrimitiveComponent* const ActorPhysicsComponent = Cast<UPrimitiveComponent>(HitActor->GetRootComponent());
+				if (ActorPhysicsComponent && ActorPhysicsComponent->Mobility == EComponentMobility::Movable)
+				{
+					ActorPhysicsComponent->SetSimulatePhysics(true);
+					ActorPhysicsComponent->AddImpulseAtLocation(HitRotation.Vector() * 200.f, ImpactHit.Location, ImpactHit.BoneName);
+				}
+			}
+		}
+#if WITH_EDITOR&&!UE_BUILD_SHIPPING
+		if (bUsingDebugTrace)
+		{
+			DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 3.0f);
+		}
+#endif
+	}
+	if (VisualFakeProjectile)
+	{
+		VisualFakeProjectile->Destroy();
 	}
 }
 
@@ -211,6 +278,7 @@ void AINSProjectile::OnProjectileHit(UPrimitiveComponent* HitComponent, AActor* 
 // Called when the game starts or when spawned
 void AINSProjectile::BeginPlay()
 {
+	Super::BeginPlay();
 	if (!bVisualProjectile)
 	{
 		TracerParticle->DestroyComponent(true);
@@ -221,7 +289,6 @@ void AINSProjectile::BeginPlay()
 			InitClientFakeProjectile(this);
 		}
 	}
-	Super::BeginPlay();
 	if (GetLocalRole() == ROLE_Authority)
 	{
 		FScriptDelegate Delegate;
@@ -349,8 +416,18 @@ void AINSProjectile::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(AINSProjectile, HitCounter);
 	DOREPLIFETIME(AINSProjectile, OwnerWeapon);
 	DOREPLIFETIME(AINSProjectile, CurrentPenetrateCount);
+	DOREPLIFETIME(AINSProjectile, ProjectileHitInfo);
 	DOREPLIFETIME(AINSProjectile, bScanTraceProjectile);
 	DOREPLIFETIME_CONDITION(AINSProjectile, MovementQuantizeLevel, COND_InitialOnly);
+}
+
+void AINSProjectile::Destroyed()
+{
+	Super::Destroyed();
+	if (VisualFakeProjectile)
+	{
+		VisualFakeProjectile->Destroy();
+	}
 }
 
 void AINSProjectile::OnRep_ReplicatedMovement()
@@ -407,7 +484,7 @@ void AINSProjectile::SendInitialReplication()
 		NetDriver->ReplicationFrame++;
 		for (int32 i = 0; i < NetDriver->ClientConnections.Num(); i++)
 		{
-			if (NetDriver->ClientConnections[i]->State == USOCK_Open && NetDriver->ClientConnections[i]->PlayerController != nullptr && NetDriver->ClientConnections[i]->IsNetReady(0))
+			if (NetDriver->ClientConnections[i]->State == USOCK_Open && NetDriver->ClientConnections[i]->PlayerController != nullptr && NetDriver->ClientConnections[i]->IsNetReady(false))
 			{
 				const AActor* ViewTarget = NetDriver->ClientConnections[i]->PlayerController->GetViewTarget();
 				if (ViewTarget == nullptr)
@@ -469,7 +546,7 @@ void AINSProjectile::CheckImpactHit()
 	const float TraceRange = 500.f;
 	const FVector TraceEnd = TraceStart + ProjectileDir * TraceRange;
 	FHitResult ImpactHit(ForceInit);
-	GetWorld()->LineTraceSingleByChannel(ImpactHit, TraceStart, TraceEnd, ECollisionChannel::ECC_Camera, QueryParams);
+	GetWorld()->LineTraceSingleByChannel(ImpactHit, TraceStart, TraceEnd, ECC_Camera, QueryParams);
 	const AActor* HitActor = ImpactHit.Actor.Get();
 	UClass* HitActorClass = HitActor == nullptr ? nullptr : HitActor->GetClass();
 	if (ImpactHit.bBlockingHit)
