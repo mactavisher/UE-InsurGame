@@ -40,7 +40,6 @@ public:
 	virtual void EnableTick();
 	virtual void DisableTick();
 	virtual void OnRep_Owner() override;
-
 	virtual bool GetIsInLobbyMode() const { return bInLobbyMode; }
 	virtual void SetIsInLobbyMode(bool IsLobbyItem) { bInLobbyMode = IsLobbyItem; }
 	/** gets the item id*/
