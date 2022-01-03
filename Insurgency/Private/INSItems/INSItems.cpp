@@ -11,7 +11,6 @@
 // Sets default values
 AINSItems::AINSItems(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
 {
-	bIsWeapon = false;
 	ItemType = EItemType::NONE;
 	bReplicates = true;
 	SetReplicatingMovement(true);

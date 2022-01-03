@@ -126,39 +126,18 @@ protected:
 
 	UPROPERTY(Replicated,ReplicatedUsing=OnRep_CurrentWalkSpeed)
 	float CurrentWalkSpeed;
-
-	/**
-	 * override
-	 */
+	
 	virtual void OnRep_Dead() override;
-
-	/**
-	 * Get Replicated Properties for net work system
-	 * @param OutLifetimeProps  OutLifetimeProps
-	 */
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
-	/**
-	 * happens when possessed by a zombie controller
-	 * @param NewController New Controller that possess this zombie
-	 */
 	virtual void PossessedBy(AController* NewController) override;
-
 	virtual void PostInitializeComponents() override;
-
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void FaceRotation(FRotator NewControlRotation, float DeltaTime /* = 0.f */) override;
 
 	/**
 	 * override
 	 */
 	virtual void OnRep_LastHitInfo() override;
-
-	/**
-	 * face this zombie to a given rotation
-	 * @param NewControlRotation Rotation to face to4
-	 * @Param DeltaTime the world delta tme in seconds
-	 */
-	virtual void FaceRotation(FRotator NewControlRotation, float DeltaTime /* = 0.f */) override;
 
 	/**
 	 * call back function when zombie has changed it's move mode
@@ -208,7 +187,7 @@ public:
 	/**
 	 * Get the current zombie attack mode
 	 */
-	inline virtual EZombieAttackMode GetZombieCurrentAttackMode() const { return CurrenAttackMode; };
+	virtual EZombieAttackMode GetZombieCurrentAttackMode() const { return CurrenAttackMode; };
 
 	/**
 	 * Set the current zombie attack mode

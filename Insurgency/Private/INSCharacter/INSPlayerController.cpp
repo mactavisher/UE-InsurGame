@@ -34,8 +34,6 @@ AINSPlayerController::AINSPlayerController(const FObjectInitializer& ObjectIniti
 	bAutoReload = true;
 }
 
-
-
 void AINSPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
@@ -89,7 +87,6 @@ void AINSPlayerController::MoveForward(float Value)
 	const AINSGameStateBase* GameState = GetWorld()->GetGameState<AINSGameStateBase>();
 	if (GameState && GameState->GetAllowMove() && Value != 0.f)
 	{
-
 		if (GetINSPlayerCharacter())
 		{
 			GetINSPlayerCharacter()->HandleMoveForwardRequest(Value);
@@ -159,9 +156,6 @@ void AINSPlayerController::BindWeaponDelegate()
 {
 	if (CurrentWeapon)
 	{
-		// 		CurrentWeapon->OnAmmoLeftEmpty.AddDynamic(this, &AINSPlayerController::OnWeaponAmmoLeftEmpty);
-		// 		CurrentWeapon->OnClipLow.AddDynamic(this, &AINSPlayerController::OnWeaponClipAmmoLow);
-		// 		CurrentWeapon->OnClipEmpty.AddDynamic(this, &AINSPlayerController::OnWeaponClipEmpty);
 	}
 }
 

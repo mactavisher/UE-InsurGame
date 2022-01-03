@@ -20,16 +20,10 @@ class INSURGENCY_API UINSWidgetBase : public UUserWidget
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "VisibilityControl")
 		uint8 bShowWidget : 1;
-	   
-
-	TWeakObjectPtr<AINSWeaponBase> RefrencedWeapon;
-
-	virtual void SetRefWeapon(AINSWeaponBase* WeaponRef);
-
-	virtual class AINSWeaponBase* GetRefWeapon()const { return RefrencedWeapon.Get(); }
 
 	virtual void NativeConstruct()override;
 
-	virtual class  AINSPlayerController* GetOwningINSPlayer();
+public:
+	virtual class  AINSLobbyPlayerController* GetOwningLobbyPlayerController();
 
 };

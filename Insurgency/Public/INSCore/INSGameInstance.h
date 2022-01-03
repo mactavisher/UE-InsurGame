@@ -31,7 +31,9 @@ protected:
 	virtual void Init() override;
 
 public:
+	UFUNCTION(BlueprintCallable)
 	virtual UDataTable* GetWeaponDataTable()const{return WeaponDataTable;}
 
+	UFUNCTION(BlueprintCallable)
 	virtual UINSItemManager* GetItemManager()const{return ItemManager;}
 };

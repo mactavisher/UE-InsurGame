@@ -11,7 +11,6 @@ AINSLobbyPlayerCameraManager::AINSLobbyPlayerCameraManager(const FObjectInitiali
 
 void AINSLobbyPlayerCameraManager::ApplyWorldOffset(const FVector& InOffset, bool bWorldShift)
 {
-	
 	Super::ApplyWorldOffset(InOffset, bWorldShift);
 }
 

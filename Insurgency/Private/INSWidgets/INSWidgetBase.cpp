@@ -3,24 +3,20 @@
 
 #include "INSWidgets/INSWidgetBase.h"
 #include "INSItems/INSWeapons/INSWeaponBase.h"
-#include "INSCharacter/INSPlayerController.h"
+#include "INSCharacter/INSLobbyPlayerController.h"
 
-UINSWidgetBase::UINSWidgetBase(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
+UINSWidgetBase::UINSWidgetBase(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	bShowWidget = true;
 }
 
-void UINSWidgetBase::SetRefWeapon(AINSWeaponBase* WeaponRef)
-{
-	RefrencedWeapon = WeaponRef;
-}
 
 void UINSWidgetBase::NativeConstruct()
 {
 	Super::NativeConstruct();
 }
 
-class AINSPlayerController* UINSWidgetBase::GetOwningINSPlayer()
+class AINSLobbyPlayerController* UINSWidgetBase::GetOwningLobbyPlayerController()
 {
-	return GetOwningPlayer<AINSPlayerController>();
+	return GetOwningPlayer<AINSLobbyPlayerController>();
 }

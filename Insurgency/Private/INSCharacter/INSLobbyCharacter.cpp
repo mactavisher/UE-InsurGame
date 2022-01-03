@@ -31,7 +31,7 @@ void AINSLobbyCharacter::BeginPlay()
 	if(LobbyCamera)
 	{
 		LobbyCamera->AttachToComponent(GetCapsuleComponent(),FAttachmentTransformRules::SnapToTargetIncludingScale,NAME_None);
-		LobbyCamera->AddRelativeLocation(FVector(200.f,50.f,65.f));
+		LobbyCamera->AddRelativeLocation(FVector(250.f,50.f,35.f));
 		LobbyCamera->AddRelativeRotation(FRotator(0.f,-180.f,0.f));
 	}
 	CreateClientLobbyWeapon();
