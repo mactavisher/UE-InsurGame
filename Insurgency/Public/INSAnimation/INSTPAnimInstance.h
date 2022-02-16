@@ -9,99 +9,101 @@
 /**
  * 
  */
-UCLASS(Blueprintable,BlueprintType)
+UCLASS(Blueprintable, BlueprintType)
 class INSURGENCY_API UINSTPAnimInstance : public UINSCharacterAimInstance
 {
 	GENERATED_UCLASS_BODY()
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BlendSpace")
-		float StandStopMoveAlpha;
+	float StandStopMoveAlpha;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|Transform")
-		FVector LastInputVector;
+	FVector LastInputVector;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|Transform")
-		FRotator LastInputRotator;
+	FRotator LastInputRotator;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|Transform")
-		FRotator DeltaRotation;
+	FRotator DeltaRotation;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|Transform")
-		uint8 bIsTurning : 1;
+	uint8 bIsTurning : 1;
 
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|Transform")
-		float StandToJogAlpha;
+	float StandToJogAlpha;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|Transform")
-	    uint8 bCanEnterJog:1;
+	uint8 bCanEnterJog:1;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFCharacterAnim|Transform")
-		uint8 bCanTurnInPlace : 1;
+	uint8 bCanTurnInPlace : 1;
 
 	UPROPERTY()
 	uint8 bCanEnterJogFromSprint:1;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Blendspace")
-		UBlendSpace* StandWalkBlendSpace;
+	UBlendSpace* StandWalkBlendSpace;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Blendspace")
-		UBlendSpace* CrouchWalkBlendSpace;
+	UBlendSpace* CrouchWalkBlendSpace;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Blendspace")
-		UBlendSpace* StandJogBlendSpace;
+	UBlendSpace* StandJogBlendSpace;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Blendspace")
-		UBlendSpace* CrouchJogBlendSpace;
+	UBlendSpace* CrouchJogBlendSpace;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Blendspace")
-		UBlendSpace* ProneMoveBlendSpace;
+	UBlendSpace* ProneMoveBlendSpace;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Turn")
-		uint8 TPShouldTurnLeft90 : 1;
+	uint8 TPShouldTurnLeft90 : 1;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Turn")
-		uint8 TPShouldTurnRight90 : 1;
+	uint8 TPShouldTurnRight90 : 1;
 
 	/** how much to apply additive base on ads time alpha value */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BlendSpace")
-		float JogPlayRate;
+	float JogPlayRate;
 
 	/** how much to apply additive base on ads time alpha value */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BlendSpace")
-		float JogSpeed;
+	float JogSpeed;
 
 	/** how much to apply additive base on ads time alpha value */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BlendSpace")
-		float WalkPlayRate;
+	float WalkPlayRate;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Stanima")
-		float WalkToStopAlpha;
+	float WalkToStopAlpha;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Stanima")
-		float SprintToWalkAlpha;
+	float SprintToWalkAlpha;
+
+	UPROPERTY()
+	ECharacterStance CurrentStance;
 
 	/**
 	 * @Desc tick variables that drives animation playing
 	 * 
 	 * @Params DeltaSeconds Tick interval
 	 */
-	virtual void NativeUpdateAnimation(float DeltaSeconds)override;
+	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
 	/**
 	 * @Desc initialize animation set owner ptr
 	 */
-	virtual void NativeInitializeAnimation()override;
+	virtual void NativeInitializeAnimation() override;
 
 	/**
 	 * @Desc set up current weapon and animation assets
 	 * 
 	 * @Param NewWeapon Weapon to use in this animation
 	 */
-	virtual void SetCurrentWeapon(class AINSWeaponBase* NewWeapon)override;
+	virtual void SetCurrentWeapon(class AINSWeaponBase* NewWeapon) override;
 
 	virtual void SetCurrentWeaponAnimData(UINSStaticAnimData* NewAnimData) override;
-
+	
 	/**
 	 * used for entry state for jog
 	 */
@@ -120,24 +122,21 @@ class INSURGENCY_API UINSTPAnimInstance : public UINSCharacterAimInstance
 
 	virtual void UpdateCanEnterSprint();
 
-	virtual float PlayReloadAnim(bool bIsDry)override;
+	virtual float PlayWeaponBasePose() override;
 
-	virtual float PlayWeaponBasePose()override;
+	virtual float PlayFireAnim() override;
 
-	virtual float PlayFireAnim()override;
-
-	virtual float PlayWeaponStartUnEquipAnim() override;
-
-	virtual float PlaySwitchFireModeAnim() override;
-
-	virtual void UpdateIsAiming();
+	virtual void UpdateIsAiming() override;
 
 	virtual void UpdateEnterJogState();
 
-	virtual void SetIsAiming(bool IsAiming)override;
-
-	virtual float PlayWeaponStartEquipAnim()override;
+	virtual void SetIsAiming(bool IsAiming) override;
 
 	virtual void UpdatePredictFallingToLandAlpha();
 
+	virtual float PlayWeaponReloadAnim(bool bDryReload) override;
+	virtual float PlayWeaponEquipAnim() override;
+	virtual float PlayWeaponSwitchFireModeAnim() override;
+	virtual float PlayWeaponUnEquipAnim() override;
+	virtual void SetCurrentStance(ECharacterStance NewStance){CurrentStance = NewStance;}
 };

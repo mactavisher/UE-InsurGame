@@ -281,9 +281,11 @@ void AINSProjectile::BeginPlay()
 	Super::BeginPlay();
 	if (!bVisualProjectile)
 	{
+		TracerParticle->UnregisterComponent();
+		ProjectileMesh->UnregisterComponent();
 		TracerParticle->DestroyComponent(true);
 		ProjectileMesh->DestroyComponent(true);
-		SetActorHiddenInGame(true);
+		//SetActorHiddenInGame(true);
 		if (IsNetMode(NM_ListenServer) || IsNetMode(NM_Standalone))
 		{
 			InitClientFakeProjectile(this);
@@ -602,6 +604,14 @@ void AINSProjectile::SetScanTraceTime(float NewTime)
 {
 	ScanTraceTime = NewTime;
 	UE_LOG(LogINSProjectile, Log, TEXT("Projectile named %s will travel with a scan trace time %f"), *GetName(), ScanTraceTime);
+}
+
+void AINSProjectile::SetCollisionIgnoredActor(TArray<AActor*> ActorsToIgnore)
+{
+	for (auto ToIgnore : ActorsToIgnore)
+	{
+		CollisionComp->MoveIgnoreActors.Add(ToIgnore);
+	}
 }
 
 void AINSProjectile::SetOwnerWeapon(class AINSWeaponBase* NewWeaponOwner)

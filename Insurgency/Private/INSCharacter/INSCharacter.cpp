@@ -24,20 +24,21 @@
 #include "GameFramework/PlayerState.h"
 #include "PhysicsEngine/PhysicalAnimationComponent.h"
 #include "INSAssets/INSStaticAnimData.h"
-#include "Widgets/Text/ISlateEditableTextWidget.h"
+#include "INSCore/INSGameInstance.h"
 #ifndef GEngine
 #endif // !GEngine
 #ifndef UWorld
 #endif // !UWorld
 #ifndef UCapsuleComponent
 #include "Components/CapsuleComponent.h"
+#include "TimerManager.h"
 #endif // !UCapsuleComponent
 
 
 DEFINE_LOG_CATEGORY(LogINSCharacter);
 
 // Sets default values
-AINSCharacter::AINSCharacter(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer.SetDefaultSubobjectClass<UINSCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
+AINSCharacter::AINSCharacter(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer.SetDefaultSubobjectClass<UINSCharacterMovementComponent>(CharacterMovementComponentName))
 {
 	PrimaryActorTick.bCanEverTick = true;
 	bReplicates = true;
@@ -71,6 +72,8 @@ AINSCharacter::AINSCharacter(const FObjectInitializer& ObjectInitializer) : Supe
 		CharacterHealthComp->SetIsReplicated(true);
 	}
 	DeathTime = 0.f;
+	CurrentWeapon = nullptr;
+	CurrentAnimPtr = nullptr;
 }
 
 void AINSCharacter::BeginPlay()
@@ -119,7 +122,7 @@ void AINSCharacter::PostInitializeComponents()
 }
 
 
-void AINSCharacter::ApplyDamageMomentum(float DamageTaken, FDamageEvent const& DamageEvent, APawn* PawnInstigator, AActor* DamageCauser)
+void AINSCharacter::ApplyDamageMomentum(float DamageTaken, const FDamageEvent& DamageEvent, APawn* PawnInstigator, AActor* DamageCauser)
 {
 	Super::ApplyDamageMomentum(DamageTaken, DamageEvent, PawnInstigator, DamageCauser);
 }
@@ -137,7 +140,7 @@ void AINSCharacter::HandleOnTakeRadiusDamage(AActor* DamagedActor, float Damage,
 {
 }
 
-bool AINSCharacter::ShouldTakeDamage(float Damage, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) const
+bool AINSCharacter::ShouldTakeDamage(float Damage, const FDamageEvent& DamageEvent, AController* EventInstigator, AActor* DamageCauser) const
 {
 	// ignore any kind of damage if we are in damage immune state
 	if (bDamageImmuneState)
@@ -247,7 +250,7 @@ void AINSCharacter::CastBloodDecal(FVector HitLocation, FVector HitDir)
 	FCollisionQueryParams CollisionQueryParams;
 	CollisionQueryParams.AddIgnoredActor(this);
 	const FVector TraceEnd = HitLocation + HitDir * TraceRange;
-	GetWorld()->LineTraceSingleByChannel(TraceHit, HitLocation, TraceEnd, ECollisionChannel::ECC_Visibility,CollisionQueryParams);
+	GetWorld()->LineTraceSingleByChannel(TraceHit, HitLocation, TraceEnd, ECC_Visibility, CollisionQueryParams);
 	if (TraceHit.bBlockingHit)
 	{
 		const UPrimitiveComponent* HitComp = TraceHit.Component.Get();
@@ -287,8 +290,8 @@ void AINSCharacter::TossCurrentWeapon()
 		if (WeaponPickup)
 		{
 			WeaponPickup->SetActualWeaponClass(CurrentWeapon->GetClass());
-			WeaponPickup->SetAmmoLeft(CurrentWeapon->AmmoLeft);
-			WeaponPickup->SetLootableAmmo(CurrentWeapon->CurrentClipAmmo);
+			WeaponPickup->SetAmmoLeft(CurrentWeapon->GetAmmoLeft());
+			WeaponPickup->SetLootableAmmo(CurrentWeapon->GetCurrentClipAmmo());
 			const FStringAssetReference AssetsRef(CurrentWeapon->GetWeaponStaticMesh());
 			UStaticMesh* WeaponMesh = LoadObject<UStaticMesh>(this, *AssetsRef.ToString());
 			UGameplayStatics::FinishSpawningActor(WeaponPickup, PickupSpawnTransform);
@@ -312,12 +315,43 @@ bool AINSCharacter::CheckCharacterIsReady()
 	return GetMesh() && GetMesh()->HasBegunPlay() && IsValid(GetMesh()->SkeletalMesh) && IsValid(GetMesh()->SkeletalMesh->GetSkeleton());
 }
 
+void AINSCharacter::ReceiveInventoryInitialized()
+{
+}
+
+void AINSCharacter::ReceiveClipAmmoEmpty()
+{
+	
+}
+
+void AINSCharacter::ReceiveSetupWeaponAttachment()
+{
+}
+
+
+void AINSCharacter::CreateAndEquipItem(int32 ItemId,const uint8 InventorySlotIndex)
+{
+	UINSGameInstance* CurGameInstance = GetWorld()->GetGameInstance<UINSGameInstance>();
+	if(CurGameInstance)
+	{
+		UINSItemManager* ItemManager = CurGameInstance->GetItemManager();
+		if(ItemManager)
+		{
+			AINSWeaponBase* WeaponItemInstance = ItemManager->CreateWeaponItemInstance(ItemId,GetActorTransform(),GetController(),this,InventorySlotIndex);
+			if(WeaponItemInstance)
+			{
+				SetCurrentWeapon(WeaponItemInstance);
+			}
+		}
+	}
+}
+
+
 void AINSCharacter::OnCauseDamage(const FTakeHitInfo& HitInfo)
 {
 	if (LastHitInfo.Victim == LastHitInfo.InstigatorPawn)
 	{
 		UE_LOG(LogINSCharacter, Log, TEXT("Character %s is causing damge to himself"), *GetName());
-		return;
 	}
 	// hook but do nothing by default
 }
@@ -348,6 +382,26 @@ float AINSCharacter::CheckDistance(const FVector OtherLocation)
 	return (GetActorLocation() - OtherLocation).Size();
 }
 
+void AINSCharacter::SetupPendingWeaponEquipEvent( const int32 ItemId, const uint8 ItemSlotIdx)
+{
+	if (!PendingWeaponEquipEvent.bIsEventActive)
+	{
+		PendingWeaponEquipEvent.bIsEventActive = true;
+		PendingWeaponEquipEvent.ItemId = ItemId;
+		PendingWeaponEquipEvent.EventCreateTime = GetWorld()->GetTimeSeconds();
+		PendingWeaponEquipEvent.WeaponSlotIndex = ItemSlotIdx;
+	}
+}
+
+FPendingWeaponEquipEvent& AINSCharacter::GetPendingEquipEvent()
+{
+	return PendingWeaponEquipEvent;
+}
+
+void AINSCharacter::UpdateAnimationData(class AINSItems* InItemRef)
+{
+}
+
 void AINSCharacter::OnRep_LastHitInfo()
 {
 	if (!IsNetMode(NM_DedicatedServer))
@@ -361,13 +415,13 @@ void AINSCharacter::OnRep_LastHitInfo()
 			const float ShotDirPitchDecompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirPitch);
 			const float ShotDirYawDeCompressed = FRotator::DecompressAxisFromByte(LastHitInfo.ShotDirYaw);
 			const FRotator BloodSpawnRotation = FRotator(ShotDirPitchDecompressed, ShotDirYawDeCompressed, 0.f);
-			const FTransform BloodSpawnTrans = FTransform(BloodSpawnRotation, BloodSpawnLocation+GetMesh()->GetComponentLocation(), FVector::OneVector);
+			//const FTransform BloodSpawnTrans = FTransform(BloodSpawnRotation, BloodSpawnLocation + GetMesh()->GetComponentLocation(), FVector::OneVector);
 			const int32 BloodParticlesSize = BloodParticles.Num();
 			if (BloodParticlesSize > 0)
 			{
 				const int32 RandomIndex = FMath::RandHelper(BloodParticlesSize - 1);
 				//UGameplayStatics::SpawnEmitterAttached(GetWorld(), BloodParticles[RandomIndex], BloodSpawnTrans);
-				UGameplayStatics::SpawnEmitterAttached(BloodParticles[RandomIndex],GetMesh(),NAME_None,BloodSpawnLocation,BloodSpawnRotation,FVector::OneVector,EAttachLocation::KeepWorldPosition);
+				UGameplayStatics::SpawnEmitterAttached(BloodParticles[RandomIndex], GetMesh(), NAME_None, BloodSpawnLocation, BloodSpawnRotation, FVector::OneVector, EAttachLocation::KeepWorldPosition);
 			}
 			UGameplayStatics::SpawnSoundAtLocation(this, BodyHitSound, LastHitInfo.RelHitLocation);
 			const uint8 RandInt = FMath::RandHelper(10);
@@ -445,7 +499,7 @@ void AINSCharacter::OnRep_Prone()
 
 void AINSCharacter::OnRep_CurrentWeapon()
 {
-  
+	
 }
 
 void AINSCharacter::OnRep_DamageImmuneTime()
@@ -484,6 +538,10 @@ void AINSCharacter::HandleWeaponReloadRequest()
 			CurrentWeapon->ServerHandleWeaponReloadRequest();
 		}
 	}
+}
+
+void AINSCharacter::HandleItemEquipRequest(int32 ItemId, uint8 ItemSlotIndex)
+{
 }
 
 void AINSCharacter::OnWeaponCollide(const FHitResult& Hit)
@@ -553,6 +611,10 @@ void AINSCharacter::HandleStopFireRequest()
 
 void AINSCharacter::HandleEquipWeaponRequest()
 {
+	if(PendingWeaponEquipEvent.bIsEventActive)
+	{
+		return;
+	}
 	if (CurrentWeapon)
 	{
 		CurrentWeapon->StartEquipWeapon();
@@ -576,7 +638,7 @@ void AINSCharacter::HandleSingleAmmoInsertRequest()
 		{
 			CurrentWeapon->InsertSingleAmmo();
 		}
-		if (GetLocalRole() == ROLE_AutonomousProxy)
+		else if (GetLocalRole() == ROLE_AutonomousProxy)
 		{
 			CurrentWeapon->ServerInsertSingleAmmo();
 		}
@@ -603,6 +665,25 @@ void AINSCharacter::HandleFinishUnEquipWeaponRequest()
 	if (CurrentWeapon)
 	{
 		CurrentWeapon->SetWeaponState(EWeaponState::UNEQUIPED);
+	}
+}
+
+void AINSCharacter::HandleItemFinishEquipRequest()
+{
+	if (CurrentWeapon)
+	{
+		if (HasAuthority())
+		{
+			CurrentWeapon->SetWeaponState(EWeaponState::IDLE);
+		}
+		if (GetLocalRole() == ROLE_AutonomousProxy)
+		{
+			CurrentWeapon->ServerSetWeaponState(EWeaponState::IDLE);
+		}
+	}
+	if (GetLocalRole() >= ROLE_AutonomousProxy && !IsNetMode(NM_DedicatedServer))
+	{
+		PendingWeaponEquipEvent.ResetEvent();
 	}
 }
 
@@ -665,11 +746,21 @@ void AINSCharacter::Die()
 	OnRep_Dead();
 }
 
+void AINSCharacter::ServerCreateAndEquipItem_Implementation(int32 ItemId,const uint8 InventorySlotIndex)
+{
+	CreateAndEquipItem(ItemId,InventorySlotIndex);
+}
+
+bool AINSCharacter::ServerCreateAndEquipItem_Validate(int32 ItemId,const uint8 InventorySlotIndex)
+{
+	return true;
+}
+
 void AINSCharacter::OnRep_Dead()
 {
 	if (bIsDead)
 	{
-		if(IsNetMode(NM_DedicatedServer))
+		if (IsNetMode(NM_DedicatedServer))
 		{
 			if (GetMesh())
 			{
@@ -769,26 +860,26 @@ void AINSCharacter::HandleJumpRequest()
 	}
 }
 
-void AINSCharacter::HandleItemEquipRequest(const uint8 SlotIndex)
-{
-}
 
 void AINSCharacter::HandleItemFinishUnEquipRequest()
 {
-	if(HasAuthority())
+	if (HasAuthority())
 	{
 		FinishUnEquipItem();
 	}
-	if(GetLocalRole()==ROLE_AutonomousProxy)
+	if (GetLocalRole() == ROLE_AutonomousProxy)
 	{
-		ServerUnEquipItem();
+		ServerFinishUnEquipItem();
 	}
-	
 }
 
 void AINSCharacter::UnEquipItem()
 {
-	if(CurrentWeapon)
+	if(PendingWeaponEquipEvent.bIsEventActive)
+	{
+		return;
+	}
+	if (CurrentWeapon)
 	{
 		CurrentWeapon->StartUnEquipWeapon();
 	}
@@ -796,6 +887,8 @@ void AINSCharacter::UnEquipItem()
 
 void AINSCharacter::FinishUnEquipItem()
 {
+	CurrentWeapon->Destroy();
+	CurrentWeapon = nullptr;
 }
 
 void AINSCharacter::ServerFinishUnEquipItem_Implementation()
@@ -810,6 +903,7 @@ bool AINSCharacter::ServerFinishUnEquipItem_Validate()
 
 void AINSCharacter::ServerUnEquipItem_Implementation()
 {
+	UnEquipItem();
 }
 
 bool AINSCharacter::ServerUnEquipItem_Validate()
@@ -842,7 +936,7 @@ void AINSCharacter::SetCharacterAiming(bool NewAimState)
 void AINSCharacter::SetCurrentWeapon(class AINSWeaponBase* NewWeapon)
 {
 	this->CurrentWeapon = NewWeapon;
-	if (GetLocalRole() == ROLE_Authority)
+	if (HasAuthority())
 	{
 		OnRep_CurrentWeapon();
 	}

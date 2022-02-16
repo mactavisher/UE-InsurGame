@@ -187,6 +187,13 @@ namespace WeaponAttachmentSlotName
 	const FName RightRail(TEXT("RightRail")); // rightRail slot name
 }
 
+namespace ReloadSectionName
+{
+	const FName Start(TEXT("StartSection"));
+	const FName Loop(TEXT("LoopSection"));
+	const FName End(TEXT("EndSection"));
+}
+
 /** weapon attachment slot */
 USTRUCT(BlueprintType)
 struct FWeaponAttachmentSlot
@@ -273,6 +280,9 @@ UCLASS(BlueprintType, Blueprintable)
 class INSURGENCY_API AINSWeaponBase : public AINSItems
 {
 	GENERATED_UCLASS_BODY()
+protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="WeaponConfig")
+	uint8 Priority;
 
 	/** stores available fire modes to switch between */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FireMode")
@@ -298,7 +308,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	EWeaponState CurrentWeaponState;
 
 	/** weapon info data*/
-	UPROPERTY()
+	UPROPERTY(Replicated, ReplicatedUsing=OnRep_WeaponInfoData)
 	FWeaponInfoData WeaponInfoData;
 
 	/** rep counter to tell clients fire just happened,mostly used for clients to play cosmetic events like fx */
@@ -334,7 +344,7 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	/** replicated dry reload state to client for reload animation play purpose */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Ammo")
 	uint8 bDryReload : 1;
-	
+
 	/** how much time it's gonna take to finish aim weapon  */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Aiming")
 	float AimTime;
@@ -446,13 +456,13 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	UPROPERTY()
 	UINSCrossHairBase* CrossHair;
 
+	/** indicates if we have unEjected shell left in chamber,mainly used for bolt rifles */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="ClientCosmetics")
+	uint8 HasLeftShellInChamber:1;
+
 	/** WeaponAttachment Slots */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponAttachments")
 	TMap<FName, FWeaponAttachmentSlot> WeaponAttachmentSlots;
-
-	/** reference from the inventory index */
-	UPROPERTY()
-	uint8 InventorySlotIndex;
 
 	/** weapon type of this weapon */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_WeaponType, Category = "WeaponConfig")
@@ -465,9 +475,20 @@ class INSURGENCY_API AINSWeaponBase : public AINSItems
 	class USkeletalMesh* WeaponMeshNoFrontSight;
 
 	FActorTickFunction WeaponSpreadTickFunction;
-	
+
+	FActorTickFunction CheckOwnerCharReadyToEquip;
+
+	FActorTickFunction CheckAndSetupAttachmentTick;
+
 	UPROPERTY()
 	uint8 bSupressorEquiped:1;
+
+	/** if true ,shell casting will be delay spawned by anim notify way*/
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Effects")
+	uint8 bDelayedShellCasting:1;
+
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly)
+	EWeaponReloadType ReloadType;
 
 	UPROPERTY(ReplicatedUsing = "OnRep_MeshType")
 	uint8 bUsingNoFrontSightMesh:1;
@@ -513,6 +534,7 @@ protected:
 	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PreReplication(IRepChangedPropertyTracker& ChangedPropertyTracker) override;
+	virtual void TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction) override;
 	//~ end actor interface
 
 	/**
@@ -521,6 +543,12 @@ protected:
 	virtual void SimulateWeaponFireFX();
 
 	virtual void InitWeaponInfoData();
+
+	virtual void CheckAndSetSlotAmmo();
+
+	virtual void RegisterFirstEquipTick();
+
+	virtual void RegisterAttachToPawnTick();
 
 	/**
 	 * @Desc perform a trace from view center to Find what's under cross hair and produce that hit result when fire
@@ -607,9 +635,14 @@ protected:
 	UFUNCTION()
 	virtual void OnRep_WeaponBasePoseType();
 
+	UFUNCTION()
+	virtual void OnRep_WeaponInfoData();
+
 	virtual void OnRep_Owner() override;
 
 	virtual void Destroyed() override;
+
+	virtual void AttachWeaponMeshToPawn();
 
 
 public:
@@ -643,10 +676,6 @@ public:
 
 	virtual float GetScanTraceRange() const { return WeaponConfigData.ScanTraceRange; }
 
-	virtual uint8 GetInventorySlotIndex() const { return InventorySlotIndex; }
-
-	virtual void SetInventorySlotIndex(uint8 TargetSlot) { this->InventorySlotIndex = TargetSlot; }
-
 	/**start equip this weapon  */
 	virtual void StartEquipWeapon();
 
@@ -654,9 +683,7 @@ public:
 
 	virtual void OnWeaponUnEquip();
 
-	/** update Weapon mesh visibility according to their local role */
-	virtual void UpdateWeaponMeshVisibility();
-
+	virtual void StartReloadWeapon();
 	/**server,start equip this weapon  */
 	UFUNCTION(Server, Unreliable, WithValidation)
 	virtual void ServerStartEquipWeapon();
@@ -917,15 +944,43 @@ public:
 
 	virtual void SetLocalClientCosmeticWeapon(AINSWeaponBase* InWeapon);
 
-	virtual bool GetIsClientCosmeticWeapon()const{return bClientCosmeticWeapon;}
+	virtual bool GetIsClientCosmeticWeapon() const { return bClientCosmeticWeapon; }
 
-	virtual AINSWeaponBase* GetLocalClientCosmeticWeapon()const{return LocalClientCosmeticWeapon;}
+	virtual AINSWeaponBase* GetLocalClientCosmeticWeapon() const { return LocalClientCosmeticWeapon; }
 
-	virtual int32 GetCurrentClipAmmo()const{return CurrentClipAmmo;}
+	virtual int32 GetCurrentClipAmmo() const { return CurrentClipAmmo; }
 
-	virtual int32 GetAmmoLeft()const{return AmmoLeft;}
+	virtual int32 GetAmmoLeft() const { return AmmoLeft; }
 
 	FORCEINLINE UINSWeaponMeshComponent* GetWeaponMeshComp() const { return WeaponMeshComp; }
 
 	virtual void SetWeaponInfoData(FWeaponInfoData NewWeaponInfoData);
+
+	virtual void SetCurrentClipAmmo(int32 InClipAmmo) { CurrentClipAmmo = InClipAmmo; }
+
+	virtual void SetAmmoLeft(int32 InAmmoLeft) { AmmoLeft = InAmmoLeft; }
+
+	virtual float GetBaseAimTime() const { return AimTime; }
+
+	virtual void InitItemInfoByInventorySlot(const FInventorySlot& InventorySlot) override;
+
+	virtual void SetItemInfo(FItemInfoData& NewItemInfoData) override;
+
+	virtual uint8 GetWeaponPriority() const { return Priority; }
+
+	virtual void SetWeaponPriority(uint8 NewPriority) { Priority = NewPriority; }
+
+	virtual void SetReloadType(const EWeaponReloadType NewReloadType) { ReloadType = NewReloadType; }
+
+	virtual EWeaponReloadType GetWeaponReloadType() const { return ReloadType; }
+
+	virtual bool GetIsDryReload() const;
+
+	virtual void NotifyOwnerClipEmpty();
+
+	virtual void CastProjectileShell();
+
+	virtual void OnRep_AttachmentReplication() override;
+
+	virtual bool HasShellLeftInChamber() const { return HasLeftShellInChamber; }
 };

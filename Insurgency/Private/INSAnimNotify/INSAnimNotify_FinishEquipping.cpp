@@ -21,17 +21,10 @@ void UINSAnimNotify_FinishEquipping::Notify(USkeletalMeshComponent* MeshComp, UA
 		UE_LOG(LogTemp, Warning, TEXT("AnimNotify::FinishEquipping Triggered but no owner,abort"));
 		return;
 	}
-	AINSPlayerController* OwnerPlayer = Cast<AINSPlayerController>(Owner->GetOwner());
-	if (OwnerPlayer)
+	AINSCharacter* OwnerCharacter = Cast<AINSCharacter>(Owner);
+	if (OwnerCharacter)
 	{
-		if (OwnerPlayer->GetLocalRole() == ROLE_Authority&&OwnerPlayer->GetNetMode()!=ENetMode::NM_DedicatedServer)
-		{
-			OwnerPlayer->SetWeaponState(EWeaponState::IDLE);
-		}
-		if (OwnerPlayer->GetLocalRole() == ROLE_AutonomousProxy)
-		{
-			OwnerPlayer->ServerSetWeaponState(EWeaponState::IDLE);
-		}
+		OwnerCharacter->HandleItemFinishEquipRequest();
+		UE_LOG(LogTemp, Log, TEXT("Character%s FinishEquip notify triggerd and Executed"), *OwnerCharacter->GetName());
 	}
-	
 }

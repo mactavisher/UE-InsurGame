@@ -10,21 +10,21 @@
 #include "INSItems/INSWeapons/INSWeaponBase.h"
 #include "INSComponents/INSCharacterAudioComponent.h"
 #include "INSGameModes/INSGameModeBase.h"
-#include "INSAnimation/INSCharacterAimInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "INSCharacter/INSPlayerStateBase.h"
 #include "DrawDebugHelpers.h"
 #include "INSHud/INSHUDBase.h"
 #include "Components/CapsuleComponent.h"
-#include "INSAnimation/INSFPAnimInstance.h"
-#include "INSAnimation/INSTPAnimInstance.h"
 #include "INSCharacter/INSPlayerCameraManager.h"
 #include "INSComponents/INSInventoryComponent.h"
+#include "INSCore/INSGameInstance.h"
 #include "Kismet/KismetMathLibrary.h"
 #ifndef GEngine
 #include "Engine/Engine.h"
 #endif
+#include "INSAnimation/INSFPAnimInstance.h"
+#include "INSAnimation/INSTPAnimInstance.h"
 
 AINSPlayerCharacter::AINSPlayerCharacter(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer.SetDefaultSubobjectClass<UINSCharSkeletalMeshComponent>(MeshComponentName))
 {
@@ -64,7 +64,7 @@ AINSPlayerCharacter::AINSPlayerCharacter(const FObjectInitializer& ObjectInitial
 	CharacterMesh1P_Foot->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	CharacterMesh1P_Foot->SetCollisionResponseToAllChannels(ECR_Ignore);
 	//CharacterMesh1P->AddRelativeLocation(FVector(0.f, 0.f, -174.f));
-	CharacterMesh1P_Foot->SetHiddenInGame(true);
+	CharacterMesh1P_Foot->SetHiddenInGame(false);
 	bIsDead = false;
 #if WITH_EDITORONLY_DATA&&!UE_BUILD_SHIPPING
 	bShowDebugTrace = false;
@@ -74,37 +74,20 @@ AINSPlayerCharacter::AINSPlayerCharacter(const FObjectInitializer& ObjectInitial
 void AINSPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	SetupMeshVisibility();
-	if (GetLocalRole() >= ROLE_AutonomousProxy && !IsNetMode(NM_DedicatedServer))
-	{
-		CharacterReadyTick.bCanEverTick = true;
-		CharacterReadyTick.TickInterval = 0.1f;
-		CharacterReadyTick.SetTickFunctionEnable(true);
-		CharacterReadyTick.Target = this;
-		CharacterReadyTick.RegisterTickFunction(GetLevel());
-		CharacterMesh1P_Foot->AttachToComponent(CharacterMesh3P, FAttachmentTransformRules::SnapToTargetIncludingScale);
-		CharacterMesh1P_Foot->SetMasterPoseComponent(GetCharacter3PMesh());
-	}
-	if (GetLocalRole() < ROLE_AutonomousProxy)
-	{
-		CharacterMesh1P->DestroyComponent();
-		FirstPersonCamera->DestroyComponent();
-		CharacterMesh1P_Foot->DestroyComponent();
-		UE_LOG(LogINSCharacter, Log, TEXT("Componens unnesessary for simulated clients get destoryed "));
-	}
+	UpdateComponents();
 }
 
 void AINSPlayerCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-	FirstPersonCamera->AttachToComponent(CharacterMesh1P, FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("Bip01_CameraBoneSocket"));
+	SetupAnimInstance();
+	FirstPersonCamera->AttachToComponent(CharacterMesh1P, FAttachmentTransformRules::SnapToTargetIncludingScale,TEXT("Bip01_CameraBoneSocket"));
 	PhysicalAnimationComponent->SetSkeletalMeshComponent(CharacterMesh3P);
 	if (CharacterAudioComp)
 	{
 		CharacterAudioComp->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale,TEXT("Bip01_HeadSocket"));
 		CharacterAudioComp->SetOwnerCharacter(this);
 	}
-	//PhysicalAnimationComponent->ApplyPhysicalAnimationSettingsBelow()
 }
 
 void AINSPlayerCharacter::Tick(float DeltaTime)
@@ -112,36 +95,24 @@ void AINSPlayerCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	TickRecoil(DeltaTime);
 	UpdateCharacterMesh1P(DeltaTime);
-	//CheckPendingEquipWeapon(DeltaTime);
 }
 
 void AINSPlayerCharacter::TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction)
 {
 	Super::TickActor(DeltaTime, TickType, ThisTickFunction);
-	if (&ThisTickFunction == &CharacterReadyTick)
+	if (&FirstEquipTickFunction == &ThisTickFunction)
 	{
-		if (CheckCharacterIsReady())
+		if (HasAuthority())
 		{
-			if (CurrentWeapon)
+			if (GetOwner() && InventoryComp->GetInitialized())
 			{
-				if (HasAuthority())
-				{
-					CurrentWeapon->SetWeaponState(EWeaponState::EQUIPPING);
-				}
-				else
-				{
-					CurrentWeapon->ServerSetWeaponState(EWeaponState::EQUIPPING);
-				}
-				if (Get1PAnimInstance())
-				{
-					Get1PAnimInstance()->SetBaseHandsIkLocation(CurrentWeapon->GetWeaponBaseIKLocation());
-					Get1PAnimInstance()->SetAimHandIKXLocation(CurrentWeapon->GetWeaponAimHandIKXLocation());
-				}
+				EquipBestWeapon();
+				FirstEquipTickFunction.Target = nullptr;
+				FirstEquipTickFunction.bCanEverTick = false;
+				FirstEquipTickFunction.SetTickFunctionEnable(false);
+				FirstEquipTickFunction.UnRegisterTickFunction();
+				UE_LOG(LogINSCharacter, Log, TEXT("Character:%s has finished first equip tick ,unregistring"),*GetName());
 			}
-			CharacterReadyTick.bCanEverTick = false;
-			CharacterReadyTick.SetTickFunctionEnable(false);
-			CharacterReadyTick.UnRegisterTickFunction();
-			UE_LOG(LogINSCharacter, Log, TEXT("Character:%s is ready for action,and check ready tick function is unregistered"), *GetName());
 		}
 	}
 }
@@ -176,16 +147,11 @@ void AINSPlayerCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 	INSPlayerController = Cast<AINSPlayerController>(GetController());
-	SetupMeshVisibility();
 	if (GetNetMode() == NM_Standalone || GetNetMode() == NM_ListenServer)
 	{
 		OnRep_TeamType();
 	}
-	if (HasAuthority())
-	{
-		//EquipGameModeDefaultWeapon();
-		EquipBestWeapon();
-	}
+	RegisterFirstEquipCheck();
 }
 
 void AINSPlayerCharacter::HandleMoveForwardRequest(float Value)
@@ -219,45 +185,46 @@ void AINSPlayerCharacter::OnRep_CurrentWeapon()
 	Super::OnRep_CurrentWeapon();
 	if (CurrentWeapon)
 	{
-		SetupWeaponAttachment();
-		if (Get1PAnimInstance())
+		for (UINSCharacterAimInstance* CachedAnimInstance : CachedAnimInstances)
 		{
-			Get1PAnimInstance()->SetCurrentWeapon(CurrentWeapon);
-			SetCurrentAnimData(CurrentWeapon->GetWeaponAnimDataPtr());
-			Get1PAnimInstance()->SetBaseHandsIkLocation(CurrentWeapon->GetWeaponBaseIKLocation());
-			Get1PAnimInstance()->SetAimHandIKXLocation(CurrentWeapon->GetWeaponAimHandIKXLocation());
+			CachedAnimInstance->SetCurrentWeapon(CurrentWeapon);
+			CachedAnimInstance->SetCurrentWeaponAnimData(CurrentWeapon->GetWeaponAnimDataPtr());
+			CachedAnimInstance->SetBaseHandsIkLocation(CurrentWeapon->GetWeaponBaseIKLocation());
+			CachedAnimInstance->SetAimHandIKXLocation(CurrentWeapon->GetWeaponAimHandIKXLocation());
 		}
-		Get3PAnimInstance()->SetBaseHandsIkLocation(CurrentWeapon->GetWeaponBaseIKLocation());
-		Get3PAnimInstance()->SetCurrentWeapon(CurrentWeapon);
 		if (GetLocalRole() >= ROLE_AutonomousProxy && !IsNetMode(NM_DedicatedServer))
 		{
 			UClass* CurrentWeaponClass = CurrentWeapon->GetClass();
-			AINSWeaponBase* CosmeticWeapon = GetWorld()->SpawnActorDeferred<AINSWeaponBase>(CurrentWeaponClass, CurrentWeapon->GetActorTransform(), CurrentWeapon->GetOwner()
-			                                                                                , CurrentWeapon->GetOwnerCharacter(), ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+			AINSWeaponBase* CosmeticWeapon = GetWorld()->SpawnActorDeferred<AINSWeaponBase>(
+				CurrentWeaponClass, CurrentWeapon->GetActorTransform(), CurrentWeapon->GetOwner()
+				, CurrentWeapon->GetOwnerCharacter(), ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 			if (CosmeticWeapon)
 			{
 				CosmeticWeapon->GetWeaponMeshComp()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 				CosmeticWeapon->GetWeaponMeshComp()->SetCollisionResponseToAllChannels(ECR_Ignore);
-				CosmeticWeapon->GetWeaponMeshComp()->AttachToComponent(CharacterMesh3P, FAttachmentTransformRules::SnapToTargetIncludingScale,TEXT("Bip01_Weapon1Socket"));
+				CosmeticWeapon->GetWeaponMeshComp()->AttachToComponent(CharacterMesh3P,
+				                                                       FAttachmentTransformRules::SnapToTargetIncludingScale,
+				                                                       TEXT("Bip01_Weapon1Socket"));
 				CurrentWeapon->SetLocalClientCosmeticWeapon(CosmeticWeapon);
 			}
 		}
+		CurrentWeapon->GetWeaponMeshComp()->SetCastShadow(false);
+		CurrentWeapon->GetWeaponMeshComp()->SetCastHiddenShadow(false);
+		CurrentWeapon->GetWeaponMeshComp()->bCastDynamicShadow = false;
 	}
 	else
 	{
-		if (Get1PAnimInstance())
+		for (UINSCharacterAimInstance* CachedAnimInstance : CachedAnimInstances)
 		{
-			Get1PAnimInstance()->SetCurrentWeapon(nullptr);
-			Get1PAnimInstance()->SetBaseHandsIkLocation(FVector::ZeroVector);
-			Get1PAnimInstance()->SetAimHandIKXLocation(0.f);
+			if (CachedAnimInstance)
+			{
+				CachedAnimInstance->SetCurrentWeapon(nullptr);
+				CachedAnimInstance->SetBaseHandsIkLocation(FVector::ZeroVector);
+				CachedAnimInstance->SetAimHandIKXLocation(0.f);
+				CachedAnimInstance->SetCurrentWeaponAnimData(nullptr);
+			}
 		}
-		Get3PAnimInstance()->SetCurrentWeapon(nullptr);
-		SetCurrentAnimData(nullptr);
-
-		Get3PAnimInstance()->SetBaseHandsIkLocation(FVector::ZeroVector);
 	}
-	CharacterReadyTick.bCanEverTick = true;
-	CharacterReadyTick.SetTickFunctionEnable(true);
 	if (HasAuthority() || GetLocalRole() == ROLE_AutonomousProxy)
 	{
 		AINSPlayerCameraManager* const CameraManager = Cast<AINSPlayerCameraManager>(GetINSPlayerController()->PlayerCameraManager);
@@ -265,9 +232,6 @@ void AINSPlayerCharacter::OnRep_CurrentWeapon()
 		{
 			CameraManager->SetCurrentWeapon(CurrentWeapon);
 		}
-		CurrentWeapon->GetWeaponMeshComp()->SetCastShadow(false);
-		CurrentWeapon->GetWeaponMeshComp()->SetCastHiddenShadow(false);
-		CurrentWeapon->GetWeaponMeshComp()->bCastDynamicShadow = false;
 	}
 }
 
@@ -282,21 +246,28 @@ void AINSPlayerCharacter::OnEnterIdleState()
 	Super::OnEnterIdleState();
 	if (!GetCurrentWeapon())
 	{
-		UE_LOG(LogINSCharacter, Log, TEXT("Character:%s with no weapon is not moving for some time ,enter idle state"), *GetName());
-		if (Get1PAnimInstance())
+		UE_LOG(LogINSCharacter, Log, TEXT("Character:%s with no weapon is not moving for some time ,enter idle state"),
+		       *GetName());
+		for (UINSCharacterAimInstance* CachedAnimInstance : CachedAnimInstances)
 		{
-			Get1PAnimInstance()->SetIdleState(true);
+			if (CachedAnimInstance)
+			{
+				CachedAnimInstance->SetIdleState(true);
+			}
 		}
-		Get3PAnimInstance()->SetIdleState(true);
 	}
 	if (GetCurrentWeapon() && GetCurrentWeapon()->GetCurrentWeaponState() == EWeaponState::IDLE)
 	{
-		UE_LOG(LogINSCharacter, Log, TEXT("Character:%s with weapon %s is not moving and not using weapon for some time ,enter idle state"), *GetName(), *(GetCurrentWeapon()->GetName()));
-		if (Get1PAnimInstance())
+		UE_LOG(LogINSCharacter, Log,
+		       TEXT("Character:%s with weapon %s is not moving and not using weapon for some time ,enter idle state"),
+		       *GetName(), *(GetCurrentWeapon()->GetName()));
+		for (UINSCharacterAimInstance* CachedAnimInstance : CachedAnimInstances)
 		{
-			Get1PAnimInstance()->SetIdleState(true);
+			if (CachedAnimInstance)
+			{
+				CachedAnimInstance->SetIdleState(true);
+			}
 		}
-		Get3PAnimInstance()->SetIdleState(true);
 	}
 }
 
@@ -310,33 +281,41 @@ void AINSPlayerCharacter::OnEnterBoredState()
 	Super::OnEnterBoredState();
 	if (!GetCurrentWeapon())
 	{
-		UE_LOG(LogINSCharacter, Log, TEXT("Character:%s with no weapon is not moving for too much time ,enter bored state"), *GetName());
-		if (Get1PAnimInstance())
+		UE_LOG(LogINSCharacter, Log,
+		       TEXT("Character:%s with no weapon is not moving for too much time ,enter bored state"), *GetName());
+		for (UINSCharacterAimInstance* CachedAnimInstance : CachedAnimInstances)
 		{
-			Get1PAnimInstance()->SetBoredState(true);
+			if (CachedAnimInstance)
+			{
+				CachedAnimInstance->SetBoredState(true);
+			}
 		}
-		Get3PAnimInstance()->SetBoredState(true);
 	}
 	if (GetCurrentWeapon() && GetCurrentWeapon()->GetCurrentWeaponState() == EWeaponState::IDLE)
 	{
-		UE_LOG(LogINSCharacter, Log, TEXT("Character:%s with weapon %s is not moving and not using weapon for too much time ,enter bored state"), *GetName(), *(GetCurrentWeapon()->GetName()));
+		UE_LOG(LogINSCharacter, Log,
+		       TEXT("Character:%s with weapon %s is not moving and not using weapon for too much time ,enter bored state"), *GetName(), *(GetCurrentWeapon()->GetName()));
 
-		if (Get1PAnimInstance())
+		for (UINSCharacterAimInstance* CachedAnimInstance : CachedAnimInstances)
 		{
-			Get1PAnimInstance()->SetBoredState(true);
+			if (CachedAnimInstance)
+			{
+				CachedAnimInstance->SetBoredState(true);
+			}
 		}
-		Get3PAnimInstance()->SetBoredState(true);
 	}
 }
 
 
 void AINSPlayerCharacter::OnOutBoredState()
 {
-	if (Get1PAnimInstance())
+	for (UINSCharacterAimInstance* CachedAnimInstance : CachedAnimInstances)
 	{
-		Get1PAnimInstance()->SetBoredState(false);
+		if (CachedAnimInstance)
+		{
+			CachedAnimInstance->SetBoredState(false);
+		}
 	}
-	Get3PAnimInstance()->SetBoredState(false);
 }
 
 
@@ -353,7 +332,8 @@ void AINSPlayerCharacter::TickRecoil(float DeltaSeconds)
 {
 	if (CurrentWeapon && CurrentWeapon->GetIsFiring() && !bIsDead && INSPlayerController)
 	{
-		float YawRecoilAmount = FMath::RandRange(-CurrentWeapon->GetRecoilHorizontallyFactor(), CurrentWeapon->GetRecoilHorizontallyFactor());
+		float YawRecoilAmount = FMath::RandRange(-CurrentWeapon->GetRecoilHorizontallyFactor(),
+		CurrentWeapon->GetRecoilHorizontallyFactor());
 		AddControllerYawInput(YawRecoilAmount * DeltaSeconds);
 		float PitchRecoilAmount = CurrentWeapon->GetRecoilVerticallyFactor();
 		AddControllerPitchInput(PitchRecoilAmount * DeltaSeconds);
@@ -362,7 +342,6 @@ void AINSPlayerCharacter::TickRecoil(float DeltaSeconds)
 
 void AINSPlayerCharacter::EquipFromInventory(const uint8 SlotIndex)
 {
-	
 }
 
 void AINSPlayerCharacter::UnEquipItem()
@@ -373,35 +352,17 @@ void AINSPlayerCharacter::UnEquipItem()
 void AINSPlayerCharacter::ServerUnEquipItem()
 {
 	Super::ServerUnEquipItem();
-	
 }
 
 void AINSPlayerCharacter::FinishUnEquipItem()
 {
+	InventoryComp->PutItemInSlot(CurrentWeapon);
 	Super::FinishUnEquipItem();
-	FInventorySlot* SelectedSlot = InventoryComp->GetItemSlot(CurrentWeapon->GetInventorySlotIndex());
-	if(SelectedSlot)
+	if (PendingWeaponEquipEvent.bIsEventActive)
 	{
-		SelectedSlot->AmmoLeft = CurrentWeapon->AmmoLeft;
-		SelectedSlot->ClipAmmo = CurrentWeapon->GetCurrentClipAmmo();
+		CreateAndEquipItem(PendingWeaponEquipEvent.ItemId,PendingWeaponEquipEvent.WeaponSlotIndex);
 	}
-	CurrentWeapon->Destroy();
-	CurrentWeapon=nullptr;
-	if(PendingWeaponEquipEvent.bIsEventActive)
-	{
-		class AINSWeaponBase* NewWeapon = GetWorld()->SpawnActorDeferred<AINSWeaponBase>(PendingWeaponEquipEvent.WeaponClass, GetActorTransform(), GetOwner(), this, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-		if (NewWeapon)
-		{
-			NewWeapon->SetAutonomousProxy(true);
-			NewWeapon->SetOwner(GetOwner());
-			NewWeapon->SetOwnerCharacter(this);
-			NewWeapon->SetInventorySlotIndex(PendingWeaponEquipEvent.WeaponSlotIndex);
-			UGameplayStatics::FinishSpawningActor(NewWeapon, GetActorTransform());
-		}
-		SetCurrentWeapon(NewWeapon);
-		NewWeapon->SetWeaponState(EWeaponState::EQUIPPING);
-		PendingWeaponEquipEvent.bIsEventActive = false;
-	}
+	PendingWeaponEquipEvent.ResetEvent();
 }
 
 void AINSPlayerCharacter::Die()
@@ -454,21 +415,138 @@ void AINSPlayerCharacter::OnRep_Dead()
 
 void AINSPlayerCharacter::SetWeaponBasePoseType(const EWeaponBasePoseType NewType)
 {
-	if (Get1PAnimInstance())
+	for (UINSCharacterAimInstance* CachedAnimInstance : CachedAnimInstances)
 	{
-		Get1PAnimInstance()->SetWeaponBasePoseType(NewType);
+		if (CachedAnimInstance)
+		{
+			CachedAnimInstance->SetWeaponBasePoseType(NewType);
+		}
 	}
-	Get3PAnimInstance()->SetWeaponBasePoseType(NewType);
+}
+
+UINSFPAnimInstance* AINSPlayerCharacter::GetFPAnimInstance()
+{
+	return FPSAnimInstance == nullptr ? Cast<UINSFPAnimInstance>(CharacterMesh1P->AnimScriptInstance) : FPSAnimInstance;
+}
+
+UINSTPAnimInstance* AINSPlayerCharacter::GetTPSAnimInstance()
+{
+	return TPSAnimInstance == nullptr ? Cast<UINSTPAnimInstance>(CharacterMesh3P->AnimScriptInstance) : TPSAnimInstance;
+}
+
+void AINSPlayerCharacter::OnShotFired()
+{
+	Super::OnShotFired();
+	if (InventoryComp && CurrentWeapon)
+	{
+		FInventorySlot* InventorySlot = InventoryComp->GetItemSlot(CurrentWeapon->GetInventorySlotIndex());
+		if (InventorySlot)
+		{
+			InventorySlot->ClipAmmo = CurrentWeapon->GetCurrentClipAmmo();
+		}
+	}
+}
+
+void AINSPlayerCharacter::OnReloadFinished()
+{
+	Super::OnReloadFinished();
+	if(InventoryComp&&CurrentWeapon)
+	{
+		FInventorySlot* InventorySlot = InventoryComp->GetItemSlot(CurrentWeapon->GetInventorySlotIndex());
+		if(InventorySlot)
+		{
+			InventorySlot->ClipAmmo=CurrentWeapon->GetAmmoLeft();
+		}
+	}
+}
+
+void AINSPlayerCharacter::GetCacheCharAnimInstances(TArray<UINSCharacterAimInstance*>& OutAnimInstances)
+{
+	for (UINSCharacterAimInstance* CachedAnimInstance : CachedAnimInstances)
+	{
+		if (CachedAnimInstance)
+		{
+			OutAnimInstances.Emplace(CachedAnimInstance);
+		}
+	}
+}
+
+float AINSPlayerCharacter::PlayWeaponUnEquipAnim()
+{
+	float AnimDuration = 0.f;
+	for (UINSCharacterAimInstance* CachedAnimInstance : CachedAnimInstances)
+	{
+		AnimDuration = CachedAnimInstance->PlayWeaponUnEquipAnim();
+	}
+	return AnimDuration;
+}
+
+float AINSPlayerCharacter::PlayWeaponEquipAnim()
+{
+	float AnimDuration = 0.f;
+	for (UINSCharacterAimInstance* CachedAnimInstance : CachedAnimInstances)
+	{
+		AnimDuration = CachedAnimInstance->PlayWeaponEquipAnim();
+	}
+	return AnimDuration;
+}
+
+float AINSPlayerCharacter::PlayFireAnim()
+{
+	float Duration = 0.f;
+	for (UINSCharacterAimInstance* CachedAnimInstance : CachedAnimInstances)
+	{
+		if (CachedAnimInstance)
+		{
+			CachedAnimInstance->StopFPPlayMoveAnimation();
+			Duration = CachedAnimInstance->PlayFireAnim();
+		}
+	}
+	return Duration;
+}
+
+float AINSPlayerCharacter::PlayWeaponReloadAnim()
+{
+	float Duration = 0.f;
+	for (UINSCharacterAimInstance* CachedAnimInstance : CachedAnimInstances)
+	{
+		if (CachedAnimInstance)
+		{
+			Duration = CachedAnimInstance->PlayWeaponReloadAnim(CurrentWeapon->GetIsDryReload());
+		}
+	}
+	return Duration;
+}
+
+float AINSPlayerCharacter::PlayWeaponSwitchFireModeAnim()
+{
+	float Duration = 0.f;
+	for (UINSCharacterAimInstance* CachedAnimInstance : CachedAnimInstances)
+	{
+		if (CachedAnimInstance)
+		{
+			CachedAnimInstance->StopFPPlayMoveAnimation();
+			Duration = CachedAnimInstance->PlayWeaponSwitchFireModeAnim();
+		}
+	}
+	return Duration;
+}
+
+void AINSPlayerCharacter::ReceiveInventoryInitialized()
+{
+	Super::ReceiveInventoryInitialized();
 }
 
 void AINSPlayerCharacter::OnOutIdleState()
 {
 	Super::OnOutIdleState();
-	if (Get1PAnimInstance())
+	for (UINSCharacterAimInstance* CachedAnimInstance : CachedAnimInstances)
 	{
-		Get1PAnimInstance()->SetIdleState(false);
+		if (CachedAnimInstance)
+		{
+			CachedAnimInstance->SetIdleState(false);
+		}
 	}
-	Get3PAnimInstance()->SetIdleState(false);
 }
 
 
@@ -485,37 +563,42 @@ void AINSPlayerCharacter::OnRep_Aim()
 		return;
 	}
 	CameraManager->SetAimingFOV(CurrentWeapon->GetAimFOV());
-	bIsAiming ? CameraManager->OnAim(CurrentWeapon->GetWeaponAimTime()) : CameraManager->OnStopAim(CurrentWeapon->GetWeaponAimTime());
-	if (Get1PAnimInstance())
+	bIsAiming
+		? CameraManager->OnAim(CurrentWeapon->GetWeaponAimTime())
+		: CameraManager->OnStopAim(CurrentWeapon->GetWeaponAimTime());
+	for (UINSCharacterAimInstance* CachedAnimInstance : CachedAnimInstances)
 	{
-		Get1PAnimInstance()->SetIsAiming(bIsAiming);
-	}
-	if (Get3PAnimInstance())
-	{
-		Get3PAnimInstance()->SetIsAiming(bIsAiming);
+		if (CachedAnimInstance)
+		{
+			CachedAnimInstance->SetIsAiming(bIsAiming);
+		}
 	}
 }
 
 void AINSPlayerCharacter::OnRep_IsCrouched()
 {
 	Super::OnRep_IsCrouched();
-	if (Get1PAnimInstance())
+	if (GetFPAnimInstance())
 	{
-		Get1PAnimInstance()->SetCurrentStance(ECharacterStance::CROUCH);
-		Get1PAnimInstance()->SetIsCrouching(bIsCrouched);
+		GetFPAnimInstance()->SetIsCrouching(bIsCrouched);
 	}
-	Get3PAnimInstance()->SetCurrentStance(ECharacterStance::CROUCH);
-	Get3PAnimInstance()->SetIsCrouching(bIsCrouched);
+	if (GetTPSAnimInstance())
+	{
+		GetTPSAnimInstance()->SetCurrentStance(ECharacterStance::CROUCH);
+		GetTPSAnimInstance()->SetIsCrouching(bIsCrouched);
+	}
 }
 
 void AINSPlayerCharacter::OnRep_Sprint()
 {
 	Super::OnRep_Sprint();
-	if (Get1PAnimInstance())
+	for (UINSCharacterAimInstance* CachedAnimInstance : CachedAnimInstances)
 	{
-		Get1PAnimInstance()->SetSprintPressed(bIsSprint);
+		if (CachedAnimInstance)
+		{
+			CachedAnimInstance->SetSprintPressed(bIsSprint);
+		}
 	}
-	Get3PAnimInstance()->SetSprintPressed(bIsSprint);
 }
 
 void AINSPlayerCharacter::OnRep_PlayerState()
@@ -569,42 +652,78 @@ void AINSPlayerCharacter::OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHe
 
 void AINSPlayerCharacter::SetAimHandsXLocation(const float Value)
 {
-	if (Get1PAnimInstance())
+	if (GetFPAnimInstance())
 	{
-		Get1PAnimInstance()->SetAimHandIKXLocation(Value);
+		GetFPAnimInstance()->SetAimHandIKXLocation(Value);
+	}
+}
+
+void AINSPlayerCharacter::UpdateComponents()
+{
+	if (FirstPersonCamera)
+	{
+		if (IsNetMode(NM_DedicatedServer))
+		{
+			FirstPersonCamera->DestroyComponent(false);
+			//FirstPersonCamera->DetachFromComponent(FDetachmentTransformRules::KeepRelativeTransform);
+			FirstPersonCamera = nullptr;
+		}
+	}
+	if (CharacterMesh1P)
+	{
+		CharacterMesh1P->SetOnlyOwnerSee(true);
+		if (IsNetMode(NM_DedicatedServer) || GetLocalRole() < ROLE_AutonomousProxy)
+		{
+			CharacterMesh1P->DestroyComponent(false);
+			//CharacterMesh1P->DetachFromComponent(FDetachmentTransformRules::KeepRelativeTransform);
+			CharacterMesh1P = nullptr;
+		}
+	}
+	if (CharacterMesh1P_Foot)
+	{
+		if (IsNetMode(NM_DedicatedServer) || GetLocalRole() < ROLE_AutonomousProxy)
+		{
+			CharacterMesh1P_Foot->DestroyComponent(false);
+			//CharacterMesh1P_Foot->DetachFromComponent(FDetachmentTransformRules::KeepRelativeTransform);
+			CharacterMesh1P_Foot = nullptr;
+		}
+		else
+		{
+			CharacterMesh1P_Foot->AttachToComponent(CharacterMesh3P, FAttachmentTransformRules::SnapToTargetIncludingScale);
+			CharacterMesh1P_Foot->SetMasterPoseComponent(GetCharacter3PMesh());
+		}
+	}
+	if (CharacterMesh3P)
+	{
+		CharacterMesh3P->SetOwnerNoSee(true);
+		// if (GetLocalRole()==ROLE_AutonomousProxy)
+		// {
+		// 	CharacterMesh3P->DestroyComponent(false);
+		// 	//CharacterMesh3P->DetachFromComponent(FDetachmentTransformRules::KeepRelativeTransform);
+		// 	CharacterMesh3P = nullptr;
+		// }
+	}
+}
+
+void AINSPlayerCharacter::RegisterFirstEquipCheck()
+{
+	if(HasAuthority())
+	{
+		FirstEquipTickFunction.Target = this;
+		FirstEquipTickFunction.bCanEverTick = true;
+		FirstEquipTickFunction.TickInterval = 0.1f;
+		FirstEquipTickFunction.SetTickFunctionEnable(true);
+		FirstEquipTickFunction.RegisterTickFunction(GetLevel());
 	}
 }
 
 bool AINSPlayerCharacter::CheckCharacterIsReady()
 {
-	if (Get1PAnimInstance() && Get1PAnimInstance()->GetIsAnimInitialized() && Get1PAnimInstance()->GetIsValidPlayAnim())
+	if (GetFPAnimInstance() && GetFPAnimInstance()->GetIsAnimInitialized() && GetFPAnimInstance()->GetIsValidPlayAnim())
 	{
 		return true;
 	}
 	return false;
-}
-
-void AINSPlayerCharacter::CheckPendingEquipWeapon(float DeltaTimeSeconds)
-{
-	if (PendingWeaponEquipEvent.bIsEventActive)
-	{
-		PendingWeaponEquipEvent.PendingDuration = FMath::Clamp<float>(PendingWeaponEquipEvent.PendingDuration - DeltaTimeSeconds, 0.f, PendingWeaponEquipEvent.PendingDuration);
-		if (PendingWeaponEquipEvent.PendingDuration == 0.f)
-		{
-			class AINSWeaponBase* NewWeapon = GetWorld()->SpawnActorDeferred<AINSWeaponBase>(PendingWeaponEquipEvent.WeaponClass, GetActorTransform(), GetOwner(), this, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-			if (NewWeapon)
-			{
-				NewWeapon->SetAutonomousProxy(true);
-				NewWeapon->SetWeaponState(EWeaponState::NONE);
-				NewWeapon->SetOwner(GetOwner());
-				NewWeapon->SetOwnerCharacter(this);
-				NewWeapon->SetInventorySlotIndex(PendingWeaponEquipEvent.WeaponSlotIndex);
-				UGameplayStatics::FinishSpawningActor(NewWeapon, GetActorTransform());
-			}
-			SetCurrentWeapon(NewWeapon);
-			PendingWeaponEquipEvent.bIsEventActive = false;
-		}
-	}
 }
 
 void AINSPlayerCharacter::HandleCrouchRequest()
@@ -612,16 +731,16 @@ void AINSPlayerCharacter::HandleCrouchRequest()
 	Super::HandleCrouchRequest();
 }
 
-void AINSPlayerCharacter::HandleItemEquipRequest(const uint8 SlotIndex)
+void AINSPlayerCharacter::HandleItemEquipRequest(const int32 NextItemId, const uint8 SlotIndex)
 {
-	Super::HandleItemEquipRequest(SlotIndex);
-	if(HasAuthority())
+	Super::HandleItemEquipRequest(NextItemId, SlotIndex);
+	if (HasAuthority())
 	{
-		EquipItem(SlotIndex);
+		EquipItem(NextItemId, SlotIndex);
 	}
-	if(GetLocalRole()==ROLE_AutonomousProxy)
+	if (GetLocalRole() == ROLE_AutonomousProxy)
 	{
-		ServerEquipItem(SlotIndex);
+		ServerEquipItem(NextItemId, SlotIndex);
 	}
 }
 
@@ -630,57 +749,44 @@ void AINSPlayerCharacter::HandleItemFinishUnEquipRequest()
 	Super::HandleItemFinishUnEquipRequest();
 }
 
-void AINSPlayerCharacter::ServerEquipItem_Implementation(const uint8 SlotIndex)
+void AINSPlayerCharacter::ServerEquipItem_Implementation(const int32 NextItemId, const uint8 SlotIndex)
 {
-	EquipItem(SlotIndex);
+	EquipItem(NextItemId, SlotIndex);
 }
 
-bool AINSPlayerCharacter::ServerEquipItem_Validate(const uint8 SlotIndex)
+bool AINSPlayerCharacter::ServerEquipItem_Validate(const int32 NextItemId, const uint8 SlotIndex)
 {
 	return true;
 }
 
-void AINSPlayerCharacter::EquipItem(const uint8 SlotIndex)
+void AINSPlayerCharacter::EquipItem(int32 NextItemId, uint8 NextSlotIndex)
 {
-	FInventorySlot* SelectedSlot = InventoryComp->GetItemSlot(SlotIndex);
+	const FInventorySlot* SelectedSlot = InventoryComp->GetItemSlot(NextSlotIndex);
 	if (CurrentWeapon)
 	{
-		if (CurrentWeapon->GetInventorySlotIndex() != SlotIndex)
+		if (CurrentWeapon->GetInventorySlotIndex() != NextSlotIndex)
 		{
 			UnEquipItem();
-			PendingWeaponEquipEvent.EventCreateTime = GetWorld()->GetTimeSeconds();
-			PendingWeaponEquipEvent.PendingDuration = 1.f;
-			PendingWeaponEquipEvent.WeaponClass = SelectedSlot->SlotWeaponClass;
-			PendingWeaponEquipEvent.WeaponSlotIndex = SlotIndex;
-			PendingWeaponEquipEvent.bIsEventActive = true;
+			SetupPendingWeaponEquipEvent(SelectedSlot->ItemId, NextSlotIndex);
 		}
 	}
 	else
 	{
-		class AINSWeaponBase* NewWeapon = GetWorld()->SpawnActorDeferred<AINSWeaponBase>(SelectedSlot->SlotWeaponClass, GetActorTransform(), GetOwner(), this, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-		if (NewWeapon)
-		{
-			NewWeapon->SetAutonomousProxy(true);
-			NewWeapon->SetWeaponState(EWeaponState::NONE);
-			NewWeapon->SetOwner(GetOwner());
-			NewWeapon->SetOwnerCharacter(this);
-			NewWeapon->SetInventorySlotIndex(SlotIndex);
-			UGameplayStatics::FinishSpawningActor(NewWeapon, GetActorTransform());
-		}
-		SetCurrentWeapon(NewWeapon);
-		CurrentWeapon->CurrentClipAmmo = SelectedSlot->ClipAmmo;
-		CurrentWeapon->AmmoLeft = SelectedSlot->AmmoLeft;
+		const int32 SelectedItemId = SelectedSlot == nullptr ? NextItemId : SelectedSlot->ItemId;
+		CreateAndEquipItem(SelectedItemId, NextSlotIndex);
 	}
 }
 
 void AINSPlayerCharacter::SetCurrentAnimData(UINSStaticAnimData* AnimData)
 {
 	Super::SetCurrentAnimData(AnimData);
-	if (Get1PAnimInstance())
+	for (UINSCharacterAimInstance* CachedAnimInstance : CachedAnimInstances)
 	{
-		Get1PAnimInstance()->SetCurrentWeaponAnimData(CurrentAnimPtr);
+		if (CachedAnimInstance)
+		{
+			CachedAnimInstance->SetCurrentWeaponAnimData(CurrentAnimPtr);
+		}
 	}
-	Get3PAnimInstance()->SetCurrentWeaponAnimData(CurrentAnimPtr);
 }
 
 void AINSPlayerCharacter::EquipGameModeDefaultWeapon()
@@ -690,7 +796,8 @@ void AINSPlayerCharacter::EquipGameModeDefaultWeapon()
 	{
 		return;
 	}
-	class AINSWeaponBase* NewWeapon = GetWorld()->SpawnActorDeferred<AINSWeaponBase>(CurrentWeaponClass, GetActorTransform(), GetOwner(), this, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+	class AINSWeaponBase* NewWeapon = GetWorld()->SpawnActorDeferred<AINSWeaponBase>(
+		CurrentWeaponClass, GetActorTransform(), GetOwner(), this, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 	if (NewWeapon)
 	{
 		NewWeapon->SetAutonomousProxy(true);
@@ -700,31 +807,29 @@ void AINSPlayerCharacter::EquipGameModeDefaultWeapon()
 		UGameplayStatics::FinishSpawningActor(NewWeapon, GetActorTransform());
 	}
 	SetCurrentWeapon(NewWeapon);
-	
 }
 
 void AINSPlayerCharacter::EquipBestWeapon()
 {
-	if(InventoryComp)
+	if (InventoryComp)
 	{
-		uint8 ItemSlotIdx = 0;
-		UClass* BestWeaponClass = InventoryComp->GiveBestWeapon(ItemSlotIdx);
-		if (!BestWeaponClass)
+		const uint8 ItemSlotIdx = InventoryComp->GiveBestWeapon();
+		AINSItems* ItemInstance = InventoryComp->GetItemFromInventory(0, ItemSlotIdx);
+		if (ItemInstance && ItemInstance->GetClass()->IsChildOf(AINSWeaponBase::StaticClass()))
 		{
-			return;
+			SetCurrentWeapon(Cast<AINSWeaponBase>(ItemInstance));
 		}
-		class AINSWeaponBase* NewWeapon = GetWorld()->SpawnActorDeferred<AINSWeaponBase>(BestWeaponClass, GetActorTransform(), GetOwner(), this, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-		if (NewWeapon)
-		{
-			NewWeapon->SetAutonomousProxy(true);
-			NewWeapon->SetWeaponState(EWeaponState::NONE);
-			NewWeapon->SetOwner(GetOwner());
-			NewWeapon->SetOwnerCharacter(this);
-			NewWeapon->SetInventorySlotIndex(ItemSlotIdx);
-			UGameplayStatics::FinishSpawningActor(NewWeapon, GetActorTransform());
-		}
-		SetCurrentWeapon(NewWeapon);
 	}
+}
+
+void AINSPlayerCharacter::ServerEquipBestWeapon_Implementation()
+{
+	EquipBestWeapon();
+}
+
+bool AINSPlayerCharacter::ServerEquipBestWeapon_Validate()
+{
+	return true;
 }
 
 void AINSPlayerCharacter::OnRep_TeamType()
@@ -741,18 +846,10 @@ void AINSPlayerCharacter::OnRep_TeamType()
 	}
 }
 
-void AINSPlayerCharacter::SetupMeshVisibility()
-{
-	CharacterMesh3P->SetOwnerNoSee(true);
-	if (CharacterMesh1P)
-	{
-		CharacterMesh1P->SetOnlyOwnerSee(true);
-	}
-}
 
 void AINSPlayerCharacter::UpdateCharacterMesh1P(float DeltaTime)
 {
-	if (GetLocalRole() >= ROLE_AutonomousProxy && !IsNetMode(NM_DedicatedServer))
+	if (!GetIsDead() && GetLocalRole() >= ROLE_AutonomousProxy && !IsNetMode(NM_DedicatedServer))
 	{
 		CharacterMesh1P->SetRelativeLocation(FVector(0.f, 0.f, -CurrentEyeHeight));
 		if (bIsCrouched)
@@ -772,11 +869,36 @@ void AINSPlayerCharacter::UpdateCharacterMesh1P(float DeltaTime)
 		FRotator ControlRot = GetControlRotation();
 		float ClampedAngle = FMath::ClampAngle(ControlRot.Pitch, -90.f, 90.f);
 		float PitchOffSetMultiplier = FMath::Abs(ClampedAngle / 90.f);
-		CapsuleTransFrom.SetLocation(CapsuleTransFrom.GetLocation() + FVector(-15.f * PitchOffSetMultiplier, 0.f, CurrentEyeHeight * PitchOffSetMultiplier * 0.35f));
+		CapsuleTransFrom.SetLocation(CapsuleTransFrom.GetLocation() + FVector(
+			-15.f * PitchOffSetMultiplier, 0.f, CurrentEyeHeight * PitchOffSetMultiplier * 0.35f));
 		FTransform RelativeTransForm = UKismetMathLibrary::MakeRelativeTransform(Mesh1pPelvisTrans, CapsuleTransFrom);
 		FVector RelLocation = RelativeTransForm.GetLocation();
 		RelLocation.Y = 0.f;
 		CharacterMesh1P->AddRelativeLocation(-RelLocation);
+	}
+}
+
+void AINSPlayerCharacter::SetupAnimInstance()
+{
+	FPSAnimInstance = Cast<UINSFPAnimInstance>(CharacterMesh1P->AnimScriptInstance);
+	CachedAnimInstances.Emplace(FPSAnimInstance);
+	TPSAnimInstance = Cast<UINSTPAnimInstance>(CharacterMesh3P->AnimScriptInstance);
+	CachedAnimInstances.Emplace(TPSAnimInstance);
+}
+
+void AINSPlayerCharacter::UpdateAnimationData(class AINSItems* InItemRef)
+{
+	const EItemType ItemType = InItemRef->GetItemType();
+	if(ItemType==EItemType::WEAPON)
+	{
+		AINSWeaponBase* WeaponItem = Cast<AINSWeaponBase>(InItemRef);
+		if(WeaponItem)
+		{
+			for (UINSCharacterAimInstance* CachedAnimInstance : CachedAnimInstances)
+			{
+				CachedAnimInstance->SetCurrentWeaponAnimData(WeaponItem->GetWeaponAnimDataPtr());
+			}
+		}
 	}
 }
 
@@ -786,10 +908,10 @@ void AINSPlayerCharacter::OnRep_Owner()
 	INSPlayerController = Cast<AINSPlayerController>(GetOwner());
 	if (!IsNetMode(NM_DedicatedServer))
 	{
-		bool bMyController = INSPlayerController == UGameplayStatics::GetPlayerController(GetWorld(), 0);
+		const bool bMyController = INSPlayerController == UGameplayStatics::GetPlayerController(GetWorld(), 0);
 		if (bMyController && CharacterAudioComp)
 		{
-			CharacterAudioComp->AttachToComponent(CharacterMesh1P, FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("Bip01_HeadSocket"));
+			CharacterAudioComp->AttachToComponent(CharacterMesh1P, FAttachmentTransformRules::SnapToTargetIncludingScale,TEXT("Bip01_HeadSocket"));
 			CharacterAudioComp->SetOwnerCharacter(this);
 		}
 	}
@@ -831,33 +953,38 @@ void AINSPlayerCharacter::GetPlayerCameraSocketWorldTransform(FTransform& OutCam
 	}
 }
 
-FORCEINLINE UINSCharacterAimInstance* AINSPlayerCharacter::Get1PAnimInstance()
-{
-	if (CharacterMesh1P)
-	{
-		return Cast<UINSFPAnimInstance>(CharacterMesh1P->AnimScriptInstance);
-	}
-	return nullptr;
-}
-
-FORCEINLINE UINSCharacterAimInstance* AINSPlayerCharacter::Get3PAnimInstance()
-{
-	return Cast<UINSTPAnimInstance>(CharacterMesh3P->AnimScriptInstance);
-}
 
 void AINSPlayerCharacter::SetCurrentWeapon(class AINSWeaponBase* NewWeapon)
 {
 	Super::SetCurrentWeapon(NewWeapon);
+	// if (HasAuthority() && InventoryComp)
+	// {
+	// 	InventoryComp->InitItemData(NewWeapon);
+	// }
 }
 
-void AINSPlayerCharacter::SetupWeaponAttachment()
+void AINSPlayerCharacter::ReceiveSetupWeaponAttachment()
 {
-	if (GetLocalRole() >= ROLE_AutonomousProxy)
+	UINSCharSkeletalMeshComponent* ItemAttachParent = nullptr;
+	const ENetMode NetMode = GetNetMode();
+	if (NetMode == NM_DedicatedServer)
 	{
-		CurrentWeapon->GetWeaponMeshComp()->AttachToComponent(CharacterMesh1P, FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("Bip01_Weapon1Socket"));
+		ItemAttachParent = GetCharacter1PMesh();
 	}
-	else
+	if (NetMode == NM_Standalone)
 	{
-		CurrentWeapon->GetWeaponMeshComp()->AttachToComponent(CharacterMesh3P, FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("Bip01_Weapon1Socket"));
+		ItemAttachParent = GetWorld()->GetFirstPlayerController() == GetINSPlayerController() ? GetCharacter1PMesh() : GetCharacter3PMesh();
+	}
+	if (NetMode == NM_Client)
+	{
+		ItemAttachParent = GetLocalRole() >= ROLE_AutonomousProxy ? GetCharacter1PMesh() : GetCharacter3PMesh();
+	}
+	if (NetMode == NM_ListenServer)
+	{
+		ItemAttachParent = GetWorld()->GetFirstPlayerController()==GetINSPlayerController()? GetCharacter1PMesh() : GetCharacter3PMesh();
+	}
+	if (ItemAttachParent)
+	{
+		CurrentWeapon->AttachToComponent(ItemAttachParent, FAttachmentTransformRules::SnapToTargetIncludingScale,TEXT("Bip01_Weapon1Socket"));
 	}
 }

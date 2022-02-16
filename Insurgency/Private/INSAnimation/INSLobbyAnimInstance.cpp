@@ -5,10 +5,12 @@
 #include "INSCharacter/INSLobbyCharacter.h"
 #include "INSItems/INSWeapons/INSWeaponBase.h"
 
-UINSLobbyAnimInstance::UINSLobbyAnimInstance(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+UINSLobbyAnimInstance::UINSLobbyAnimInstance(const FObjectInitializer& ObjectInitializer): Super(ObjectInitializer)
 {
 	CurrentActiveRelaxAnim = nullptr;
+	WeaponBasePoseAnim = nullptr;
+	OwnerLobbyCharacter = nullptr;
+	LobbyWeapon = nullptr;
 }
 
 void UINSLobbyAnimInstance::NativeInitializeAnimation()
@@ -26,7 +28,7 @@ void UINSLobbyAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 void UINSLobbyAnimInstance::PlayWeaponBasePose()
 {
-	if(WeaponBasePoseAnim&&!Montage_IsPlaying(WeaponBasePoseAnim))
+	if (WeaponBasePoseAnim && !Montage_IsPlaying(WeaponBasePoseAnim))
 	{
 		Montage_Play(WeaponBasePoseAnim);
 	}
@@ -34,9 +36,9 @@ void UINSLobbyAnimInstance::PlayWeaponBasePose()
 
 void UINSLobbyAnimInstance::PlayRelaxAnim()
 {
-	if(!CurrentActiveRelaxAnim&&RelaxAnims.Num()>1&&!Montage_IsPlaying(CurrentActiveRelaxAnim))
+	if (!CurrentActiveRelaxAnim && RelaxAnims.Num() > 1 && !Montage_IsPlaying(CurrentActiveRelaxAnim))
 	{
-		const int32 Random = FMath::RandHelper(RelaxAnims.Num()-1);
+		const int32 Random = FMath::RandHelper(RelaxAnims.Num() - 1);
 		CurrentActiveRelaxAnim = RelaxAnims[Random];
 		Montage_Play(CurrentActiveRelaxAnim);
 	}

@@ -6,6 +6,7 @@
 UINSGameInstance::UINSGameInstance(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	ItemManagerClass = UINSItemManager::StaticClass();
+	ItemManager = nullptr;
 }
 
 void UINSGameInstance::Init()
@@ -18,5 +19,7 @@ void UINSGameInstance::Init()
 	if(ItemManager)
 	{
 		ItemManager->SetOwingGameInstance(this);
+		ItemManager->SetItemTable(ItemDataTable);
+		ItemManager->SetWeaponTable(WeaponDataTable);
 	}
 }

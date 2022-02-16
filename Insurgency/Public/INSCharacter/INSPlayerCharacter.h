@@ -11,6 +11,8 @@ class USpringArmComponent;
 class AINSWeaponBase;
 class UINSCharSkeletalMeshComponent;
 class UINSInventoryComponent;
+class UINSFPAnimInstance;
+class UINSTPAnimInstance;
 
 USTRUCT(BlueprintType)
 struct FDefaultPlayerMesh
@@ -75,7 +77,16 @@ protected:
 	AINSPlayerController* INSPlayerController;
 
 	UPROPERTY()
-	FPendingWeaponEquipEvent PendingWeaponEquipEvent;
+	UINSFPAnimInstance* FPSAnimInstance;
+
+	UPROPERTY()
+	UINSTPAnimInstance* TPSAnimInstance;
+
+	UPROPERTY()
+	TArray<UINSCharacterAimInstance*> CachedAnimInstances;
+
+	FActorTickFunction FirstEquipTickFunction;
+	
 
 protected:
 	virtual void BeginPlay() override;
@@ -97,12 +108,13 @@ protected:
 	virtual void OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
 	virtual void OnEndCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
 	virtual void SetAimHandsXLocation(const float Value) override;
-	virtual bool CheckCharacterIsReady() override;
-	virtual void CheckPendingEquipWeapon(float DeltaTimeSeconds);
+	virtual void UpdateComponents();
+	virtual void RegisterFirstEquipCheck();
 	UFUNCTION()
 	virtual void OnRep_TeamType();
-	virtual void SetupMeshVisibility();
 	virtual void UpdateCharacterMesh1P(float DeltaTime);
+	virtual void SetupAnimInstance();
+	virtual void UpdateAnimationData(class AINSItems* InItemRef) override;
 
 
 	/**
@@ -144,16 +156,9 @@ public:
 	/** returns character's 1p mesh comp */
 	FORCEINLINE UINSCharSkeletalMeshComponent* GetCharacter1PMesh() const { return CharacterMesh1P; }
 
-	/** returns 1P animation instance */
-	FORCEINLINE virtual class UINSCharacterAimInstance* Get1PAnimInstance();
-
-	/** returns 3p animation instance */
-	FORCEINLINE virtual class UINSCharacterAimInstance* Get3PAnimInstance();
-
 	/** returns current equipped weapon of this character */
 	virtual void SetCurrentWeapon(class AINSWeaponBase* NewWeapon) override;
-
-	virtual void SetupWeaponAttachment();
+	virtual void ReceiveSetupWeaponAttachment();
 
 	/** handles a move forward request from player controller */
 	virtual void HandleMoveForwardRequest(float Value) override;
@@ -169,14 +174,14 @@ public:
 
 	virtual void HandleCrouchRequest() override;
 
-	virtual void HandleItemEquipRequest(const uint8 SlotIndex) override;
+	virtual void HandleItemEquipRequest(const int32 ItemId,const uint8 SlotIndex) override;
 
 	virtual void HandleItemFinishUnEquipRequest() override;
 
 	UFUNCTION(Server,Reliable,WithValidation)
-	virtual void ServerEquipItem(const uint8 SlotIndex);
+	virtual void ServerEquipItem(const int32 NextItemId,const uint8 SlotIndex);
 
-	virtual void EquipItem(const uint8 SlotIndex);
+	virtual void EquipItem(const int32 NextItemId,const uint8 SlotIndex);
 
 	virtual void SetCurrentAnimData(UINSStaticAnimData* AnimData) override;
 
@@ -184,6 +189,9 @@ public:
 	virtual void EquipGameModeDefaultWeapon();
 
 	virtual void EquipBestWeapon();
+
+	UFUNCTION(Server,Reliable,WithValidation)
+	virtual void ServerEquipBestWeapon();
 
 	virtual void SetTeamType(const ETeamType NewTeamType);
 
@@ -214,4 +222,21 @@ public:
 	virtual AINSPlayerController* GetINSPlayerController() const { return INSPlayerController; }
 
 	virtual void SetWeaponBasePoseType(const EWeaponBasePoseType NewType) override;
+
+	virtual UINSFPAnimInstance* GetFPAnimInstance();
+
+	virtual UINSTPAnimInstance* GetTPSAnimInstance();
+
+	virtual void OnShotFired() override;
+
+	virtual void OnReloadFinished() override;
+
+	virtual void GetCacheCharAnimInstances(TArray<UINSCharacterAimInstance*>& OutAnimInstances);
+	virtual bool CheckCharacterIsReady() override;
+	virtual float PlayWeaponUnEquipAnim() override;
+	virtual float PlayWeaponEquipAnim() override;
+	virtual float PlayFireAnim() override;
+	virtual float PlayWeaponReloadAnim() override;
+	virtual float PlayWeaponSwitchFireModeAnim() override;
+	virtual  void ReceiveInventoryInitialized() override;
 };

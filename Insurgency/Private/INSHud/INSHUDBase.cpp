@@ -261,9 +261,9 @@ void AINSHUDBase::DrawAmmoInfo()
 	if (CurrentWeapon.Get())
 	{
 		FString AmmoMessage;
-		AmmoMessage.Append(FString::FromInt(CurrentWeapon.Get()->CurrentClipAmmo));
+		AmmoMessage.Append(FString::FromInt(CurrentWeapon.Get()->GetCurrentClipAmmo()));
 		AmmoMessage.Append("/");
-		AmmoMessage.Append(FString::FromInt(CurrentWeapon.Get()->AmmoLeft));
+		AmmoMessage.Append(FString::FromInt(CurrentWeapon.Get()->GetAmmoLeft()));
 		DrawText(AmmoMessage, FLinearColor::White, Canvas->SizeX * 0.9f, Canvas->SizeY * 0.95f, GEngine->GetMediumFont(), 1.f, false);
 	}
 }

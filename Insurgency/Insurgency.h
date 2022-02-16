@@ -286,3 +286,17 @@ enum class EGameModeEnum :uint8
 	TEAM_DEATH_MATCH,
 	CAPTURE_THE_FLAG,
 };
+
+
+UENUM(BlueprintType)
+enum class EWeaponReloadType :uint8
+{
+	/** one reload, one round*/
+	ONCE,
+
+	/** cycle reload ,such like shot gun , bolt rifles*/
+	CYCLE,
+
+	/** none of above*/
+	NONE,
+};

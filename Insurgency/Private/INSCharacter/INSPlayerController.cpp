@@ -551,7 +551,7 @@ void AINSPlayerController::EquipWeapon(const uint8 SlotIndex)
 {
 	if (GetINSPlayerCharacter())
 	{
-		GetINSPlayerCharacter()->HandleItemEquipRequest(SlotIndex);
+		GetINSPlayerCharacter()->HandleItemEquipRequest(0,SlotIndex);
 	}
 }
 
@@ -758,4 +758,9 @@ void AINSPlayerController::OnCharacterDead()
 		UnPossess();
 	}
 	
+}
+
+void AINSPlayerController::ReceiveCurrentClipAmmoEmpty()
+{
+	ReloadWeapon();
 }

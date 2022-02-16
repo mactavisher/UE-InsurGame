@@ -43,6 +43,7 @@ void AINSLobbyCharacter::CreateClientLobbyWeapon()
 	{
 		LobbyWeapon = GetWorld()->SpawnActorDeferred<AINSWeaponBase>(LobbyWeaponClass,GetActorTransform(),this,this,ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 		LobbyWeapon->GetWeaponMeshComp()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		LobbyWeapon->SetIsInLobbyMode(true);
 		if(LobbyWeapon)
 		{
 			UGameplayStatics::FinishSpawningActor(LobbyWeapon,GetActorTransform());

@@ -12,6 +12,7 @@
 #include "INSItems/INSWeapons/INSWeaponBase.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "INSAssets/INSStaticAnimData.h"
+#include "TimerManager.h"
 
 DEFINE_LOG_CATEGORY(LogINSCharacterAimInstance);
 
@@ -30,7 +31,6 @@ UINSCharacterAimInstance::UINSCharacterAimInstance(const FObjectInitializer& Obj
 	bStartJump = false;
 	bIsCrouching = false;
 	bCanEnterSprint = false;
-	CurrentWeaponBaseType = EWeaponBasePoseType::FOREGRIP;
 #if WITH_EDITORONLY_DATA
 	bShowDebugTrace = true;
 #endif
@@ -41,9 +41,17 @@ UINSCharacterAimInstance::UINSCharacterAimInstance(const FObjectInitializer& Obj
 	BaseHandIKEffector = FVector::ZeroVector;
 	bInitialized = false;
 	CurrentWeaponAnimData = nullptr;
-	bIsFalling =false;
+	CurrentWeapon = nullptr;
+	bIsFalling = false;
 	bIsArmed = false;
 	bIsSprinting = false;
+	CurrentWeaponReloadType = EWeaponReloadType::NONE;
+	CurrentWeaponBaseType = EWeaponBasePoseType::FOREGRIP;
+	bIsInAir =false;
+	bSprintPressed = false;
+	HorizontalSpeed = 0.f;
+	VerticalSpeed = 0.f;
+	SprintPlaySpeed = 1.f;
 }
 
 
@@ -64,7 +72,7 @@ void UINSCharacterAimInstance::NativeBeginPlay()
 void UINSCharacterAimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
-	if(!CheckValid())
+	if (!CheckValid())
 	{
 		return;
 	}
@@ -84,7 +92,7 @@ void UINSCharacterAimInstance::UpdateHorizontalSpeed()
 	HorizontalSpeed = CharacterMovementComponent->GetLastUpdateVelocity().Size2D();
 }
 
-void  UINSCharacterAimInstance::UpdateVerticalSpeed()
+void UINSCharacterAimInstance::UpdateVerticalSpeed()
 {
 	VerticalSpeed = CharacterMovementComponent->GetLastUpdateVelocity().Z;
 }
@@ -102,7 +110,6 @@ bool UINSCharacterAimInstance::CheckValid()
 		//UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("Owner character runs on Dedicated server,can't play animations"));
 		bValidPlayAnim = false;
 		return bValidPlayAnim;
-
 	}
 	if (OwnerPlayerCharacter->GetIsDead())
 	{
@@ -110,13 +117,13 @@ bool UINSCharacterAimInstance::CheckValid()
 		bValidPlayAnim = false;
 		return bValidPlayAnim;
 	}
-	if (CurrentWeapon==nullptr)
+	if (CurrentWeapon == nullptr)
 	{
-		UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("Missing Current Weapon Ref,invalid for playing any weapon anim"));
+		//UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("Missing Current Weapon Ref,invalid for playing any weapon anim"));
 		bValidPlayAnim = false;
 		return bValidPlayAnim;
 	}
-	if (CurrentWeaponAnimData==nullptr)
+	if (CurrentWeaponAnimData == nullptr)
 	{
 		UE_LOG(LogINSCharacterAimInstance, Warning, TEXT("Missing Current Weapon asstes Ref,invalid for playing any weapon anim"));
 		bValidPlayAnim = false;
@@ -177,8 +184,8 @@ void UINSCharacterAimInstance::StopFPPlayMoveAnimation()
 	{
 		return;
 	}
-	UAnimMontage* MoveMontage = CurrentWeaponAnimData->FPIdleAnim;
-	UAnimMontage* AimMoveMontage = CurrentWeaponAnimData->FPMoveAnim;
+	const UAnimMontage* const MoveMontage = CurrentWeaponAnimData->FPIdleAnim;
+	const UAnimMontage* const AimMoveMontage = CurrentWeaponAnimData->FPMoveAnim;
 	const bool bIsFPPlayingMoveMontage = Montage_IsPlaying(MoveMontage);
 	const bool bIsFPPlayingAimMoveMontage = Montage_IsPlaying(AimMoveMontage);
 	if (bIsFPPlayingMoveMontage)
@@ -253,45 +260,44 @@ void UINSCharacterAimInstance::UpdateIsFalling()
 }
 
 
-float UINSCharacterAimInstance::PlayAimAnim()
-{
-	bIsAiming = true;
-	return 0.f;
-}
+// float UINSCharacterAimInstance::PlayAimAnim()
+// {
+// 	bIsAiming = true;
+// 	return 0.f;
+// }
+//
+// float UINSCharacterAimInstance::PlayStopAimAnim()
+// {
+// 	bIsAiming = false;
+// 	return 0.f;
+// }
 
-float UINSCharacterAimInstance::PlayStopAimAnim()
-{
-	bIsAiming = false;
-	return 0.f;
-}
-
-float UINSCharacterAimInstance::PlaySprintAnim()
-{
-	bIsSprinting = true;
-	float Duration = 0.f;
-	UAnimMontage* const SelectedSprintMontage = CurrentWeaponAnimData->FPSprintAnim;
-	if (!Montage_IsPlaying(SelectedSprintMontage))
-	{
-		Duration = Montage_Play(SelectedSprintMontage);
-	}
-	return Duration;
-}
-
-float UINSCharacterAimInstance::StopPlaySprintAnim()
-{
-	bIsSprinting = false;
-	float blendTime = 0.3f;
-	UAnimMontage* const SelectedSprintMontage = CurrentWeaponAnimData->FPSprintAnim;
-	if (Montage_IsPlaying(SelectedSprintMontage))
-	{
-		Montage_Stop(blendTime, SelectedSprintMontage);
-	}
-	return blendTime;
-}
+// float UINSCharacterAimInstance::PlaySprintAnim()
+// {
+// 	bIsSprinting = true;
+// 	float Duration = 0.f;
+// 	UAnimMontage* const SelectedSprintMontage = CurrentWeaponAnimData->FPSprintAnim;
+// 	if (!Montage_IsPlaying(SelectedSprintMontage))
+// 	{
+// 		Duration = Montage_Play(SelectedSprintMontage);
+// 	}
+// 	return Duration;
+// }
+//
+// float UINSCharacterAimInstance::StopPlaySprintAnim()
+// {
+// 	bIsSprinting = false;
+// 	float blendTime = 0.3f;
+// 	UAnimMontage* const SelectedSprintMontage = CurrentWeaponAnimData->FPSprintAnim;
+// 	if (Montage_IsPlaying(SelectedSprintMontage))
+// 	{
+// 		Montage_Stop(blendTime, SelectedSprintMontage);
+// 	}
+// 	return blendTime;
+// }
 
 void UINSCharacterAimInstance::OnCharacterJustLanded()
 {
-
 }
 
 void UINSCharacterAimInstance::SetIdleState(bool NewIdleState)
@@ -309,7 +315,7 @@ void UINSCharacterAimInstance::SetBoredState(bool NewBoredState)
 			GetWorld()->GetTimerManager().SetTimer(BoredAnimPlayTimer, this, &UINSCharacterAimInstance::PlayBoredAnim, 15.0, true, 0.f);
 		}
 	}
-	else 
+	else
 	{
 		GetWorld()->GetTimerManager().ClearTimer(BoredAnimPlayTimer);
 	}
@@ -320,11 +326,11 @@ void UINSCharacterAimInstance::SetBaseHandsIkLocation(const FVector NewLocation)
 	BaseHandIKEffector = NewLocation;
 }
 
-void UINSCharacterAimInstance::OnWeaponAnimDelegateBindingFinished()
-{
-	bWeaponAnimDelegateBindingFinished = true;
-	PlayWeaponStartEquipAnim();
-}
+// void UINSCharacterAimInstance::OnWeaponAnimDelegateBindingFinished()
+// {
+// 	bWeaponAnimDelegateBindingFinished = true;
+// 	PlayWeaponStartEquipAnim();
+// }
 
 float UINSCharacterAimInstance::FPPlayWeaponIdleAnim()
 {
@@ -340,14 +346,14 @@ float UINSCharacterAimInstance::FPPlayWeaponIdleAnim()
 	return Duration;
 }
 
-float UINSCharacterAimInstance::PlayWeaponIdleAnim()
-{
-	if (CurrentViewMode == EViewMode::FPS)
-	{
-		return FPPlayWeaponIdleAnim();
-	}
-	return 0.f;
-}
+// float UINSCharacterAimInstance::PlayWeaponIdleAnim()
+// {
+// 	if (CurrentViewMode == EViewMode::FPS)
+// 	{
+// 		return FPPlayWeaponIdleAnim();
+// 	}
+// 	return 0.f;
+// }
 
 void UINSCharacterAimInstance::SetWeaponBasePoseType(EWeaponBasePoseType NewBasePoseType)
 {
@@ -377,7 +383,6 @@ void UINSCharacterAimInstance::SetIsAiming(bool IsAiming)
 }
 
 
-
 void UINSCharacterAimInstance::PlayBoredAnim()
 {
 }
@@ -395,6 +400,5 @@ void UINSCharacterAimInstance::SetCurrentWeaponAnimData(UINSStaticAnimData* NewA
 #if WITH_EDITOR&&!UE_BUILD_SHIPPING
 void UINSCharacterAimInstance::AddScreenAminDebugMessage(const UAnimMontage* const Anim)
 {
-
 }
 #endif

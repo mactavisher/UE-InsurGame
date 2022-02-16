@@ -448,6 +448,8 @@ public:
 	/** returns the projectile scan trace time */
 	virtual float GetScanTraceTime() const { return ScanTraceTime; }
 
+	virtual void SetCollisionIgnoredActor(TArray<AActor*> ActorsToIgnore);
+
 	/**
 	 * @Desc  set if this projectile is spawned by way of scan trace
 	 * @Param bFromScanTrace whether this projectile is spawned by way of scan trace or not

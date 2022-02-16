@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "INSAssets/INSWeaponAssets.h"
 #include "Insurgency/Insurgency.h"
 #include "INSItems.generated.h"
 
@@ -11,6 +12,10 @@ class USphereComponent;
 class UTexture2D;
 class AINSPlayerController;
 class AINSPlayerCharacter;
+class UINSInventoryComponent;
+struct FInventorySlot;
+struct FItemInfoData;
+struct FWeaponInfoData;
 
 UCLASS()
 class INSURGENCY_API AINSItems : public AActor
@@ -22,6 +27,15 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category = "Item")
 	int32 ItemId;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, Category = "Item")
+	int32 SKinId;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Item")
+	uint8 InventorySlotIndex;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Item")
+	struct FItemInfoData ItemInfoData;
 
 	UPROPERTY()
 	uint8 bInLobbyMode:1;
@@ -40,10 +54,17 @@ public:
 	virtual void EnableTick();
 	virtual void DisableTick();
 	virtual void OnRep_Owner() override;
+	virtual void InitItemInfoByInventorySlot(const FInventorySlot& InventorySlot);
 	virtual bool GetIsInLobbyMode() const { return bInLobbyMode; }
 	virtual void SetIsInLobbyMode(bool IsLobbyItem) { bInLobbyMode = IsLobbyItem; }
 	/** gets the item id*/
-	virtual int32 GetItemId() { return ItemId; }
+	virtual int32 GetItemId() const { return ItemId; }
+	virtual void SetItemId(int32 InItemId) { ItemId = InItemId; }
+	virtual int32 GetSkinId() const { return SKinId; }
+	virtual void SetSkinId(int32 InSkinId) { SKinId = InSkinId; }
+	virtual int32 GetInventorySlotIndex() const { return InventorySlotIndex; }
+	virtual void SetInventorySlotIndex(uint8 SlotIndex) { InventorySlotIndex = SlotIndex; }
+	virtual void SetItemInfo(FItemInfoData& NewItemInfoData);
 
 	/**
 	 * return if this item is a weapon

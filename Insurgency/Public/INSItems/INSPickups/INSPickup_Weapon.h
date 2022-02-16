@@ -45,8 +45,6 @@ protected:
 	virtual void Tick(float DeltaTime)override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
 	//~ end AActor interface
-
-
 public:
 
 	/**

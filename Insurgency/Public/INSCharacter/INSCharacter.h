@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "INSAssets/INSStaticAnimData.h"
+#include "INSComponents/INSInventoryComponent.h"
 #include "Insurgency/Insurgency.h"
 #include "INSCharacter.generated.h"
 
@@ -105,17 +106,9 @@ struct FPendingWeaponEquipEvent
 	UPROPERTY()
 	float EventCreateTime;
 
-	/** indicates how much  time we have to wait to execute this event */
-	UPROPERTY()
-	float PendingDuration;
-
-	/** the time that used to execute this event,after execution complete,all props will get reset*/
-	UPROPERTY()
-	float ExecutingDuration;
-
 	/** the actual weapon class to equip*/
 	UPROPERTY()
-	UClass* WeaponClass;
+	int32 ItemId;
 
 	/** indicates if this event is currently active,if true,can't be overriden,has to wait until it finishes*/
 	UPROPERTY()
@@ -126,12 +119,17 @@ struct FPendingWeaponEquipEvent
 
 	FPendingWeaponEquipEvent()
 		: EventCreateTime(0.f)
-		  , PendingDuration(0.f)
-		  , ExecutingDuration(0.f)
-		  , WeaponClass(nullptr)
+		  , ItemId(0)
 		  , bIsEventActive(false)
-		  , WeaponSlotIndex(255)
+		  , WeaponSlotIndex(static_cast<uint8>(255))
 	{
+	}
+	void ResetEvent()
+	{
+		EventCreateTime = 0.f;
+		ItemId = 0;
+		bIsEventActive = false;
+		WeaponSlotIndex = static_cast<uint8>(255);
 	}
 };
 
@@ -149,6 +147,10 @@ protected:
 	/** is this character dead ? */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_Dead, Category = "States")
 	uint8 bIsDead : 1;
+
+	/** used to prevent any cosmetic death events to play twice after dead  */
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly)
+	uint8 bIsDeadDead : 1;
 
 	/** is this character sprinting ? */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_Sprint, Category = "Stances")
@@ -177,6 +179,7 @@ protected:
 	/** game time in real seconds when this pawn dead */
 	UPROPERTY()
 	float DeathTime;
+	
 
 	/** current stance of this character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_CurrentStance, Category = "Stances")
@@ -271,14 +274,12 @@ public:
 	UPROPERTY()
 	UINSStaticAnimData* CurrentAnimPtr;
 
+	FPendingWeaponEquipEvent PendingWeaponEquipEvent;
+
 #if WITH_EDITORONLY_DATA
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Debugs")
 	uint8 bShowDebugTrace : 1;
 #endif
-
-	/** check character is ready, after ready is set,this will unregister make sure only called once*/
-	UPROPERTY()
-	FActorTickFunction CharacterReadyTick;
 
 protected:
 	//~ begin AActor interface
@@ -327,7 +328,10 @@ protected:
 
 	virtual void TossCurrentWeapon();
 
-	virtual bool CheckCharacterIsReady();
+	virtual void CreateAndEquipItem(int32 ItemId,const uint8 InventorySlotIndex);
+
+	UFUNCTION(Server,WithValidation,Reliable)
+	virtual void ServerCreateAndEquipItem(int32 ItemId,const uint8 InventorySlotIndex);
 
 	/** ~~--------------------------------------------------------------
 	   Rep callbacks-------------------------------------------*/
@@ -455,6 +459,8 @@ public:
 
 	virtual void HandleFinishUnEquipWeaponRequest();
 
+	virtual void HandleItemFinishEquipRequest();
+
 	/** return this character is dead or not */
 	virtual bool GetIsDead() const { return bIsDead; };
 
@@ -475,21 +481,18 @@ public:
 
 	/** handles jump request from player*/
 	virtual void HandleJumpRequest();
-
+	
 	/** Handles Weapon Equip Request */
-	virtual void HandleItemEquipRequest(const uint8 SlotIndex);
+	virtual void HandleItemEquipRequest(const int32 NextItemId,const uint8 SlotIndex);
 
 	/** Handles Weapon UnEquip Request */
 	virtual void HandleItemFinishUnEquipRequest();
-
 	virtual void UnEquipItem();
-
+	UFUNCTION(Server, Unreliable, WithValidation)
+    virtual void ServerUnEquipItem();
 	virtual void FinishUnEquipItem();
 	UFUNCTION(Server,Unreliable,WithValidation)
 	virtual void ServerFinishUnEquipItem();
-
-	UFUNCTION(Server, Unreliable, WithValidation)
-	virtual void ServerUnEquipItem();
 
 	/** callback when character crouched or un-crouched */
 	virtual void OnRep_IsCrouched() override;
@@ -599,4 +602,34 @@ public:
 
 	/** local client check this distance to the other location before spawn some FX*/
 	virtual float CheckDistance(const FVector OtherLocation);
+
+	virtual void SetupPendingWeaponEquipEvent(const int32 ItemId,const uint8 ItemSlotIdx);
+
+	virtual FPendingWeaponEquipEvent& GetPendingEquipEvent();
+
+	virtual bool GetIsDeadDead()const{return bIsDeadDead;}
+
+	virtual float PlayWeaponReloadAnim(){return 0.f;};
+
+	virtual float PlayWeaponEquipAnim(){return 0.f;};
+
+	virtual float PlayWeaponUnEquipAnim(){return 0.f;};
+
+	virtual float PlayWeaponSwitchFireModeAnim(){return 0.f;};
+
+	virtual float PlayFireAnim(){return 0.f;};
+
+	virtual void UpdateAnimationData(class AINSItems* InItemRef);
+
+	virtual bool CheckCharacterIsReady();
+
+	virtual void OnShotFired(){};
+
+	virtual void OnReloadFinished(){};
+
+	virtual void ReceiveInventoryInitialized();
+
+	virtual void ReceiveClipAmmoEmpty();
+
+	virtual void ReceiveSetupWeaponAttachment();
 };

@@ -7,6 +7,7 @@
 #include "Engine/Texture2D.h"
 #include "Components/SphereComponent.h"
 #include "Insurgency/Public/INSCharacter/INSPlayerCharacter.h"
+#include "INSComponents/INSInventoryComponent.h"
 
 // Sets default values
 AINSItems::AINSItems(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
@@ -53,5 +54,15 @@ void AINSItems::DisableTick()
 void AINSItems::OnRep_Owner()
 {
 	Super::OnRep_Owner();
+}
+
+void AINSItems::InitItemInfoByInventorySlot(const FInventorySlot& InventorySlot)
+{
+	
+}
+
+void AINSItems::SetItemInfo(FItemInfoData& NewItemInfoData)
+{
+	ItemInfoData = NewItemInfoData;
 }
 

@@ -9,7 +9,7 @@
 #include "INSGameModes/INSGameModeBase.h"
 void UINSDamageModifier_Team::ModifyDamage(float& InDamage, FDamageEvent& DamageEvent, AController* Instigator, class AController* Victim)
 {
-	class AINSGameModeBase* const GM = Victim->GetWorld()->GetAuthGameMode<AINSGameModeBase>();
+	AINSGameModeBase* const GM = Victim->GetWorld()->GetAuthGameMode<AINSGameModeBase>();
 	if (GM)
 	{
 		const float OrigDamage = InDamage;

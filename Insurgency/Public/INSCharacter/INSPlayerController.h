@@ -317,4 +317,6 @@ public:
 	virtual void OnWeaponClipEmpty(class AController* WeaponOwnerPlayer);
 
 	virtual void OnCharacterDead();
+
+	virtual void ReceiveCurrentClipAmmoEmpty();
 };

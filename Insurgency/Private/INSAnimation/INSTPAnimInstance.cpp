@@ -106,33 +106,6 @@ void UINSTPAnimInstance::UpdateCanEnterSprint()
 	//bCanEnterSprint = bSprintPressed && CharacterMovementComponent->GetLastUpdateVelocity().Size2D() > 0.f;
 }
 
-float UINSTPAnimInstance::PlayReloadAnim(bool bIsDry)
-{
-	if (!CheckValid())
-	{
-		return 0.f;
-	}
-	UAnimMontage* SelectedReloadAnim = nullptr;
-	switch (CurrentWeaponBaseType)
-	{
-	case EWeaponBasePoseType::ALTGRIP:SelectedReloadAnim = bIsDry
-		? CurrentWeaponAnimData->TPWeaponAltGripAnim.ReloadDryAnim.CharAnim
-		: CurrentWeaponAnimData->TPWeaponAltGripAnim.ReloadAnim.CharAnim;
-		break;
-	case EWeaponBasePoseType::FOREGRIP:SelectedReloadAnim = bIsDry
-		? CurrentWeaponAnimData->TPWeaponForeGripAnim.ReloadDryAnim.CharAnim
-		: CurrentWeaponAnimData->TPWeaponForeGripAnim.ReloadAnim.CharAnim;
-		break;
-	case EWeaponBasePoseType::DEFAULT:SelectedReloadAnim = bIsDry
-		? CurrentWeaponAnimData->TPWeaponDefaultPoseAnim.ReloadDryAnim.CharAnim
-		: CurrentWeaponAnimData->TPWeaponDefaultPoseAnim.ReloadAnim.CharAnim;
-		break;
-	default:SelectedReloadAnim = nullptr;
-		break;
-	}
-	return Montage_Play(SelectedReloadAnim);
-}
-
 float  UINSTPAnimInstance::PlayWeaponBasePose()
 {
 	if (!CheckValid())
@@ -181,55 +154,6 @@ float UINSTPAnimInstance::PlayFireAnim()
 	return Montage_Play(SelectedPullTriggerAnim);
 }
 
-float UINSTPAnimInstance::PlayWeaponStartUnEquipAnim()
-{
-	if (!CheckValid())
-	{
-		return 0.f;
-	}
-	UAnimMontage* SelectedUnEquipMontage = nullptr;
-	switch (CurrentWeaponBaseType)
-	{
-	case EWeaponBasePoseType::ALTGRIP:SelectedUnEquipMontage = CurrentWeaponAnimData->TPWeaponAltGripAnim.UnDeployAnim.CharAnim;
-		break;
-	case EWeaponBasePoseType::FOREGRIP:SelectedUnEquipMontage = CurrentWeaponAnimData->TPWeaponForeGripAnim.UnDeployAnim.CharAnim;
-		break;
-	case EWeaponBasePoseType::DEFAULT:SelectedUnEquipMontage = CurrentWeaponAnimData->TPWeaponDefaultPoseAnim.UnDeployAnim.CharAnim;
-		break;
-	default:SelectedUnEquipMontage = nullptr;
-		break;
-	}
-	if(!SelectedUnEquipMontage)
-	{
-		return 0.f;
-	}
-	return Montage_Play(SelectedUnEquipMontage);
-}
-
-float UINSTPAnimInstance::PlaySwitchFireModeAnim()
-{
-	if (!CheckValid())
-	{
-		return 0.f;
-	}
-	UAnimMontage* SelectedSwitchFireModeAnim = nullptr;
-	switch (CurrentWeaponBaseType)
-	{
-	case EWeaponBasePoseType::ALTGRIP:SelectedSwitchFireModeAnim = CurrentWeaponAnimData->TPWeaponAltGripAnim.SwitchFireModeAnim.CharAnim;
-		break;
-	case EWeaponBasePoseType::FOREGRIP:SelectedSwitchFireModeAnim = CurrentWeaponAnimData->TPWeaponForeGripAnim.SwitchFireModeAnim.CharAnim;
-		break;
-	case EWeaponBasePoseType::DEFAULT:SelectedSwitchFireModeAnim = CurrentWeaponAnimData->TPWeaponDefaultPoseAnim.SwitchFireModeAnim.CharAnim;
-		break;
-	default:SelectedSwitchFireModeAnim = nullptr;
-		break;
-	}
-	if(!SelectedSwitchFireModeAnim)
-	{
-		return 0.f;
-	}
-	return Montage_Play(SelectedSwitchFireModeAnim);
-}
 
 void UINSTPAnimInstance::UpdateIsAiming()
 {
@@ -264,22 +188,6 @@ void UINSTPAnimInstance::SetIsAiming(bool IsAiming)
 	Super::SetIsAiming(IsAiming);
 }
 
-float UINSTPAnimInstance::PlayWeaponStartEquipAnim()
-{
-	if (!CheckValid())
-	{
-		return 0.f;
-	}
-	UAnimMontage* SelectedEquipAnim = nullptr;
-	switch (CurrentWeaponBaseType)
-	{
-	case EWeaponBasePoseType::ALTGRIP:SelectedEquipAnim = CurrentWeaponAnimData->TPWeaponAltGripAnim.DeployAnim.CharAnim; break;
-	case EWeaponBasePoseType::FOREGRIP:SelectedEquipAnim = CurrentWeaponAnimData->TPWeaponForeGripAnim.DeployAnim.CharAnim; break;
-	case EWeaponBasePoseType::DEFAULT:SelectedEquipAnim = CurrentWeaponAnimData->TPWeaponDefaultPoseAnim.DeployAnim.CharAnim; break;
-	default:SelectedEquipAnim = nullptr; break;
-	}
-	return Montage_Play(SelectedEquipAnim);
-}
 
 void UINSTPAnimInstance::UpdatePredictFallingToLandAlpha()
 {
@@ -331,4 +239,98 @@ void UINSTPAnimInstance::UpdatePredictFallingToLandAlpha()
 	{
 		CustomNotIsFallingAlpha = 1.f;
 	}
+}
+
+float UINSTPAnimInstance::PlayWeaponReloadAnim(bool bDryReload)
+{
+	if (!CheckValid())
+	{
+		return 0.f;
+	}
+	UAnimMontage* SelectedReloadAnim = nullptr;
+	switch (CurrentWeaponBaseType)
+	{
+	case EWeaponBasePoseType::ALTGRIP:SelectedReloadAnim = bDryReload
+		? CurrentWeaponAnimData->TPWeaponAltGripAnim.ReloadDryAnim.CharAnim
+		: CurrentWeaponAnimData->TPWeaponAltGripAnim.ReloadAnim.CharAnim;
+		break;
+	case EWeaponBasePoseType::FOREGRIP:SelectedReloadAnim = bDryReload
+		? CurrentWeaponAnimData->TPWeaponForeGripAnim.ReloadDryAnim.CharAnim
+		: CurrentWeaponAnimData->TPWeaponForeGripAnim.ReloadAnim.CharAnim;
+		break;
+	case EWeaponBasePoseType::DEFAULT:SelectedReloadAnim = bDryReload
+		? CurrentWeaponAnimData->TPWeaponDefaultPoseAnim.ReloadDryAnim.CharAnim
+		: CurrentWeaponAnimData->TPWeaponDefaultPoseAnim.ReloadAnim.CharAnim;
+		break;
+	default:SelectedReloadAnim = nullptr;
+		break;
+	}
+	return Montage_Play(SelectedReloadAnim);
+}
+
+float UINSTPAnimInstance::PlayWeaponEquipAnim()
+{
+	if (!CheckValid())
+	{
+		return 0.f;
+	}
+	UAnimMontage* SelectedEquipAnim = nullptr;
+	switch (CurrentWeaponBaseType)
+	{
+	case EWeaponBasePoseType::ALTGRIP:SelectedEquipAnim = CurrentWeaponAnimData->TPWeaponAltGripAnim.DeployAnim.CharAnim; break;
+	case EWeaponBasePoseType::FOREGRIP:SelectedEquipAnim = CurrentWeaponAnimData->TPWeaponForeGripAnim.DeployAnim.CharAnim; break;
+	case EWeaponBasePoseType::DEFAULT:SelectedEquipAnim = CurrentWeaponAnimData->TPWeaponDefaultPoseAnim.DeployAnim.CharAnim; break;
+	default:SelectedEquipAnim = nullptr; break;
+	}
+	return Montage_Play(SelectedEquipAnim);
+}
+
+float UINSTPAnimInstance::PlayWeaponSwitchFireModeAnim()
+{
+	if (!CheckValid())
+	{
+		return 0.f;
+	}
+	UAnimMontage* SelectedSwitchFireModeAnim = nullptr;
+	switch (CurrentWeaponBaseType)
+	{
+	case EWeaponBasePoseType::ALTGRIP:SelectedSwitchFireModeAnim = CurrentWeaponAnimData->TPWeaponAltGripAnim.SwitchFireModeAnim.CharAnim;
+		break;
+	case EWeaponBasePoseType::FOREGRIP:SelectedSwitchFireModeAnim = CurrentWeaponAnimData->TPWeaponForeGripAnim.SwitchFireModeAnim.CharAnim;
+		break;
+	case EWeaponBasePoseType::DEFAULT:SelectedSwitchFireModeAnim = CurrentWeaponAnimData->TPWeaponDefaultPoseAnim.SwitchFireModeAnim.CharAnim;
+		break;
+	default:SelectedSwitchFireModeAnim = nullptr;
+		break;
+	}
+	if(!SelectedSwitchFireModeAnim)
+	{
+		return 0.f;
+	}
+	return Montage_Play(SelectedSwitchFireModeAnim);
+}
+
+float UINSTPAnimInstance::PlayWeaponUnEquipAnim()
+{
+	if (!CheckValid())
+	{
+		return 0.f;
+	}
+	UAnimMontage* SelectedUnEquipMontage = nullptr;
+	switch (CurrentWeaponBaseType)
+	{
+	case EWeaponBasePoseType::ALTGRIP:SelectedUnEquipMontage = CurrentWeaponAnimData->TPWeaponAltGripAnim.UnDeployAnim.CharAnim;
+		break;
+	case EWeaponBasePoseType::FOREGRIP:SelectedUnEquipMontage = CurrentWeaponAnimData->TPWeaponForeGripAnim.UnDeployAnim.CharAnim;
+		break;
+	case EWeaponBasePoseType::DEFAULT:SelectedUnEquipMontage = CurrentWeaponAnimData->TPWeaponDefaultPoseAnim.UnDeployAnim.CharAnim;
+		break;
+	default:SelectedUnEquipMontage = nullptr;
+		break;
+	}
+	if(!SelectedUnEquipMontage)
+	{
+		return 0.f;
+	}
+	return Montage_Play(SelectedUnEquipMontage);
 }

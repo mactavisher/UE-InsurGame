@@ -16,7 +16,10 @@ class INSURGENCY_API UINSGameInstance : public UGameInstance
 {
 	GENERATED_UCLASS_BODY()
 protected:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "VoiceData")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ItemTable")
+	UDataTable* ItemDataTable;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ItemTable")
 	UDataTable* WeaponDataTable;
 
 	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="GameMaps")
@@ -33,6 +36,9 @@ protected:
 public:
 	UFUNCTION(BlueprintCallable)
 	virtual UDataTable* GetWeaponDataTable()const{return WeaponDataTable;}
+
+	UFUNCTION(BlueprintCallable)
+	virtual UDataTable* GetItemDataTable()const{return ItemDataTable;}
 
 	UFUNCTION(BlueprintCallable)
 	virtual UINSItemManager* GetItemManager()const{return ItemManager;}

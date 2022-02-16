@@ -101,8 +101,6 @@ protected:
 	 */
 	virtual void UpdateSight(float DeltaTimeSeconds);
 
-	virtual float PlayWeaponStartEquipAnim()override;
-
 	/**
 	 * @Desc calculate sight transform when ads to match center of the screen
 	 * 
@@ -114,16 +112,7 @@ protected:
 	 * play the weapon base pose each frame to correct the weapon pose
 	 */
 	virtual float PlayWeaponBasePose()override;
-
-	/**
-	 * @Desc play weapon reload Animation
-	 * @Param bIsDry is this a dry reload
-	 * @return the animation duration 
-	 */
-	virtual float PlayReloadAnim(bool bIsDry)override;
-
-	virtual float PlayWeaponStartUnEquipAnim() override;
-
+	
 	/**
 	 * @Desc set is aiming and relative aiming variables
 	 * @Param isAiming  aiming conditions
@@ -132,26 +121,26 @@ protected:
 
 	virtual void SetIsSprinting(bool bIsSprintingNow)override;
 
-	virtual void SetSprintPressed(bool NewSprintPressed)override;
-
 	virtual void SetIdleState(bool NewIdleState)override;
 
 	virtual void SetBoredState(bool NewBoredState)override;
 
 	virtual void PlayBoredAnim()override;
 
-	virtual float PlaySwitchFireModeAnim() override;
-
-	virtual void SetCurrentWeapon(class AINSWeaponBase* NewWeapon)override;
-
 	virtual void SetCurrentWeaponAnimData(UINSStaticAnimData* NewAnimData) override;
 
 public:
-	virtual float PlayFireAnim()override;
-
 	/**
 	 * update HandsShift when firing
 	 * @Param DeltaSeconds  DeltaSeconds
 	 */
 	virtual void UpdateFiringHandsShift(float DeltaSeconds);
+	virtual void SetCurrentWeapon(class AINSWeaponBase* NewWeapon)override;
+	virtual void SetSprintPressed(bool NewSprintPressed)override;
+
+	virtual float PlayWeaponEquipAnim() override;
+	virtual float PlayWeaponUnEquipAnim() override;
+	virtual float PlayWeaponReloadAnim(bool bDryReload) override;
+	virtual float PlayFireAnim()override;
+	virtual float PlayWeaponSwitchFireModeAnim() override;
 };
