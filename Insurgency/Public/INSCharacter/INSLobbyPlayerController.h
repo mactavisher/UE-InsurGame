@@ -15,9 +15,8 @@ UCLASS()
 class INSURGENCY_API AINSLobbyPlayerController : public APlayerController
 {
 	GENERATED_UCLASS_BODY()
-
 protected:
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="sound")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="sound")
 	USoundBase* LobbyBMG;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PawnMakeNoiseComp", meta = (AllowPrivateAccess = "true"))
@@ -25,7 +24,7 @@ protected:
 
 	UPROPERTY()
 	UINSGameInstance* INSGameInstance;
-	
+
 	virtual void BeginPlay() override;
 
 	virtual void PlayLobbyBGM();

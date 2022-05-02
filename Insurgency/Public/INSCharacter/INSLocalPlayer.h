@@ -16,7 +16,7 @@ class INSURGENCY_API UINSLocalPlayer : public ULocalPlayer
 	GENERATED_UCLASS_BODY()
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Prefrence")
-		ETeamType PrefTeam;
-	virtual ETeamType GetPrefTeamType()const { return PrefTeam; }
+	ETeamType PrefTeam;
+	virtual ETeamType GetPrefTeamType() const { return PrefTeam; }
 	virtual void SetPrefTeamType(ETeamType NewPrefTeam) { PrefTeam = NewPrefTeam; }
 };

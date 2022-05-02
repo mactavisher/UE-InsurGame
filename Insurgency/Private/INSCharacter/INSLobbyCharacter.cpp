@@ -11,42 +11,42 @@
 #include "INSAnimation/INSLobbyAnimInstance.h"
 
 // Sets default values
-AINSLobbyCharacter::AINSLobbyCharacter(const FObjectInitializer&ObjectInitializer) :Super(ObjectInitializer)
+AINSLobbyCharacter::AINSLobbyCharacter(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
- 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-    //GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	//GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	//GetCapsuleComponent()->SetCollisionResponseToAllChannels(ECR_Ignore);
 	//GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	//GetMesh()->SetCollisionResponseToAllChannels(ECR_Ignore);
-	GetMesh()->AddRelativeLocation(FVector(0.f,0.f,-94.f));
+	GetMesh()->AddRelativeLocation(FVector(0.f, 0.f, -94.f));
 	LobbyCamera = ObjectInitializer.CreateDefaultSubobject<UCameraComponent>(this, TEXT("FirstPersonCamera"));
-	LobbyCamera->bUsePawnControlRotation =false;
+	LobbyCamera->bUsePawnControlRotation = false;
 }
 
 // Called when the game starts or when spawned
 void AINSLobbyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	if(LobbyCamera)
+	if (LobbyCamera)
 	{
-		LobbyCamera->AttachToComponent(GetCapsuleComponent(),FAttachmentTransformRules::SnapToTargetIncludingScale,NAME_None);
-		LobbyCamera->AddRelativeLocation(FVector(250.f,50.f,35.f));
-		LobbyCamera->AddRelativeRotation(FRotator(0.f,-180.f,0.f));
+		LobbyCamera->AttachToComponent(GetCapsuleComponent(), FAttachmentTransformRules::SnapToTargetIncludingScale, NAME_None);
+		LobbyCamera->AddRelativeLocation(FVector(250.f, 50.f, 35.f));
+		LobbyCamera->AddRelativeRotation(FRotator(0.f, -180.f, 0.f));
 	}
 	CreateClientLobbyWeapon();
 }
 
 void AINSLobbyCharacter::CreateClientLobbyWeapon()
 {
-	if(LobbyWeaponClass)
+	if (LobbyWeaponClass)
 	{
-		LobbyWeapon = GetWorld()->SpawnActorDeferred<AINSWeaponBase>(LobbyWeaponClass,GetActorTransform(),this,this,ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+		LobbyWeapon = GetWorld()->SpawnActorDeferred<AINSWeaponBase>(LobbyWeaponClass, GetActorTransform(), this, this, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 		LobbyWeapon->GetWeaponMeshComp()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		LobbyWeapon->SetIsInLobbyMode(true);
-		if(LobbyWeapon)
+		if (LobbyWeapon)
 		{
-			UGameplayStatics::FinishSpawningActor(LobbyWeapon,GetActorTransform());
+			UGameplayStatics::FinishSpawningActor(LobbyWeapon, GetActorTransform());
 		}
 		LobbyWeapon->GetWeaponMeshComp()->SetCollisionResponseToAllChannels(ECR_Ignore);
 		LobbyWeapon->GetWeaponMeshComp()->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("Bip01_Weapon1Socket"));
@@ -57,21 +57,20 @@ void AINSLobbyCharacter::CreateClientLobbyWeapon()
 void AINSLobbyCharacter::UpdateAnimation()
 {
 	UINSLobbyAnimInstance* LobbyAnimInstance = Cast<UINSLobbyAnimInstance>(GetMesh()->AnimScriptInstance);
-	if(LobbyAnimInstance)
+	if (LobbyAnimInstance)
 	{
 		LobbyAnimInstance->SetLobbyWeapon(LobbyWeapon);
 		EWeaponBasePoseType CurrentWeaponPoseType = LobbyWeapon->GetCurrentWeaponBasePose();
-		UAnimMontage* CurrentBasePoseAnim = CurrentWeaponPoseType==EWeaponBasePoseType::ALTGRIP?LobbyWeapon->GetWeaponAnimDataPtr()->FPWeaponAltGripAnim.BasePoseAnim.CharAnim:
-		LobbyWeapon->GetWeaponAnimDataPtr()->FPWeaponForeGripAnim.BasePoseAnim.CharAnim;
+		UAnimMontage* CurrentBasePoseAnim = CurrentWeaponPoseType == EWeaponBasePoseType::ALTGRIP ? LobbyWeapon->GetWeaponAnimDataPtr()->FPWeaponAltGripAnim.BasePoseAnim.CharAnim : LobbyWeapon->GetWeaponAnimDataPtr()->FPWeaponForeGripAnim.BasePoseAnim.CharAnim;
 		LobbyAnimInstance->UpDateWeaponBasePoseAnim(CurrentBasePoseAnim);
 	}
 }
 
 UAnimMontage* AINSLobbyCharacter::GetWeaponBasePose() const
 {
-	if(LobbyWeapon)
+	if (LobbyWeapon)
 	{
-		if(LobbyWeapon->GetWeaponAnimDataPtr())
+		if (LobbyWeapon->GetWeaponAnimDataPtr())
 		{
 			return LobbyWeapon->GetWeaponAnimDataPtr()->TPWeaponForeGripAnim.BasePoseAnim.CharAnim;
 		}
@@ -88,5 +87,3 @@ void AINSLobbyCharacter::Tick(float DeltaTime)
 void AINSLobbyCharacter::SetCurrentLobbyWeapon(int32 WeaponId)
 {
 }
-
-

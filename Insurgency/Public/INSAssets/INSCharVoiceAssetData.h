@@ -13,48 +13,48 @@ class USoundCue;
  */
 
 USTRUCT(BlueprintType)
-struct FVoiceData {
-
+struct FVoiceData
+{
 	GENERATED_USTRUCT_BODY()
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "VoiceData")
-		USoundCue* TakeDamageVoice;
+	USoundCue* TakeDamageVoice;
 
 	/** used to blend finger pull trigger */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "VoiceData")
-		USoundCue* DieVoice;
+	USoundCue* DieVoice;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "VoiceData")
-		USoundCue* TeamDamageVoice;
+	USoundCue* TeamDamageVoice;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "VoiceData")
-		USoundCue* KillEnemy;
+	USoundCue* KillEnemy;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "VoiceData")
-		USoundCue* ReloadWeapon;
+	USoundCue* ReloadWeapon;
 
 	/** used to blend finger pull trigger */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "VoiceData")
-		USoundCue* SeeEnemy;
+	USoundCue* SeeEnemy;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "VoiceData")
-		USoundCue* ThrowGranade;
+	USoundCue* ThrowGranade;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "VoiceData")
-		USoundCue* ThrowSmokingBang;
+	USoundCue* ThrowSmokingBang;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "VoiceData")
-	    USoundCue* Mandown;
+	USoundCue* Mandown;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "VoiceData")
-		USoundCue* FriendlyDamage;
+	USoundCue* FriendlyDamage;
 };
 
 UCLASS()
-class INSURGENCY_API UINSCharVoiceAssetData : public UDataAsset
+class INSURGENCY_API UINSCharVoiceAssetData : public UPrimaryDataAsset
 {
 	GENERATED_BODY()
 public:
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="MaleVoice")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="MaleVoice")
 	FVoiceData MaleVoiceData;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "FeMaleVoice")

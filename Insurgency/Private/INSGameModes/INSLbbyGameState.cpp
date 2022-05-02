@@ -9,10 +9,9 @@ void AINSLbbyGameState::BeginPlay()
 {
 	Super::BeginPlay();
 	PlayLobbyBGM();
-	
 }
 
 void AINSLbbyGameState::PlayLobbyBGM()
 {
-	UGameplayStatics::PlaySound2D(GetWorld(),LobbyBGM);
+	UGameplayStatics::PlaySound2D(GetWorld(), LobbyBGM);
 }

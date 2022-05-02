@@ -18,21 +18,21 @@ class INSURGENCY_API UINSUserWidget_Item : public UINSWidgetBase
 {
 	GENERATED_BODY()
 protected:
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="ItemId")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="ItemId")
 	int32 ItemId;
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="Button")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Button")
 	UButton* Button;
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="Button")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Button")
 	UImage* ItemImage;
 
 	UPROPERTY()
 	UTexture* ImageTexture;
-	
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="ItemName")
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="ItemName")
 	FString ItemName;
-	
+
 	FSlateBrush* ImageSlateBrush;
 
 protected:
@@ -41,16 +41,16 @@ protected:
 public:
 	UFUNCTION(BlueprintCallable)
 	virtual void SetButton(UButton* InButton);
-	
+
 	UFUNCTION(BlueprintCallable)
-	virtual void SetItemName(FString NewItemName){ItemName = NewItemName;}
-	
+	virtual void SetItemName(FString NewItemName) { ItemName = NewItemName; }
+
 	UFUNCTION(BlueprintCallable)
-	virtual void SetItemImage(UImage* InImage){ItemImage = InImage;}
-	
+	virtual void SetItemImage(UImage* InImage) { ItemImage = InImage; }
+
 	UFUNCTION(BlueprintCallable)
-	virtual void SetItemId(int32 NewItemId){ItemId = NewItemId;}
-	
+	virtual void SetItemId(int32 NewItemId) { ItemId = NewItemId; }
+
 	UFUNCTION(BlueprintCallable)
 	virtual FSlateBrush GetImageSlateBrush();
 };

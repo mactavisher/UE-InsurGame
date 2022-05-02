@@ -18,63 +18,62 @@ class INSURGENCY_API UINSCharacterMovementComponent : public UCharacterMovementC
 {
 	GENERATED_UCLASS_BODY()
 protected:
-
 	/** speed modifier when sprint */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "StanimaModifier")
-		float SprintSpeedModifier;
+	float SprintSpeedModifier;
 
 	/** speed modifier when crouch */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "StanimaModifier")
-		float CrouchSpeedModifier;
+	float CrouchSpeedModifier;
 
 	/** speed modifier when prone */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "StanimaModifier")
-		float ProneSpeedModifier;
+	float ProneSpeedModifier;
 
 	/** speed modifier when aim */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "StanimaModifier")
-		float AimSpeedModifier;
+	float AimSpeedModifier;
 
 	/** cache stand walk speed as base speed */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "StanimaModifier")
-		float BaseWalkSpeed;
+	float BaseWalkSpeed;
 
 	/** cache this speed value for later calculate aiming speed purposes */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "StanimaModifier")
-		float SpeedBeforeAim;
+	float SpeedBeforeAim;
 
 	/** accumulated idle time */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "StanimaModifier")
-		float AccumulatedIdleTime;
+	float AccumulatedIdleTime;
 
 	/** how much time this player can enter idle state */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "StanimaModifier")
-		float IdleStateTime;
+	float IdleStateTime;
 
 	/** how much time this player can enter bored state */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "StanimaModifier")
-		float BoredStateTime;
+	float BoredStateTime;
 
 	/** how much time this player can enter bored state */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "StanimaModifier")
-		uint8 bEnableBoredState:1;
+	uint8 bEnableBoredState:1;
 
 	UPROPERTY()
-		uint8 bInIdleState : 1;
+	uint8 bInIdleState : 1;
 
 	UPROPERTY()
-		uint8 bInBoredState : 1;
+	uint8 bInBoredState : 1;
 
 protected:
 	AINSCharacter* INSCharacterOwner;
 
 protected:
 	//~ begin UCharacterMovement Interface
-	virtual void BeginPlay()override;
-	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)override;
+	virtual void BeginPlay() override;
+	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 public:
-	virtual void Crouch(bool bClientSimulation /* = false */)override;
-	virtual void UnCrouch(bool bClientSimulation /* = false */)override;
+	virtual void Crouch(bool bClientSimulation /* = false */) override;
+	virtual void UnCrouch(bool bClientSimulation /* = false */) override;
 	//~ end UCharacterMovement Interface
 
 public:
@@ -84,7 +83,7 @@ public:
 
 	virtual void StartProne();
 
-	virtual void  EndProne();
+	virtual void EndProne();
 
 	virtual void StartAim();
 
@@ -92,11 +91,11 @@ public:
 
 	virtual void CheckCharacterIdleState(const float DeltaTime);
 
-	inline virtual float GetSprintSpeed()const { return BaseWalkSpeed * SprintSpeedModifier; }
+	inline virtual float GetSprintSpeed() const { return BaseWalkSpeed * SprintSpeedModifier; }
 
-	inline virtual float GetCrouchSpeed()const { return BaseWalkSpeed * CrouchSpeedModifier; }
+	inline virtual float GetCrouchSpeed() const { return BaseWalkSpeed * CrouchSpeedModifier; }
 
-	inline virtual float GetAimSpeed()const { return SpeedBeforeAim * AimSpeedModifier; }
+	inline virtual float GetAimSpeed() const { return SpeedBeforeAim * AimSpeedModifier; }
 
-	inline virtual float GetAcculatedIdleTime()const { return AccumulatedIdleTime; }
+	inline virtual float GetAcculatedIdleTime() const { return AccumulatedIdleTime; }
 };

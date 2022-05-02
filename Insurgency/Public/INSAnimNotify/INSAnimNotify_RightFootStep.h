@@ -14,6 +14,5 @@ class INSURGENCY_API UINSAnimNotify_RightFootStep : public UINSAnimNotify_LeftFo
 {
 	GENERATED_BODY()
 
-		UINSAnimNotify_RightFootStep();
-	
+	UINSAnimNotify_RightFootStep();
 };

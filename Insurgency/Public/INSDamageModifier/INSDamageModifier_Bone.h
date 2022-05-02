@@ -9,9 +9,9 @@
 /**
  * 
  */
-UCLASS(Blueprintable,BlueprintType)
+UCLASS(Blueprintable, BlueprintType)
 class INSURGENCY_API UINSDamageModifier_Bone : public UINSDamageModifierBase
 {
 	GENERATED_BODY()
-		virtual void ModifyDamage(float& InDamage, FDamageEvent& DamageEvent, AController* Instigator, class AController* Victim)override;
+	virtual void ModifyDamage(float& InDamage, FDamageEvent& DamageEvent, AController* Instigator, class AController* Victim) override;
 };

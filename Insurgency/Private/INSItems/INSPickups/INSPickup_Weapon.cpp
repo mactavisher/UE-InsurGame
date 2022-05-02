@@ -13,21 +13,19 @@
 #include "Components/SphereComponent.h"
 #endif
 
-AINSPickup_Weapon::AINSPickup_Weapon(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
+AINSPickup_Weapon::AINSPickup_Weapon(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-	
 }
 
 void AINSPickup_Weapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	
 }
 
 
 void AINSPickup_Weapon::GiveTo(class AController* PlayerToGive)
 {
-  Super::GiveTo(PlayerToGive);
+	Super::GiveTo(PlayerToGive);
 }
 
 
@@ -46,4 +44,3 @@ void AINSPickup_Weapon::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 }
-

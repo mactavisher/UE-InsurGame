@@ -3,7 +3,6 @@
 
 #include "INSCharacter/INSLocalPlayer.h"
 
-UINSLocalPlayer::UINSLocalPlayer(const FObjectInitializer&ObjectInitializer) :Super(ObjectInitializer)
+UINSLocalPlayer::UINSLocalPlayer(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-
 }

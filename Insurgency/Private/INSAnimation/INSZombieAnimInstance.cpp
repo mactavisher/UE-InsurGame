@@ -6,7 +6,8 @@
 #include "INSComponents/INSCharacterMovementComponent.h"
 
 DEFINE_LOG_CATEGORY(LogINSZombieAnimation);
-UINSZombieAnimInstance::UINSZombieAnimInstance(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
+
+UINSZombieAnimInstance::UINSZombieAnimInstance(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	bIsMoving = false;
 	bIsFalling = false;
@@ -31,7 +32,7 @@ void UINSZombieAnimInstance::NativeInitializeAnimation()
 void UINSZombieAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 {
 	Super::NativeUpdateAnimation(DeltaSeconds);
-	if(ZombiePawnOwner&&ZombiePawnMovementComp)
+	if (ZombiePawnOwner && ZombiePawnMovementComp)
 	{
 		UpdateIsFalling();
 		UpdateIsMovingHorizontal();
@@ -41,7 +42,6 @@ void UINSZombieAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 void UINSZombieAnimInstance::EvaluateAnimCurves()
 {
-
 }
 
 void UINSZombieAnimInstance::UpdateIsMoving()
@@ -63,7 +63,7 @@ void UINSZombieAnimInstance::UpdateIsMovingHorizontal()
 	if (ZombiePawnOwner && ZombiePawnMovementComp)
 	{
 		//bIsMovingHorizontal = !ZombiePawnMovementComp->IsFalling() && ZombiePawnMovementComp->GetLastUpdateVelocity().Size2D() > 0.f;
-		bIsMovingHorizontal = !(ZombiePawnMovementComp->IsFalling())&&ZombiePawnMovementComp->GetLastUpdateVelocity().Size2D() > 0.f;
+		bIsMovingHorizontal = !(ZombiePawnMovementComp->IsFalling()) && ZombiePawnMovementComp->GetLastUpdateVelocity().Size2D() > 0.f;
 	}
 }
 

@@ -23,39 +23,39 @@ class INSURGENCY_API AINSWeaponAttachment : public AINSItems
 protected:
 	/** attachment visual skeletal component , should have no collision(Physics) enabled */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "AttachmentMeshComp", meta = (AllowPrivateAccess = "true"))
-		UStaticMeshComponent* AttachmentMeshComp;
+	UStaticMeshComponent* AttachmentMeshComp;
 
 	/** weapon that own this attachment */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_OwnerWeapon, Category = "WeaponOwner")
-		AINSWeaponBase* WeaponOwner;
+	AINSWeaponBase* WeaponOwner;
 
 	/** in which slot can this attachment attach to, e.g. underBarrel,muzzle */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
-		TArray<EWeaponAttachmentType> CompatibleWeaponSlots;
+	TArray<EWeaponAttachmentType> CompatibleWeaponSlots;
 
 	/** in which slot can this attachment attach to, e.g. underBarrel,muzzle */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Config")
-		EWeaponAttachmentType AttachmentType;
+	EWeaponAttachmentType AttachmentType;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "WeaponAttachments")
-		uint8 AttachedSlotIndex;
+	uint8 AttachedSlotIndex;
 
 	/** Target FOV value,for optics only */
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="FOV")
-	   float TargetFOV;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="FOV")
+	float TargetFOV;
 
 
 protected:
 	/** for grips typically, such as fore grips */
 	UPROPERTY()
-		uint8 bChangeWeaponBasePoseType : 1;
+	uint8 bChangeWeaponBasePoseType : 1;
 
 	/** for bolt rifles typically,indicates if this attachment will block weapon quick reloading */
 	UPROPERTY()
-		uint8 bBlockQuickBoltRifileReloading : 1;
+	uint8 bBlockQuickBoltRifileReloading : 1;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponAttachments")
-		EWeaponBasePoseType TargetWeaponBasePoseType;
+	EWeaponBasePoseType TargetWeaponBasePoseType;
 
 
 protected:
@@ -63,7 +63,7 @@ protected:
 	virtual void AttachToWeaponSlot();
 
 	UFUNCTION()
-		virtual void OnRep_OwnerWeapon();
+	virtual void OnRep_OwnerWeapon();
 
 	virtual void CheckAndUpdateWeaponBasePoseType();
 
@@ -91,7 +91,7 @@ public:
 	FORCEINLINE virtual class UStaticMeshComponent* GetAttachmentMeshComp() const;
 
 	/** gets the target FOV of this attachment ,for optics only */
-	virtual float GetTargetFOV()const { return TargetFOV; }
+	virtual float GetTargetFOV() const { return TargetFOV; }
 
 	inline virtual EWeaponBasePoseType GetTargetWeaponBasePoseType() const { return TargetWeaponBasePoseType; }
 

@@ -14,200 +14,201 @@ class UMaterial;
  * point hit particle data
  */
 USTRUCT(BlueprintType)
-struct FImpactParticleData {
-
+struct FImpactParticleData
+{
 	GENERATED_USTRUCT_BODY()
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactParticles")
-		UParticleSystem* DefaultParticle;
+	UParticleSystem* DefaultParticle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactParticles")
-		UParticleSystem* DirtParticle;
+	UParticleSystem* DirtParticle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactParticles")
-		UParticleSystem* ConcretParticle;
+	UParticleSystem* ConcretParticle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactParticles")
-		UParticleSystem* ThinMetalParticle;
+	UParticleSystem* ThinMetalParticle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactParticles")
-		UParticleSystem* ThickMetalParticle;
+	UParticleSystem* ThickMetalParticle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactParticles")
-		UParticleSystem* GrassParticle;
+	UParticleSystem* GrassParticle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactParticles")
-		UParticleSystem* GlassParticle;
+	UParticleSystem* GlassParticle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactParticles")
-		UParticleSystem* WaterParticle;
+	UParticleSystem* WaterParticle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactParticles")
-		UParticleSystem* WoodParticle;
+	UParticleSystem* WoodParticle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactParticles")
-		UParticleSystem* AlsphatParticle;
+	UParticleSystem* AlsphatParticle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactParticles")
-		UParticleSystem* RuberParticle;
+	UParticleSystem* RuberParticle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactParticles")
-		UParticleSystem* FleshParticle;
+	UParticleSystem* FleshParticle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactParticles")
-		UParticleSystem* GravelParticle;
+	UParticleSystem* GravelParticle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactParticles")
-		UParticleSystem* MudParticle;
+	UParticleSystem* MudParticle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactParticles")
-		UParticleSystem* CanParticle;
+	UParticleSystem* CanParticle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactParticles")
-		UParticleSystem* FabricParticle;
+	UParticleSystem* FabricParticle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactParticles")
-		UParticleSystem* PlasticParticle;
+	UParticleSystem* PlasticParticle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactParticles")
-		UParticleSystem* CarpetParticle;
+	UParticleSystem* CarpetParticle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactParticles")
-		UParticleSystem* TreeLogParticle;
+	UParticleSystem* TreeLogParticle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactParticles")
-		UParticleSystem* TreeLeavesParticle;
+	UParticleSystem* TreeLeavesParticle;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactParticles")
-		UParticleSystem* ArmorParticle;
-
+	UParticleSystem* ArmorParticle;
 };
 
 /**
  * point hit sound data
  */
 USTRUCT(BlueprintType)
-struct FImpactSoundData {
-
+struct FImpactSoundData
+{
 	GENERATED_USTRUCT_BODY()
-		/** projectile impact SoundCue*/
+	/** projectile impact SoundCue*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactSound")
-		USoundCue* DefaultSound;
+	USoundCue* DefaultSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactSound")
-		USoundCue* DirtSound;
+	USoundCue* DirtSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactSound")
-		USoundCue* ConcretSound;
+	USoundCue* ConcretSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactSound")
-		USoundCue* ThinMetalSound;
+	USoundCue* ThinMetalSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactSound")
-		USoundCue* ThickMetalSound;
+	USoundCue* ThickMetalSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactSound")
-		USoundCue* GrassSound;
+	USoundCue* GrassSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactSound")
-		USoundCue* GlassSound;
+	USoundCue* GlassSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactSound")
-		USoundCue* WaterSound;
+	USoundCue* WaterSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactSound")
-		USoundCue* WoodSound;
+	USoundCue* WoodSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactSound")
-		USoundCue* AlsphatSound;
+	USoundCue* AlsphatSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactSound")
-		USoundCue* RuberSound;
+	USoundCue* RuberSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactSound")
-		USoundCue* FleshSound;
+	USoundCue* FleshSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactSound")
-		USoundCue* GravelSound;
+	USoundCue* GravelSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactSound")
-		USoundCue* MudSound;
+	USoundCue* MudSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactSound")
-		USoundCue* CanSound;
+	USoundCue* CanSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactSound")
-		USoundCue* FabricSound;
+	USoundCue* FabricSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactSound")
-		USoundCue* PlasticSound;
+	USoundCue* PlasticSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactSound")
-		USoundCue* CarpetSound;
+	USoundCue* CarpetSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactSound")
-		USoundCue* TreeLogSound;
+	USoundCue* TreeLogSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactSound")
-		USoundCue* TreeLeavesSound;
+	USoundCue* TreeLeavesSound;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ImpactSound")
-		USoundCue* ArmorSound;
-
+	USoundCue* ArmorSound;
 };
 
 /**
  * point hit decal data
  */
 USTRUCT(BlueprintType)
-struct FImpactDecalData {
+struct FImpactDecalData
+{
 	GENERATED_USTRUCT_BODY()
 
 	/** projectile impact Decal*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Decals")
-		UMaterial* DefaultDecal;
+	UMaterial* DefaultDecal;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Decals")
-		UMaterial* DirtDecal;
+	UMaterial* DirtDecal;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Decals")
-		UMaterial* ConcreteDecal;
+	UMaterial* ConcreteDecal;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Decals")
-		UMaterial* MetalDecal;
+	UMaterial* MetalDecal;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Decals")
-		UMaterial* GlassDecal;
+	UMaterial* GlassDecal;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Decals")
-		UMaterial* WoodDecal;
+	UMaterial* WoodDecal;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Decals")
-		UMaterial* AlsphatDecal;
+	UMaterial* AlsphatDecal;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Decals")
-		UMaterial* RubberDecal;
+	UMaterial* RubberDecal;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Decals")
-		UMaterial* FleshDecal;
+	UMaterial* FleshDecal;
 };
+
 UCLASS(notplaceable)
 class INSURGENCY_API AINSImpactEffect : public AActor
 {
 	GENERATED_UCLASS_BODY()
-	
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ParticleData")
-		FImpactParticleData ImpactParticles;
+	FImpactParticleData ImpactParticles;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ParticleData")
-		FImpactSoundData ImpactSounds;
+	FImpactSoundData ImpactSounds;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "ParticleData")
-		FImpactDecalData ImpactDecals;
+	FImpactDecalData ImpactDecals;
+
+	TWeakObjectPtr<UPhysicalMaterial> ImpactedPhysicalMat;
 
 protected:
-	virtual void PostInitializeComponents()override;
+	virtual void PostInitializeComponents() override;
 
 	virtual UParticleSystem* GetImpactParticlesBySurfaceType(EPhysicalSurface SurfaceType);
 
@@ -219,5 +220,6 @@ protected:
 	FHitResult ImpactHit;
 
 public:
-	virtual void SetImpactHit( FHitResult& InImpactHit) { this->ImpactHit = InImpactHit; };
+	virtual void SetImpactHit(FHitResult& InImpactHit) { this->ImpactHit = InImpactHit; };
+	virtual void SetImpactedPhysicalMat(UPhysicalMaterial* const PhysicalMaterial);
 };

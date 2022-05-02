@@ -9,6 +9,7 @@
 #endif
 #include "INSGameModes/INSGameModeBase.h"
 #include "INSCharacter/INSPlayerController.h"
+
 AINSTeamInfo::AINSTeamInfo(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	bReplicates = true;
@@ -45,7 +46,6 @@ void AINSTeamInfo::SetTeamType(ETeamType NewTeamType)
 
 void AINSTeamInfo::OnRep_TeamType()
 {
-
 }
 
 void AINSTeamInfo::AddPlayerToThisTeam(class AINSPlayerStateBase* NewPlayer)
@@ -58,9 +58,9 @@ void AINSTeamInfo::AddPlayerToThisTeam(class AINSPlayerStateBase* NewPlayer)
 
 void AINSTeamInfo::SortPlayersByScore()
 {
-// 	StrArr.Sort([](const FString& A, const FString& B) {
-// 		return A.Len() > B.Len();
-// 	});
+	// 	StrArr.Sort([](const FString& A, const FString& B) {
+	// 		return A.Len() > B.Len();
+	// 	});
 }
 
 void AINSTeamInfo::RemovePlayer(class AINSPlayerStateBase* PlayerToRemove)
@@ -78,4 +78,3 @@ bool AINSTeamInfo::isTeamFull()
 	}
 	return GetCurrentTeamPlayers() < CurrentGameMode->GetMaxSingleTeamPlayers();
 }
-

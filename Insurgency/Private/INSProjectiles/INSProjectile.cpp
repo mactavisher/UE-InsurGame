@@ -24,6 +24,7 @@
 #include "INSComponents/INSWeaponMeshComponent.h"
 #include "Curves/CurveFloat.h"
 #include "Engine/ActorChannel.h"
+#include "Engine/NetConnection.h"
 #include "INSDamageTypes/INSDamageType_Projectile.h"
 
 DEFINE_LOG_CATEGORY(LogINSProjectile);
@@ -74,6 +75,7 @@ AINSProjectile::AINSProjectile(const FObjectInitializer& ObjectInitializer) : Su
 	ProjectileMoveComp->PrimaryComponentTick.AddPrerequisite(this, InitRepTickFunc);
 	PrimaryActorTick.AddPrerequisite(ProjectileMoveComp, ProjectileMoveComp->PrimaryComponentTick);
 	MovementQuantizeLevel = EVectorQuantization::RoundWholeNumber;
+	bScanTraceConditionSet = false;
 }
 
 void AINSProjectile::OnRep_Explode()
@@ -176,7 +178,7 @@ void AINSProjectile::OnRep_ProjectileHit()
 	GetWorld()->LineTraceSingleByChannel(ImpactHit, ProjectileHitInfo.Location, TraceEnd, ECC_Camera, QueryParams);
 	if (ImpactHit.bBlockingHit)
 	{
-		const AActor* HitActor = ImpactHit.Actor.Get();
+		const AActor* HitActor = ImpactHit.GetActor();
 		UClass* HitActorClass = HitActor == nullptr ? nullptr : HitActor->GetClass();
 		if (GetVisualFakeProjectile())
 		{
@@ -343,7 +345,7 @@ void AINSProjectile::LifeSpanExpired()
 void AINSProjectile::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-	GetProjectileMovementComp()->SetOwnerProjectile(this);
+	//GetProjectileMovementComp()->SetOwnerProjectile(this);
 	ProjectileLiftTimeData.InitialSpeed = GetProjectileMovementComp()->InitialSpeed;
 	ProjectileLiftTimeData.StartTime = GetWorld()->GetRealTimeSeconds();
 }
@@ -372,7 +374,7 @@ void AINSProjectile::PostNetReceiveLocationAndRotation()
 
 void AINSProjectile::GatherCurrentMovement()
 {
-	if (HasAuthority() && !bVisualProjectile && RootComponent != nullptr && !IsPendingKill() && !IsPendingKillPending())
+	if (HasAuthority() && !bVisualProjectile && RootComponent != nullptr && !GetValid(this) && !IsPendingKillPending())
 	{
 		// If we are attached, don't replicate absolute position
 		if (RootComponent->GetAttachParent() != nullptr)
@@ -486,7 +488,7 @@ void AINSProjectile::SendInitialReplication()
 		NetDriver->ReplicationFrame++;
 		for (int32 i = 0; i < NetDriver->ClientConnections.Num(); i++)
 		{
-			if (NetDriver->ClientConnections[i]->State == USOCK_Open && NetDriver->ClientConnections[i]->PlayerController != nullptr && NetDriver->ClientConnections[i]->IsNetReady(false))
+			if (NetDriver->ClientConnections[i]->GetConnectionState() == USOCK_Open && NetDriver->ClientConnections[i]->PlayerController != nullptr && NetDriver->ClientConnections[i]->IsNetReady(false))
 			{
 				const AActor* ViewTarget = NetDriver->ClientConnections[i]->PlayerController->GetViewTarget();
 				if (ViewTarget == nullptr)
@@ -549,7 +551,7 @@ void AINSProjectile::CheckImpactHit()
 	const FVector TraceEnd = TraceStart + ProjectileDir * TraceRange;
 	FHitResult ImpactHit(ForceInit);
 	GetWorld()->LineTraceSingleByChannel(ImpactHit, TraceStart, TraceEnd, ECC_Camera, QueryParams);
-	const AActor* HitActor = ImpactHit.Actor.Get();
+	const AActor* HitActor = ImpactHit.GetActor();
 	UClass* HitActorClass = HitActor == nullptr ? nullptr : HitActor->GetClass();
 	if (ImpactHit.bBlockingHit)
 	{
@@ -593,6 +595,11 @@ void AINSProjectile::CheckImpactHit()
 		DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, 3.0f);
 	}
 #endif
+}
+
+void AINSProjectile::OnRep_ScanTraceCondition()
+{
+	bScanTraceConditionSet = true;
 }
 
 void AINSProjectile::SetMuzzleSpeed(const float NewSpeed)

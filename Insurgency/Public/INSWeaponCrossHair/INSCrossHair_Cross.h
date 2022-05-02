@@ -12,32 +12,32 @@ struct FWeaponCrossHairInfo
 {
 	GENERATED_USTRUCT_BODY()
 
-		/** default cross hair tint color */
-		UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "CrossHair")
-		FLinearColor CrossHairDefaultTintColor;
+	/** default cross hair tint color */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "CrossHair")
+	FLinearColor CrossHairDefaultTintColor;
 
 	/** extra effect tint color ,for example , when contact with enemies */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "CrossHair")
-		FLinearColor CrossHairThreatenTintColor;
+	FLinearColor CrossHairThreatenTintColor;
 
 	/** Gap between each cross hair part */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "CrossHair")
-		float CenterRadius;
+	float CenterRadius;
 
 	/** Gap between each cross hair part */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "CrossHair")
-		float LineScale;
+	float LineScale;
 
 	/** Gap between each cross hair part */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "CrossHair")
-		float LineLength;
+	float LineLength;
 
 	FWeaponCrossHairInfo()
 		: CrossHairDefaultTintColor(FLinearColor::White)
-		, CrossHairThreatenTintColor(FLinearColor::Red)
-		, CenterRadius(5.f)
-		, LineScale(1.f)
-		, LineLength(6.f)
+		  , CrossHairThreatenTintColor(FLinearColor::Red)
+		  , CenterRadius(5.f)
+		  , LineScale(1.f)
+		  , LineLength(6.f)
 	{
 	}
 };
@@ -50,14 +50,12 @@ UCLASS(BlueprintType, Blueprintable, notplaceable)
 class INSURGENCY_API UINSCrossHair_Cross : public UINSCrossHairBase
 {
 	GENERATED_UCLASS_BODY()
-
 	/** CrossHair Config data */
 	UPROPERTY()
-		FWeaponCrossHairInfo WeaponCrossHairInfo;
+	FWeaponCrossHairInfo WeaponCrossHairInfo;
 
 public:
 	//~ Begin UINSCrossHairBase Interface
-	virtual void DrawCrossHair(class UCanvas* InCanvas, class AINSWeaponBase* InWeapon, FLinearColor DrawColor)override;
+	virtual void DrawCrossHair(class UCanvas* InCanvas, class AINSWeaponBase* InWeapon, FLinearColor DrawColor) override;
 	//~ End UINSCrossHairBase Interface
-
 };

@@ -7,7 +7,7 @@
 #include "Engine/Canvas.h"
 #include "INSItems/INSWeapons/INSWeaponBase.h"
 
-UINSCrossHairBase::UINSCrossHairBase(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
+UINSCrossHairBase::UINSCrossHairBase(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	BaseSize = FVector2D(1920.f, 1080.f);
 }
@@ -31,5 +31,4 @@ void UINSCrossHairBase::SetOwnerWeapon(AINSWeaponBase* NewWeaponOwner)
 
 void UINSCrossHairBase::DrawCrossHair(class UCanvas* InCanvas, class AINSWeaponBase* InWeapon, FLinearColor DrawColor)
 {
-
 }

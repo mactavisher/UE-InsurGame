@@ -13,7 +13,7 @@
 
 DEFINE_LOG_CATEGORY(LogINSPickup);
 
-AINSPickupBase::AINSPickupBase(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
+AINSPickupBase::AINSPickupBase(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	SimpleCollisionComp = ObjectInitializer.CreateDefaultSubobject<UBoxComponent>(this, TEXT("ColisionComp"));
 	SimpleCollisionComp->SetBoxExtent(FVector(50.f, 3.f, 10.f));
@@ -29,7 +29,7 @@ AINSPickupBase::AINSPickupBase(const FObjectInitializer& ObjectInitializer) :Sup
 	VisualMeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	VisualMeshComp->SetCollisionResponseToAllChannels(ECR_Ignore);
 	bReplicates = true;
-    SetReplicatingMovement(true);
+	SetReplicatingMovement(true);
 	bAutoPickup = false;
 	bAutoDestroy = true;
 	PrimaryActorTick.bCanEverTick = true;
@@ -51,7 +51,7 @@ void AINSPickupBase::OnRep_PickupInfo()
 void AINSPickupBase::BeginPlay()
 {
 	Super::BeginPlay();
-	if(bAutoDestroy)
+	if (bAutoDestroy)
 	{
 		SetLifeSpan(10.f);
 	}
@@ -111,7 +111,6 @@ void AINSPickupBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 
 void AINSPickupBase::OnRep_bIsActive()
 {
-
 }
 
 void AINSPickupBase::HandleOnBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -169,11 +168,9 @@ void AINSPickupBase::DisableTick()
 
 void AINSPickupBase::GiveTo(class AController* PlayerToGive)
 {
-
 }
 
 void AINSPickupBase::OnRep_Owner()
 {
 	Super::OnRep_Owner();
 }
-

@@ -111,7 +111,7 @@ void AINSPlayerCharacter::TickActor(float DeltaTime, ELevelTick TickType, FActor
 				FirstEquipTickFunction.bCanEverTick = false;
 				FirstEquipTickFunction.SetTickFunctionEnable(false);
 				FirstEquipTickFunction.UnRegisterTickFunction();
-				UE_LOG(LogINSCharacter, Log, TEXT("Character:%s has finished first equip tick ,unregistring"),*GetName());
+				UE_LOG(LogINSCharacter, Log, TEXT("Character:%s has finished first equip tick ,unregistring"), *GetName());
 			}
 		}
 	}
@@ -134,7 +134,7 @@ void AINSPlayerCharacter::OnCauseDamage(const FTakeHitInfo& HitInfo)
 		return;
 	}
 	AINSPlayerCharacter* const PlayerCharacter = Cast<AINSPlayerCharacter>(LastHitInfo.InstigatorPawn);
-	if (PlayerCharacter && !PlayerCharacter->GetIsDead() && !PlayerCharacter->IsPendingKill())
+	if (PlayerCharacter && !PlayerCharacter->GetIsDead() && !GetValid(PlayerCharacter))
 	{
 		if (PlayerCharacter->GetINSPlayerController())
 		{
@@ -333,7 +333,7 @@ void AINSPlayerCharacter::TickRecoil(float DeltaSeconds)
 	if (CurrentWeapon && CurrentWeapon->GetIsFiring() && !bIsDead && INSPlayerController)
 	{
 		float YawRecoilAmount = FMath::RandRange(-CurrentWeapon->GetRecoilHorizontallyFactor(),
-		CurrentWeapon->GetRecoilHorizontallyFactor());
+		                                         CurrentWeapon->GetRecoilHorizontallyFactor());
 		AddControllerYawInput(YawRecoilAmount * DeltaSeconds);
 		float PitchRecoilAmount = CurrentWeapon->GetRecoilVerticallyFactor();
 		AddControllerPitchInput(PitchRecoilAmount * DeltaSeconds);
@@ -360,7 +360,7 @@ void AINSPlayerCharacter::FinishUnEquipItem()
 	Super::FinishUnEquipItem();
 	if (PendingWeaponEquipEvent.bIsEventActive)
 	{
-		CreateAndEquipItem(PendingWeaponEquipEvent.ItemId,PendingWeaponEquipEvent.WeaponSlotIndex);
+		CreateAndEquipItem(PendingWeaponEquipEvent.ItemId, PendingWeaponEquipEvent.WeaponSlotIndex);
 	}
 	PendingWeaponEquipEvent.ResetEvent();
 }
@@ -450,12 +450,12 @@ void AINSPlayerCharacter::OnShotFired()
 void AINSPlayerCharacter::OnReloadFinished()
 {
 	Super::OnReloadFinished();
-	if(InventoryComp&&CurrentWeapon)
+	if (InventoryComp && CurrentWeapon)
 	{
 		FInventorySlot* InventorySlot = InventoryComp->GetItemSlot(CurrentWeapon->GetInventorySlotIndex());
-		if(InventorySlot)
+		if (InventorySlot)
 		{
-			InventorySlot->ClipAmmo=CurrentWeapon->GetAmmoLeft();
+			InventorySlot->ClipAmmo = CurrentWeapon->GetAmmoLeft();
 		}
 	}
 }
@@ -707,7 +707,7 @@ void AINSPlayerCharacter::UpdateComponents()
 
 void AINSPlayerCharacter::RegisterFirstEquipCheck()
 {
-	if(HasAuthority())
+	if (HasAuthority())
 	{
 		FirstEquipTickFunction.Target = this;
 		FirstEquipTickFunction.bCanEverTick = true;
@@ -889,10 +889,10 @@ void AINSPlayerCharacter::SetupAnimInstance()
 void AINSPlayerCharacter::UpdateAnimationData(class AINSItems* InItemRef)
 {
 	const EItemType ItemType = InItemRef->GetItemType();
-	if(ItemType==EItemType::WEAPON)
+	if (ItemType == EItemType::WEAPON)
 	{
 		AINSWeaponBase* WeaponItem = Cast<AINSWeaponBase>(InItemRef);
-		if(WeaponItem)
+		if (WeaponItem)
 		{
 			for (UINSCharacterAimInstance* CachedAnimInstance : CachedAnimInstances)
 			{
@@ -981,7 +981,7 @@ void AINSPlayerCharacter::ReceiveSetupWeaponAttachment()
 	}
 	if (NetMode == NM_ListenServer)
 	{
-		ItemAttachParent = GetWorld()->GetFirstPlayerController()==GetINSPlayerController()? GetCharacter1PMesh() : GetCharacter3PMesh();
+		ItemAttachParent = GetWorld()->GetFirstPlayerController() == GetINSPlayerController() ? GetCharacter1PMesh() : GetCharacter3PMesh();
 	}
 	if (ItemAttachParent)
 	{

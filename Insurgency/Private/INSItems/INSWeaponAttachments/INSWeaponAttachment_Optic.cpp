@@ -11,7 +11,7 @@
 #include "INSItems/INSWeapons/INSWeaponBase.h"
 #endif
 
-AINSWeaponAttachment_Optic::AINSWeaponAttachment_Optic(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
+AINSWeaponAttachment_Optic::AINSWeaponAttachment_Optic(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	OpticMeshComp = ObjectInitializer.CreateDefaultSubobject<UStaticMeshComponent>(this, TEXT("OpticMesh"));
 	SceneCaptureComp = ObjectInitializer.CreateDefaultSubobject<USceneCaptureComponent2D>(this, TEXT("SceneCaptureComp"));
@@ -23,6 +23,7 @@ AINSWeaponAttachment_Optic::AINSWeaponAttachment_Optic(const FObjectInitializer&
 	AttachmentType = EWeaponAttachmentType::SIGHT;
 	OpticMeshComp->SetupAttachment(RootComponent);
 	OpticMeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	OpticMeshComp->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	TargetFOV = 70.f;
 	BaseHandIKXLocationValue = -4.f;
 	bEnableDualRenderOptic = false;
@@ -45,7 +46,7 @@ void AINSWeaponAttachment_Optic::Tick(float DeltaTime)
 		return;
 	}
 	//only we have a weapon owner and player controlled client need to update this
-	if (WeaponOwner&&!WeaponOwner->GetIsClientCosmeticWeapon())
+	if (WeaponOwner && !WeaponOwner->GetIsClientCosmeticWeapon())
 	{
 		const AController* const PC = Cast<AController>(WeaponOwner->GetOwner());
 		if (PC)
@@ -78,7 +79,7 @@ void AINSWeaponAttachment_Optic::PostInitializeComponents()
 	OpticMeshComp->AttachToComponent(AttachmentMeshComp, FAttachmentTransformRules::SnapToTargetIncludingScale, NAME_None);
 	SceneCaptureComp->AttachToComponent(OpticMeshComp, FAttachmentTransformRules::SnapToTargetIncludingScale, NAME_None);
 	SceneCaptureComp->AddRelativeLocation(FVector(50.f, 0.f, 0.f));
-	if(bEnableDualRenderOptic)
+	if (bEnableDualRenderOptic)
 	{
 		SceneCaptureComp->PrimaryComponentTick.bCanEverTick = true;
 		SceneCaptureComp->PrimaryComponentTick.SetTickFunctionEnable(true);
@@ -93,9 +94,9 @@ void AINSWeaponAttachment_Optic::PostInitializeComponents()
 void AINSWeaponAttachment_Optic::AttachToWeaponSlot()
 {
 	Super::AttachToWeaponSlot();
-	if(WeaponOwner&&WeaponOwner->GetRequireExtraOpticRail())
+	if (WeaponOwner && WeaponOwner->GetRequireExtraOpticRail())
 	{
-		RootComponent->AttachToComponent(WeaponOwner->GetOpticRailComp(),FAttachmentTransformRules::SnapToTargetIncludingScale,TEXT("Optic"));
+		RootComponent->AttachToComponent(WeaponOwner->GetOpticRailComp(), FAttachmentTransformRules::SnapToTargetIncludingScale,TEXT("Optic"));
 	}
 }
 
@@ -105,7 +106,7 @@ void AINSWeaponAttachment_Optic::OnRep_OwnerWeapon()
 	if (WeaponOwner)
 	{
 		AINSCharacter* OwnerChar = WeaponOwner->GetOwnerCharacter();
-		if(OwnerChar)
+		if (OwnerChar)
 		{
 			OwnerChar->SetAimHandsXLocation(WeaponOwner->GetWeaponAimHandIKXLocation());
 			const AINSPlayerStateBase* const PS = OwnerChar->GetPlayerState<AINSPlayerStateBase>();
@@ -128,7 +129,7 @@ FTransform AINSWeaponAttachment_Optic::GetOpticSightTransform()
 	const FName SightAlignerName = FName(TEXT("SightAligner"));
 	if (OpticMeshComp->DoesSocketExist(SightAlignerName))
 	{
-		return OpticMeshComp->GetSocketTransform(SightAlignerName,RTS_World);
+		return OpticMeshComp->GetSocketTransform(SightAlignerName, RTS_World);
 	}
 	return FTransform::Identity;
 }

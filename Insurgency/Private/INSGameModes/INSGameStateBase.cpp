@@ -12,7 +12,7 @@
 
 DEFINE_LOG_CATEGORY(LogINSGameState);
 
-AINSGameStateBase::AINSGameStateBase(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
+AINSGameStateBase::AINSGameStateBase(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	bShouldDropWeaponWhenPlayerDead = true;
 	bAllowFire = false;
@@ -20,7 +20,8 @@ AINSGameStateBase::AINSGameStateBase(const FObjectInitializer& ObjectInitializer
 	bIsMatchPrepare = false;
 	bMatchPrepareFinished = false;
 }
-void AINSGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty> &OutLifetimeProps) const
+
+void AINSGameStateBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AINSGameStateBase, bAllowFire);
@@ -41,12 +42,10 @@ void AINSGameStateBase::Tick(float DeltaSeconds)
 
 void AINSGameStateBase::OnRep_PrepareMath()
 {
-
 }
 
 void AINSGameStateBase::ClientsReceiveKillEvent_Implementation(class APlayerState* Killer, class APlayerState* Victim, int32 KillerScore, bool bIsTeamDamage)
 {
-	
 	/*//OnKill.Broadcast(Killer->PlayerState, Victim->PlayerState, KillerScore, bIsTeamDamage);
 	if (Killer->GetClass()->IsChildOf(APlayerState::StaticClass()))
 	{
@@ -102,7 +101,6 @@ void AINSGameStateBase::SetMatchPrepareRemainingTime(uint8 PrepareTimeRemaining)
 
 void AINSGameStateBase::OnRep_FinishePreparing()
 {
-
 }
 
 void AINSGameStateBase::OnRep_PreparingRemainingTime()
@@ -123,5 +121,4 @@ void AINSGameStateBase::OnRep_PreparingRemainingTime()
 
 void AINSGameStateBase::OnRep_GameType()
 {
-
 }

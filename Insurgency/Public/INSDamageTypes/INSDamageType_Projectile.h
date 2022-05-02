@@ -13,5 +13,4 @@ UCLASS()
 class INSURGENCY_API UINSDamageType_Projectile : public UINSDamageType
 {
 	GENERATED_BODY()
-	
 };

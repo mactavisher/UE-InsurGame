@@ -15,32 +15,31 @@ class AINSPlayerStateBase;
  *  Team Info class for Team Based Game Modes
  */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FTeamTypeChangedSignature);
+
 UCLASS(Blueprintable)
 class INSURGENCY_API AINSTeamInfo : public AInfo
 {
 	GENERATED_UCLASS_BODY()
-
 	/** current team type */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, ReplicatedUsing = OnRep_TeamType, Category = "TeamType")
-		ETeamType ThisTeamType;
+	ETeamType ThisTeamType;
 
 	/** uint8 that limit a team maximum member to 255 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Team")
-		TArray<AINSPlayerStateBase*> TeamMembers;
+	TArray<AINSPlayerStateBase*> TeamMembers;
 
 	/** this team's score */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Scoring")
-		float  TeamScore;
+	float TeamScore;
 
 public:
 	UPROPERTY(BlueprintAssignable, Category = "Events")
-		FTeamTypeChangedSignature OnTeamTypeChange;
+	FTeamTypeChangedSignature OnTeamTypeChange;
 
 protected:
-
 	//~ Begin AActor Interface
-	virtual void BeginPlay()override;
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
+	virtual void BeginPlay() override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	//~end AActor interface
 public:
 	/**
@@ -50,11 +49,11 @@ public:
 	virtual void SetTeamType(ETeamType NewTeamType);
 
 	/** return team type */
-	virtual ETeamType GetTeamType()const { return ThisTeamType; }
+	virtual ETeamType GetTeamType() const { return ThisTeamType; }
 
 	/** call back function when team type set or changed */
 	UFUNCTION()
-		virtual void OnRep_TeamType();
+	virtual void OnRep_TeamType();
 
 	/**
 	 * @desc add a new player in this team
@@ -63,7 +62,7 @@ public:
 	virtual void AddPlayerToThisTeam(class AINSPlayerStateBase* NewPlayer);
 
 	/** get current team member size */
-	virtual uint8 GetCurrentTeamPlayers()const { return (uint8)TeamMembers.Num(); }
+	virtual uint8 GetCurrentTeamPlayers() const { return (uint8)TeamMembers.Num(); }
 
 	/** Sort member players by their score */
 	virtual void SortPlayersByScore();
@@ -83,5 +82,5 @@ public:
 	/**
 	 * retrieve the team score
 	 */
-	virtual float GetTeamScore()const { return TeamScore; }
+	virtual float GetTeamScore() const { return TeamScore; }
 };

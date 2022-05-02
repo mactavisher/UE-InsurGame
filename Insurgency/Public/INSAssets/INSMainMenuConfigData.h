@@ -13,5 +13,4 @@ UCLASS()
 class INSURGENCY_API UINSMainMenuConfigData : public UDataAsset
 {
 	GENERATED_BODY()
-	
 };

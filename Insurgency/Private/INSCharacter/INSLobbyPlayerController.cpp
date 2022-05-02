@@ -11,7 +11,7 @@
 // 	
 // }
 
-AINSLobbyPlayerController::AINSLobbyPlayerController(const FObjectInitializer&ObjectInitializer) :Super(ObjectInitializer)
+AINSLobbyPlayerController::AINSLobbyPlayerController(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	AudioComponent = ObjectInitializer.CreateDefaultSubobject<UAudioComponent>(this,TEXT("AudioComponent"));
 	AudioComponent->SetUISound(true);
@@ -22,24 +22,24 @@ void AINSLobbyPlayerController::BeginPlay()
 {
 	INSGameInstance = GetWorld()->GetGameInstance<UINSGameInstance>();
 	Super::BeginPlay();
-	AudioComponent->OnAudioFinished.AddDynamic(this,&AINSLobbyPlayerController::OnLobbyBgmPlayFinished);
+	AudioComponent->OnAudioFinished.AddDynamic(this, &AINSLobbyPlayerController::OnLobbyBgmPlayFinished);
 	DisableInput(this);
 	SetShowMouseCursor(true);
-	if(IsNetMode(NM_DedicatedServer))
+	if (IsNetMode(NM_DedicatedServer))
 	{
 		AudioComponent->DestroyComponent();
-		AudioComponent=nullptr;
+		AudioComponent = nullptr;
 	}
 	PlayLobbyBGM();
 }
 
 void AINSLobbyPlayerController::PlayLobbyBGM()
 {
-	if(IsNetMode(NM_DedicatedServer))
+	if (IsNetMode(NM_DedicatedServer))
 	{
-		return ;
+		return;
 	}
-	if(LobbyBMG)
+	if (LobbyBMG)
 	{
 		AudioComponent->SetSound(LobbyBMG);
 		AudioComponent->Play();
@@ -64,4 +64,3 @@ void AINSLobbyPlayerController::SetupInputComponent()
 void AINSLobbyPlayerController::OnClickItemIcon(int32 ItemId)
 {
 }
-

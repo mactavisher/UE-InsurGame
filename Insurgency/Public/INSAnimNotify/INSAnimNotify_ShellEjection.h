@@ -16,6 +16,6 @@ class INSURGENCY_API UINSAnimNotify_ShellEjection : public UAnimNotify
 	UINSAnimNotify_ShellEjection();
 public:
 	// Begin UAnimNotify interface
-	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation) override;
+	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference) override;
 	// End UAnimNotify interface
 };

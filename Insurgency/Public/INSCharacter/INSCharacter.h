@@ -124,6 +124,7 @@ struct FPendingWeaponEquipEvent
 		  , WeaponSlotIndex(static_cast<uint8>(255))
 	{
 	}
+
 	void ResetEvent()
 	{
 		EventCreateTime = 0.f;
@@ -179,7 +180,7 @@ protected:
 	/** game time in real seconds when this pawn dead */
 	UPROPERTY()
 	float DeathTime;
-	
+
 
 	/** current stance of this character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_CurrentStance, Category = "Stances")
@@ -328,10 +329,10 @@ protected:
 
 	virtual void TossCurrentWeapon();
 
-	virtual void CreateAndEquipItem(int32 ItemId,const uint8 InventorySlotIndex);
+	virtual void CreateAndEquipItem(int32 ItemId, const uint8 InventorySlotIndex);
 
-	UFUNCTION(Server,WithValidation,Reliable)
-	virtual void ServerCreateAndEquipItem(int32 ItemId,const uint8 InventorySlotIndex);
+	UFUNCTION(Server, WithValidation, Reliable)
+	virtual void ServerCreateAndEquipItem(int32 ItemId, const uint8 InventorySlotIndex);
 
 	/** ~~--------------------------------------------------------------
 	   Rep callbacks-------------------------------------------*/
@@ -481,17 +482,17 @@ public:
 
 	/** handles jump request from player*/
 	virtual void HandleJumpRequest();
-	
+
 	/** Handles Weapon Equip Request */
-	virtual void HandleItemEquipRequest(const int32 NextItemId,const uint8 SlotIndex);
+	virtual void HandleItemEquipRequest(const int32 NextItemId, const uint8 SlotIndex);
 
 	/** Handles Weapon UnEquip Request */
 	virtual void HandleItemFinishUnEquipRequest();
 	virtual void UnEquipItem();
 	UFUNCTION(Server, Unreliable, WithValidation)
-    virtual void ServerUnEquipItem();
+	virtual void ServerUnEquipItem();
 	virtual void FinishUnEquipItem();
-	UFUNCTION(Server,Unreliable,WithValidation)
+	UFUNCTION(Server, Unreliable, WithValidation)
 	virtual void ServerFinishUnEquipItem();
 
 	/** callback when character crouched or un-crouched */
@@ -603,29 +604,33 @@ public:
 	/** local client check this distance to the other location before spawn some FX*/
 	virtual float CheckDistance(const FVector OtherLocation);
 
-	virtual void SetupPendingWeaponEquipEvent(const int32 ItemId,const uint8 ItemSlotIdx);
+	virtual void SetupPendingWeaponEquipEvent(const int32 ItemId, const uint8 ItemSlotIdx);
 
 	virtual FPendingWeaponEquipEvent& GetPendingEquipEvent();
 
-	virtual bool GetIsDeadDead()const{return bIsDeadDead;}
+	virtual bool GetIsDeadDead() const { return bIsDeadDead; }
 
-	virtual float PlayWeaponReloadAnim(){return 0.f;};
+	virtual float PlayWeaponReloadAnim() { return 0.f; };
 
-	virtual float PlayWeaponEquipAnim(){return 0.f;};
+	virtual float PlayWeaponEquipAnim() { return 0.f; };
 
-	virtual float PlayWeaponUnEquipAnim(){return 0.f;};
+	virtual float PlayWeaponUnEquipAnim() { return 0.f; };
 
-	virtual float PlayWeaponSwitchFireModeAnim(){return 0.f;};
+	virtual float PlayWeaponSwitchFireModeAnim() { return 0.f; };
 
-	virtual float PlayFireAnim(){return 0.f;};
+	virtual float PlayFireAnim() { return 0.f; };
 
 	virtual void UpdateAnimationData(class AINSItems* InItemRef);
 
 	virtual bool CheckCharacterIsReady();
 
-	virtual void OnShotFired(){};
+	virtual void OnShotFired()
+	{
+	};
 
-	virtual void OnReloadFinished(){};
+	virtual void OnReloadFinished()
+	{
+	};
 
 	virtual void ReceiveInventoryInitialized();
 

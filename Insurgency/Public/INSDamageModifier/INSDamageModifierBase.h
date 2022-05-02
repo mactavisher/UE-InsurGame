@@ -19,7 +19,7 @@ UCLASS(Abstract, NotBlueprintable)
 class INSURGENCY_API UINSDamageModifierBase : public UObject
 {
 	GENERATED_BODY()
-		friend class AINSGameModeBase;
+	friend class AINSGameModeBase;
 	/** damage modifier function,all subclasses must implement this function*/
-	virtual void  ModifyDamage(float& InDamage, FDamageEvent& DamageEvent, AController* Instigator, class AController* Victim);
+	virtual void ModifyDamage(float& InDamage, FDamageEvent& DamageEvent, AController* Instigator, class AController* Victim);
 };

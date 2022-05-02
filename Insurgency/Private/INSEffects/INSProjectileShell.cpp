@@ -9,7 +9,7 @@
 DEFINE_LOG_CATEGORY(INSProjectileShell);
 
 // Sets default values
-AINSProjectileShell::AINSProjectileShell(const FObjectInitializer& Objectinitializer) :Super(Objectinitializer)
+AINSProjectileShell::AINSProjectileShell(const FObjectInitializer& Objectinitializer) : Super(Objectinitializer)
 {
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.SetTickFunctionEnable(true);
@@ -24,7 +24,6 @@ AINSProjectileShell::AINSProjectileShell(const FObjectInitializer& Objectinitial
 void AINSProjectileShell::BeginPlay()
 {
 	Super::BeginPlay();
-
 }
 
 void AINSProjectileShell::PostInitializeComponents()
@@ -55,10 +54,10 @@ void AINSProjectileShell::OnCollide(FName EventName, float EmitterTime, int32 Pa
 		// init the shell impact effect spawn transform
 		const FTransform ImpactSpawnTrans(Velocity.ToOrientationQuat(), Location, FVector::OneVector);
 		AINSImpactEffect* const ImpactActor = GetWorld()->SpawnActorDeferred<AINSImpactEffect>(ShellCollideEffectClass
-			, ImpactSpawnTrans
-			, nullptr
-			, nullptr
-			, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+		                                                                                       , ImpactSpawnTrans
+		                                                                                       , nullptr
+		                                                                                       , nullptr
+		                                                                                       , ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 		if (ImpactActor)
 		{
 			FHitResult ImpactHit(ForceInit);
@@ -71,21 +70,20 @@ void AINSProjectileShell::OnCollide(FName EventName, float EmitterTime, int32 Pa
 			UGameplayStatics::FinishSpawningActor(ImpactActor, ImpactSpawnTrans);
 			bCollided = true;
 			UE_LOG(INSProjectileShell
-				, Warning
-				, TEXT("projectile shell %s spawns it impacte effect at location %s,Spawned impact effct instance name %s")
-				, *GetName()
-				, *ImpactSpawnTrans.GetLocation().ToString()
-				, *ImpactActor->GetName());
+			       , Warning
+			       , TEXT("projectile shell %s spawns it impacte effect at location %s,Spawned impact effct instance name %s")
+			       , *GetName()
+			       , *ImpactSpawnTrans.GetLocation().ToString()
+			       , *ImpactActor->GetName());
 			ParticleCollideDelegate.Unbind();
 		}
 		else if (!ImpactActor)
 		{
 			UE_LOG(INSProjectileShell
-				, Warning
-				, TEXT("projectile shell %s spawns it impacte effect failed at transform %s")
-				, *GetName()
-				, *ImpactSpawnTrans.ToString());
+			       , Warning
+			       , TEXT("projectile shell %s spawns it impacte effect failed at transform %s")
+			       , *GetName()
+			       , *ImpactSpawnTrans.ToString());
 		}
 	}
 }
-

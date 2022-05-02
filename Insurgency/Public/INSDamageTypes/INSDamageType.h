@@ -17,19 +17,18 @@ UCLASS()
 class INSURGENCY_API UINSDamageType : public UDamageType
 {
 	GENERATED_UCLASS_BODY()
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Message")
+	FText DamageMessage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Message")
-		FText DamageMessage;
+	FText DeathMessage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Message")
-		FText DeathMessage;
+	FText FallingDamageMessage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Message")
-		FText FallingDamageMessage;
+	FText FallingDeathMessage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Message")
-		FText FallingDeathMessage;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Message")
-		FCanvasIcon DamageIcon;
+	FCanvasIcon DamageIcon;
 };

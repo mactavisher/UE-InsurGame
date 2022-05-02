@@ -10,9 +10,9 @@ UINSAnimNotify_FinishReloading::UINSAnimNotify_FinishReloading()
 {
 }
 
-void UINSAnimNotify_FinishReloading::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
+void UINSAnimNotify_FinishReloading::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,const FAnimNotifyEventReference& EventReference)
 {
-	Super::Notify(MeshComp, Animation);
+	Super::Notify(MeshComp, Animation,EventReference);
 	AActor* Owner = MeshComp->GetOwner();
 	if (!Owner)
 	{

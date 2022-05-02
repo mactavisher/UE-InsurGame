@@ -5,5 +5,4 @@
 
 UINSCrossHair_Triangle::UINSCrossHair_Triangle(const FObjectInitializer& ObjectInitalizer) : Super(ObjectInitalizer)
 {
-
 }

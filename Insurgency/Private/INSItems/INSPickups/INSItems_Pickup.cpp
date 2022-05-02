@@ -6,7 +6,7 @@
 #ifndef AINSPlayerCharacter
 #include "Insurgency/Public/INSCharacter/INSPlayerCharacter.h"
 #endif
-AINSItems_Pickup::AINSItems_Pickup(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
+AINSItems_Pickup::AINSItems_Pickup(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	bAutoPickup = false;
 	InteractionComp = ObjectInitializer.CreateDefaultSubobject<USphereComponent>(this, TEXT("InteractionComp"));
@@ -25,11 +25,10 @@ void AINSItems_Pickup::HandleOnEndOverlap(UPrimitiveComponent* OverlappedCompone
 
 void AINSItems_Pickup::GiveThisToPlayer(class AController* NewClaimedPlayer)
 {
-
 }
 
 void AINSItems_Pickup::BeginPlay()
 {
-	 InteractionComp->OnComponentBeginOverlap.AddDynamic(this, &AINSItems_Pickup::HandleOnBeginOverlap);
-	 InteractionComp->OnComponentEndOverlap.AddDynamic(this, &AINSItems_Pickup::HandleOnEndOverlap);
+	InteractionComp->OnComponentBeginOverlap.AddDynamic(this, &AINSItems_Pickup::HandleOnBeginOverlap);
+	InteractionComp->OnComponentEndOverlap.AddDynamic(this, &AINSItems_Pickup::HandleOnEndOverlap);
 }

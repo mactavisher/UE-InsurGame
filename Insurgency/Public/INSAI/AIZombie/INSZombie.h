@@ -97,9 +97,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Movement")
 	float ChargeMoveSpeed;
 
-	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Replicated,ReplicatedUsing=OnRep_CurrentMoveSpeed,Category="Movement")
-    float CurrentMoveSpeed;
-	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing=OnRep_CurrentMoveSpeed, Category="Movement")
+	float CurrentMoveSpeed;
+
 	/** modular zombie of HeadComp */
 	UPROPERTY(Category = Character, VisibleAnywhere, BlueprintReadOnly, meta = (AllowPrivateAccess = "true"))
 	USkeletalMeshComponent* HeadComp;
@@ -124,9 +124,9 @@ protected:
 	UPROPERTY()
 	TArray<USkeletalMeshComponent*> CachedModularSkeletalMeshes;
 
-	UPROPERTY(Replicated,ReplicatedUsing=OnRep_CurrentWalkSpeed)
+	UPROPERTY(Replicated, ReplicatedUsing=OnRep_CurrentWalkSpeed)
 	float CurrentWalkSpeed;
-	
+
 	virtual void OnRep_Dead() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void PossessedBy(AController* NewController) override;
@@ -212,6 +212,5 @@ public:
 	 */
 	virtual void AddZombieRagePoint(const int32 RageToAdd) { RagePoint += RageToAdd; }
 
-	virtual void SetCurrentWalkSpeed(const float NewSpeedValue){CurrentMoveSpeed = NewSpeedValue;}
-
+	virtual void SetCurrentWalkSpeed(const float NewSpeedValue) { CurrentMoveSpeed = NewSpeedValue; }
 };

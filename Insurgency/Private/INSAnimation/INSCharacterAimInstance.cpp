@@ -13,6 +13,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "INSAssets/INSStaticAnimData.h"
 #include "TimerManager.h"
+#include "AnimGraphRuntime/Public/KismetAnimationLibrary.h"
 
 DEFINE_LOG_CATEGORY(LogINSCharacterAimInstance);
 
@@ -47,7 +48,7 @@ UINSCharacterAimInstance::UINSCharacterAimInstance(const FObjectInitializer& Obj
 	bIsSprinting = false;
 	CurrentWeaponReloadType = EWeaponReloadType::NONE;
 	CurrentWeaponBaseType = EWeaponBasePoseType::FOREGRIP;
-	bIsInAir =false;
+	bIsInAir = false;
 	bSprintPressed = false;
 	HorizontalSpeed = 0.f;
 	VerticalSpeed = 0.f;
@@ -200,7 +201,7 @@ void UINSCharacterAimInstance::StopFPPlayMoveAnimation()
 
 void UINSCharacterAimInstance::UpdateDirection()
 {
-	Direction = CalculateDirection(OwnerPlayerCharacter->GetVelocity(), OwnerPlayerCharacter->GetActorRotation());
+	UKismetAnimationLibrary::CalculateDirection(OwnerPlayerCharacter->GetVelocity(), OwnerPlayerCharacter->GetActorRotation());
 }
 
 

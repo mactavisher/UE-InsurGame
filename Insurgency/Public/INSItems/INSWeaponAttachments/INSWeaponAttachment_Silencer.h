@@ -13,5 +13,4 @@ UCLASS()
 class INSURGENCY_API AINSWeaponAttachment_Silencer : public AINSWeaponAttachment
 {
 	GENERATED_BODY()
-	
 };

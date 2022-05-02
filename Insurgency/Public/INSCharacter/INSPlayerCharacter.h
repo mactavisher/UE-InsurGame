@@ -86,7 +86,7 @@ protected:
 	TArray<UINSCharacterAimInstance*> CachedAnimInstances;
 
 	FActorTickFunction FirstEquipTickFunction;
-	
+
 
 protected:
 	virtual void BeginPlay() override;
@@ -174,14 +174,14 @@ public:
 
 	virtual void HandleCrouchRequest() override;
 
-	virtual void HandleItemEquipRequest(const int32 ItemId,const uint8 SlotIndex) override;
+	virtual void HandleItemEquipRequest(const int32 ItemId, const uint8 SlotIndex) override;
 
 	virtual void HandleItemFinishUnEquipRequest() override;
 
-	UFUNCTION(Server,Reliable,WithValidation)
-	virtual void ServerEquipItem(const int32 NextItemId,const uint8 SlotIndex);
+	UFUNCTION(Server, Reliable, WithValidation)
+	virtual void ServerEquipItem(const int32 NextItemId, const uint8 SlotIndex);
 
-	virtual void EquipItem(const int32 NextItemId,const uint8 SlotIndex);
+	virtual void EquipItem(const int32 NextItemId, const uint8 SlotIndex);
 
 	virtual void SetCurrentAnimData(UINSStaticAnimData* AnimData) override;
 
@@ -190,7 +190,7 @@ public:
 
 	virtual void EquipBestWeapon();
 
-	UFUNCTION(Server,Reliable,WithValidation)
+	UFUNCTION(Server, Reliable, WithValidation)
 	virtual void ServerEquipBestWeapon();
 
 	virtual void SetTeamType(const ETeamType NewTeamType);
@@ -238,5 +238,5 @@ public:
 	virtual float PlayFireAnim() override;
 	virtual float PlayWeaponReloadAnim() override;
 	virtual float PlayWeaponSwitchFireModeAnim() override;
-	virtual  void ReceiveInventoryInitialized() override;
+	virtual void ReceiveInventoryInitialized() override;
 };

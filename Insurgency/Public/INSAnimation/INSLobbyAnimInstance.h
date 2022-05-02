@@ -17,11 +17,10 @@ UCLASS()
 class INSURGENCY_API UINSLobbyAnimInstance : public UAnimInstance
 {
 	GENERATED_UCLASS_BODY()
-
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="LobbyAnimation")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="LobbyAnimation")
 	TArray<UAnimMontage*> RelaxAnims;
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="LobbyAnimation")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="LobbyAnimation")
 	UAnimMontage* WeaponBasePoseAnim;
 
 	UPROPERTY()
@@ -39,8 +38,8 @@ protected:
 	virtual void PlayRelaxAnim();
 public:
 	virtual void UpDateWeaponBasePoseAnim(UAnimMontage* NewAnim);
-	virtual UAnimMontage* GetWeaponBasePose()const{return  WeaponBasePoseAnim;}
+	virtual UAnimMontage* GetWeaponBasePose() const { return WeaponBasePoseAnim; }
 
 	virtual void SetLobbyWeapon(AINSWeaponBase* NewWeapon);
-	virtual AINSWeaponBase* GetLobbyWeapon()const{return LobbyWeapon;}
+	virtual AINSWeaponBase* GetLobbyWeapon() const { return LobbyWeapon; }
 };

@@ -20,6 +20,7 @@ AINSWeaponAttachment::AINSWeaponAttachment(const FObjectInitializer& ObjectIniti
 	bReplicates = true;
 	AttachmentMeshComp = ObjectInitializer.CreateDefaultSubobject<UStaticMeshComponent>(this, TEXT("AttachmentMeshComp"));
 	AttachmentMeshComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	AttachmentMeshComp->SetCollisionResponseToAllChannels(ECollisionResponse::ECR_Ignore);
 	RootComponent = AttachmentMeshComp;
 	AttachmentMeshComp->AlwaysLoadOnClient = true;
 	AttachmentMeshComp->SetHiddenInGame(false);
@@ -37,15 +38,16 @@ AINSWeaponAttachment::AINSWeaponAttachment(const FObjectInitializer& ObjectIniti
 void AINSWeaponAttachment::BeginPlay()
 {
 	Super::BeginPlay();
-	if(WeaponOwner)
+	if (WeaponOwner)
 	{
-		if(WeaponOwner->GetIsClientCosmeticWeapon())
+		if (WeaponOwner->GetIsClientCosmeticWeapon())
 		{
 			SetActorHiddenInGame(true);
 			AttachmentMeshComp->bCastHiddenShadow = true;
-		}else
+		}
+		else
 		{
-			if(WeaponOwner->GetLocalRole()>=ROLE_AutonomousProxy)
+			if (WeaponOwner->GetLocalRole() >= ROLE_AutonomousProxy)
 			{
 				AttachmentMeshComp->SetCastShadow(false);
 				AttachmentMeshComp->SetCastHiddenShadow(false);

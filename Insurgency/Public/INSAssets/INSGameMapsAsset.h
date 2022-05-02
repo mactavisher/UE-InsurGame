@@ -15,14 +15,14 @@
 USTRUCT(BlueprintType)
 struct FGameMapInfo
 {
-GENERATED_USTRUCT_BODY()
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
+	GENERATED_USTRUCT_BODY()
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	FName MapName;
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,meta=(AllowedClasses="World"))
-	FSoftObjectPath EntryMap ;
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(AllowedClasses="World"))
+	FSoftObjectPath EntryMap;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	FCanvasIcon MapIcon;
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	FCanvasIcon MiniMapIcon;
 };
 
@@ -30,18 +30,18 @@ USTRUCT(BlueprintType)
 struct FGameModeAndMapsInfo
 {
 	GENERATED_USTRUCT_BODY()
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	EGameModeEnum GameMode;
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	TArray<FGameMapInfo> Maps;
-	
 };
+
 UCLASS()
 class INSURGENCY_API UINSGameMapsAsset : public UDataAsset
 {
 	GENERATED_BODY()
 protected:
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="GameMaps")
-		TArray<FGameModeAndMapsInfo> GameMaps;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="GameMaps")
+	TArray<FGameModeAndMapsInfo> GameMaps;
 };

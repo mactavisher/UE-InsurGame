@@ -11,7 +11,7 @@ void FWeaponInfoData::CopyDataFromTable(FItemTableRow* ItemTableRow)
 	if (WeaponTableRow)
 	{
 		WeaponType = WeaponTableRow->WeaponType;
-		Priority =  WeaponTableRow->Priority;
+		Priority = WeaponTableRow->Priority;
 		BaseClipCapacity = WeaponTableRow->BaseClipCapacity;
 		BaseClipSize = WeaponTableRow->BaseClipSize;
 		TimeBetweenShots = WeaponTableRow->TimeBetweenShots;

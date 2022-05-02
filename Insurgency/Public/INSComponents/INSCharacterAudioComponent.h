@@ -19,23 +19,23 @@ class INSURGENCY_API UINSCharacterAudioComponent : public UAudioComponent
 
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "VoiceData")
-		UINSCharVoiceAssetData* MaleVoiceData;
+	UINSCharVoiceAssetData* MaleVoiceData;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "VoiceData")
-		UINSCharVoiceAssetData* FeMaleVoiceData;
+	UINSCharVoiceAssetData* FeMaleVoiceData;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "VoiceType")
-		EVoiceType CurrentVoiceType;
+	EVoiceType CurrentVoiceType;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character")
-		AINSCharacter* OwnerCharacter;
+	AINSCharacter* OwnerCharacter;
 
 	UPROPERTY()
 	EVoiceType CurrentPlayingSoundType;
 
 protected:
 	virtual class USoundCue* GetSoundToPlay(const EVoiceType NewVoiceType);
-	virtual void BeginPlay()override;
+	virtual void BeginPlay() override;
 
 public:
 	virtual void SetVoiceType(EVoiceType NewVoiceType);
@@ -71,14 +71,13 @@ public:
 	/**
 	 * called when Owner damages other character
 	 */
-	virtual void OnCauseDamage(bool bTeamDamage,bool bVictimDead);
-
+	virtual void OnCauseDamage(bool bTeamDamage, bool bVictimDead);
 
 
 	/**
 	 * @desc returns the owner character of this audio comp
 	 */
-	inline virtual AINSCharacter* GetOwnerCharacter()const { return OwnerCharacter; }
+	inline virtual AINSCharacter* GetOwnerCharacter() const { return OwnerCharacter; }
 
 	/**
 	 * @desc set the OwnerCharacter of this audio comp;
@@ -90,7 +89,7 @@ public:
 	 * @desc returns the owner character is Dead or not
 	 * @return bool   character's dead condition
 	 */
-	virtual bool GetIsPlayValid()const;
+	virtual bool GetIsPlayValid() const;
 
 	UFUNCTION()
 	virtual void OnSoundFinishPlay();

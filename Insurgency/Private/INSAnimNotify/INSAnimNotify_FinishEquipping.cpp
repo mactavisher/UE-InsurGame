@@ -11,10 +11,11 @@
 
 UINSAnimNotify_FinishEquipping::UINSAnimNotify_FinishEquipping()
 {
-
 }
-void UINSAnimNotify_FinishEquipping::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
+
+void UINSAnimNotify_FinishEquipping::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,const FAnimNotifyEventReference& EventReference)
 {
+	Super::Notify(MeshComp, Animation, EventReference);
 	AActor* Owner = MeshComp->GetOwner();
 	if (!Owner)
 	{

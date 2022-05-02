@@ -13,38 +13,36 @@ class AINSImpactEffect;
 
 INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(INSProjectileShell, Log, All);
 
-UCLASS(notplaceable,Blueprintable)
+UCLASS(notplaceable, Blueprintable)
 class INSURGENCY_API AINSProjectileShell : public AActor
 {
 	GENERATED_UCLASS_BODY()
-
 protected:
-
 	/** shell particle comp */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, meta = (AllowPrivateAccess = "true"), Category = "ShellParticle")
-		UParticleSystemComponent* ParticleComp;
+	UParticleSystemComponent* ParticleComp;
 
 	/** shell particle template */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "AmmoShell|ShellParticle")
-		UParticleSystem* ParticleTemplate;
+	UParticleSystem* ParticleTemplate;
 
 	/** shell particle impact spawn effect class */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
-		TSubclassOf<AINSImpactEffect> ShellCollideEffectClass;
+	TSubclassOf<AINSImpactEffect> ShellCollideEffectClass;
 
 	/** indicate if this particle comp collided */
 	UPROPERTY()
-		uint8 bCollided : 1;
+	uint8 bCollided : 1;
 
 	UPROPERTY()
-		int32 CurrentCollideCount;
+	int32 CurrentCollideCount;
 
 	FScriptDelegate ParticleCollideDelegate;
 
 protected:
 	//~ begin AActor interface
 	virtual void BeginPlay() override;
-	virtual void PostInitializeComponents()override;
+	virtual void PostInitializeComponents() override;
 	//~ end AActor interface
 
 	/**

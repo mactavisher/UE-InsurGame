@@ -276,5 +276,5 @@ public:
 	virtual float PlayWeaponUnEquipAnim() { return 0.f; };
 	virtual float PlayFireAnim() { return 0.f; }
 	virtual float PlayPullTriggerAnim() { return 0.f; }
-	virtual float PlayIdleAnim(){return 0.f;}
+	virtual float PlayIdleAnim() { return 0.f; }
 };

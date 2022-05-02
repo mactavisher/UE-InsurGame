@@ -120,7 +120,7 @@ AINSItems* UINSItemManager::CreateItemInstance(int32 ItemId, const FTransform& I
 	return nullptr;
 }
 
-AINSWeaponBase* UINSItemManager::CreateWeaponItemInstance(int32 ItemId, const FTransform& InitialTransform, AActor* Owner, APawn* Instigator,const uint8 InventorySlotIndex)
+AINSWeaponBase* UINSItemManager::CreateWeaponItemInstance(int32 ItemId, const FTransform& InitialTransform, AActor* Owner, APawn* Instigator, const uint8 InventorySlotIndex)
 {
 	if (ItemId > 0)
 	{

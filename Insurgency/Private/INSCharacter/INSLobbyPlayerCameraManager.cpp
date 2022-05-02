@@ -3,7 +3,7 @@
 
 #include "INSCharacter/INSLobbyPlayerCameraManager.h"
 
-AINSLobbyPlayerCameraManager::AINSLobbyPlayerCameraManager(const FObjectInitializer&ObjectInitializer) :Super(ObjectInitializer)
+AINSLobbyPlayerCameraManager::AINSLobbyPlayerCameraManager(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	DefaultFOV = 80.f;
 	LockedFOV = DefaultFOV;

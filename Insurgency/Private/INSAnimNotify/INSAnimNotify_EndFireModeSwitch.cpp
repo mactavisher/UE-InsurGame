@@ -10,8 +10,9 @@ UINSAnimNotify_EndFireModeSwitch::UINSAnimNotify_EndFireModeSwitch()
 {
 }
 
-void UINSAnimNotify_EndFireModeSwitch::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
+void UINSAnimNotify_EndFireModeSwitch::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,const FAnimNotifyEventReference& EventReference)
 {
+	Super::Notify(MeshComp, Animation, EventReference);
 	AActor* Owner = MeshComp->GetOwner();
 	if (!Owner)
 	{

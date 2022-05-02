@@ -14,7 +14,7 @@ class INSURGENCY_API AINSLbbyGameState : public AGameState
 {
 	GENERATED_BODY()
 protected:
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="Audio")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Audio")
 	USoundBase* LobbyBGM;
 
 	virtual void BeginPlay() override;

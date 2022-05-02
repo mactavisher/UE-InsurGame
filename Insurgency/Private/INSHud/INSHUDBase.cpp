@@ -12,7 +12,7 @@
 #include "Engine/Engine.h"
 #endif
 
-AINSHUDBase::AINSHUDBase(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
+AINSHUDBase::AINSHUDBase(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	bUsingHudCrossHair = true;
 	StandardSizeX = 1920.f;
@@ -95,9 +95,12 @@ void AINSHUDBase::DrawMyTeamInfo()
 		const ETeamType MyTeamType = MyTeamInfo->GetTeamType();
 		switch (MyTeamType)
 		{
-		case ETeamType::ALLIE:MyTeamName.Append(TeamName::Allie.ToString()); break;
-		case ETeamType::REBEL:MyTeamName.Append(TeamName::Rebel.ToString()); break;
-		default: MyTeamName.Append("None"); break;
+		case ETeamType::ALLIE: MyTeamName.Append(TeamName::Allie.ToString());
+			break;
+		case ETeamType::REBEL: MyTeamName.Append(TeamName::Rebel.ToString());
+			break;
+		default: MyTeamName.Append("None");
+			break;
 		}
 		DrawText(MyTeamName, FLinearColor::White, Canvas->SizeX * 0.1f, Canvas->SizeY * 0.95f, GEngine->GetSmallFont(), 1.2f, false);
 	}
@@ -135,24 +138,24 @@ void AINSHUDBase::DrawHitFeedBackIndicator()
 	{
 		DrawHitFeedBackInfo.CalculateCoord(FVector2D(Canvas->ClipX / 2.f, Canvas->ClipY / 2.f));
 		DrawLine(DrawHitFeedBackInfo.LeftUpBegin.X, DrawHitFeedBackInfo.LeftUpBegin.Y,
-			DrawHitFeedBackInfo.LeftUpEnd.X, DrawHitFeedBackInfo.LeftUpEnd.Y,
-			DrawHitFeedBackInfo.DrawColor,
-			2.f);
+		         DrawHitFeedBackInfo.LeftUpEnd.X, DrawHitFeedBackInfo.LeftUpEnd.Y,
+		         DrawHitFeedBackInfo.DrawColor,
+		         2.f);
 
 		DrawLine(DrawHitFeedBackInfo.RightUpBegin.X, DrawHitFeedBackInfo.RightUpBegin.Y,
-			DrawHitFeedBackInfo.RightUpEnd.X, DrawHitFeedBackInfo.RightUpEnd.Y,
-			DrawHitFeedBackInfo.DrawColor,
-			2.f);
+		         DrawHitFeedBackInfo.RightUpEnd.X, DrawHitFeedBackInfo.RightUpEnd.Y,
+		         DrawHitFeedBackInfo.DrawColor,
+		         2.f);
 
 		DrawLine(DrawHitFeedBackInfo.LeftDownBegin.X, DrawHitFeedBackInfo.LeftDownBegin.Y,
-			DrawHitFeedBackInfo.LeftDownEnd.X, DrawHitFeedBackInfo.LeftDownEnd.Y,
-			DrawHitFeedBackInfo.DrawColor,
-			2.f);
+		         DrawHitFeedBackInfo.LeftDownEnd.X, DrawHitFeedBackInfo.LeftDownEnd.Y,
+		         DrawHitFeedBackInfo.DrawColor,
+		         2.f);
 
 		DrawLine(DrawHitFeedBackInfo.RightDownBegin.X, DrawHitFeedBackInfo.RightDownBegin.Y,
-			DrawHitFeedBackInfo.RightDownEnd.X, DrawHitFeedBackInfo.RightDownEnd.Y,
-			DrawHitFeedBackInfo.DrawColor,
-			2.f);
+		         DrawHitFeedBackInfo.RightDownEnd.X, DrawHitFeedBackInfo.RightDownEnd.Y,
+		         DrawHitFeedBackInfo.DrawColor,
+		         2.f);
 
 		DrawHitFeedBackInfo.BaseLineOffSet = DrawHitFeedBackInfo.BaseLineOffSet * 0.9f;
 
@@ -169,9 +172,9 @@ void AINSHUDBase::DrawPickupItemInfo()
 	if (ItemTexture)
 	{
 		DrawTexture(ItemTexture, Canvas->ClipX / 2, Canvas->ClipY * 0.8f
-			, Canvas->ClipX, Canvas->ClipY, ItemTexture->GetSizeX()
-			, ItemTexture->GetSizeY(), ItemTexture->GetSizeX()
-			, ItemTexture->GetSizeY());
+		            , Canvas->ClipX, Canvas->ClipY, ItemTexture->GetSizeX()
+		            , ItemTexture->GetSizeY(), ItemTexture->GetSizeX()
+		            , ItemTexture->GetSizeY());
 	}
 	FString DrawMessage("See pickupable Weapon");
 	DrawText(DrawMessage, FLinearColor::White, Canvas->ClipX / 0.4, Canvas->ClipY / 0.5f, GEngine->GetMediumFont(), 1.f, false);
@@ -287,7 +290,6 @@ void AINSHUDBase::SetStartDrawScore(bool NewDrawState, int32 InScoreForDrawing)
 	//DrawScoreInfo.ResetDrawStatus();
 	DrawScoreStatus = NewDrawState;
 	DrawScoreInfo.ScoreToDraw = InScoreForDrawing;
-
 }
 
 void AINSHUDBase::SetStartDrawHitFeedBack(FLinearColor NewDrawColor)
@@ -320,20 +322,22 @@ void AINSHUDBase::DrawScore()
 			DrawScoreInfo.ResetDrawStatus();
 		}
 	}
-
 }
 
 void AINSHUDBase::DrawWeaponFireMode()
 {
-	if (CurrentWeapon.Get() && GetINSOwingPlayerController()->GetINSPlayerCharacter()&&!GetINSOwingPlayerController()->GetINSPlayerCharacter()->GetIsDead())
+	if (CurrentWeapon.Get() && GetINSOwingPlayerController()->GetINSPlayerCharacter() && !GetINSOwingPlayerController()->GetINSPlayerCharacter()->GetIsDead())
 	{
 		FString FireMode;
 		EWeaponFireMode CurrentWeaponFireMode = CurrentWeapon->GetCurrentWeaponFireMode();
 		switch (CurrentWeaponFireMode)
 		{
-		case EWeaponFireMode::SINGLE:FireMode.Append("Single"); break;
-		case EWeaponFireMode::SEMIAUTO:FireMode.Append("Semi-Auto"); break;
-		case EWeaponFireMode::FULLAUTO:FireMode.Append("Full-Auto"); break;
+		case EWeaponFireMode::SINGLE: FireMode.Append("Single");
+			break;
+		case EWeaponFireMode::SEMIAUTO: FireMode.Append("Semi-Auto");
+			break;
+		case EWeaponFireMode::FULLAUTO: FireMode.Append("Full-Auto");
+			break;
 		default:
 			break;
 		}
@@ -367,5 +371,4 @@ class UCanvas* AINSHUDBase::GetCanvas() const
 void AINSHUDBase::DrawPlayerKill(const class APlayerState* Killer, const class APlayerState* Vimtim)
 {
 	const uint8 Num = DrawPlayerKillInfos.Num();
-
 }

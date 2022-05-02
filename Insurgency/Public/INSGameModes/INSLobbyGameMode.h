@@ -15,5 +15,4 @@ class INSURGENCY_API AINSLobbyGameMode : public AGameMode
 {
 	GENERATED_UCLASS_BODY()
 protected:
-	
 };

@@ -25,14 +25,14 @@ protected:
 	UPROPERTY()
 	TArray<UINSUserWidget_Item*> ItemWidgets;
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="ItemWidgetClass")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="ItemWidgetClass")
 	TSubclassOf<UINSUserWidget_Item> ItemWidgetClass;
 public:
 	UFUNCTION(BlueprintCallable)
 	virtual void SetItemScrollBox(UScrollBox* NewScrollBox);
 
 	UFUNCTION(BlueprintCallable)
-	virtual UScrollBox* GetScrollBox()const{return ItemScrollBox;}
+	virtual UScrollBox* GetScrollBox() const { return ItemScrollBox; }
 
 	UFUNCTION(BlueprintCallable)
 	virtual void CreateItemWidgets();
@@ -40,5 +40,4 @@ public:
 	virtual void RemoveAllItemWidgets();
 
 	virtual void NativeConstruct() override;
-	
 };

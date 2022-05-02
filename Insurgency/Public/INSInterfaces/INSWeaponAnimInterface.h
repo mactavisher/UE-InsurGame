@@ -23,7 +23,6 @@ class INSURGENCY_API IINSWeaponAnimInterface
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-
 	/** ~~--------------------------------------------------------------
        delegates declare ----------------------------------------------*/
 
@@ -56,13 +55,12 @@ public:
 
 
 public:
-
 	/** ~~--------------------------------------------------------------
 	   declare interface Functions ------------------------------------*/
 
 	/** fire interface function*/
 	UFUNCTION()
-	virtual float PlayFireAnim() {return 0.f;};
+	virtual float PlayFireAnim() { return 0.f; };
 
 	/** switch fire mode interface function */
 	UFUNCTION()
@@ -70,7 +68,7 @@ public:
 
 	/** Reload interface function */
 	UFUNCTION()
-	virtual float PlayReloadAnim( bool bIsDry) {return 0.f;};
+	virtual float PlayReloadAnim(bool bIsDry) { return 0.f; };
 
 	/** equip weapon interface function */
 	UFUNCTION()
@@ -82,32 +80,40 @@ public:
 
 	/** base weapon pose interface function */
 	UFUNCTION()
-	virtual float PlayWeaponBasePose() {return 0.f;};
+	virtual float PlayWeaponBasePose() { return 0.f; };
 
 	/** base weapon pose interface function */
 	UFUNCTION()
-	virtual float PlayWeaponIdleAnim() {return 0.f;};
+	virtual float PlayWeaponIdleAnim() { return 0.f; };
 
 	UFUNCTION()
-	virtual float PlayAimAnim() {return 0.f;};
+	virtual float PlayAimAnim() { return 0.f; };
 
 	UFUNCTION()
-	virtual float PlayStopAimAnim() {return 0.f;};
+	virtual float PlayStopAimAnim() { return 0.f; };
 
 	UFUNCTION()
-		virtual float PlaySprintAnim() {return 0.f;};
+	virtual float PlaySprintAnim() { return 0.f; };
 
 	UFUNCTION()
-		virtual void OnWeaponAnimDelegateBindingFinished() {}
+	virtual void OnWeaponAnimDelegateBindingFinished()
+	{
+	}
 
 	UFUNCTION()
-		virtual float StopPlaySprintAnim() {return 0.f;};
+	virtual float StopPlaySprintAnim() { return 0.f; };
 
 	/** bind interface functions to events */
-	virtual void BindWeaponAnimDelegate() {};
+	virtual void BindWeaponAnimDelegate()
+	{
+	};
 
 	/** unbind interface functions from events */
-	virtual void UnbindWeaponAnimDelegate() {};
+	virtual void UnbindWeaponAnimDelegate()
+	{
+	};
 
-	virtual void SetWeaponBasePoseType(enum EWeaponBasePoseType NewWeaponBasePoseType) {}
+	virtual void SetWeaponBasePoseType(enum EWeaponBasePoseType NewWeaponBasePoseType)
+	{
+	}
 };

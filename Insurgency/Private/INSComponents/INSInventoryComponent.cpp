@@ -17,8 +17,8 @@ UINSInventoryComponent::UINSInventoryComponent(const FObjectInitializer& ObjectI
 	PrimaryComponentTick.bCanEverTick = false;
 	PrimaryComponentTick.SetTickFunctionEnable(false);
 	ItemManager = nullptr;
-	OwnerChar =nullptr;
-	bInitialized =false;
+	OwnerChar = nullptr;
+	bInitialized = false;
 }
 
 void UINSInventoryComponent::BeginPlay()

@@ -4,12 +4,13 @@
 #include "INSComponents/INSWeaponMeshComponent.h"
 #include "INSAnimation/INSWeaponAnimInstance.h"
 
-UINSWeaponMeshComponent::UINSWeaponMeshComponent(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
+UINSWeaponMeshComponent::UINSWeaponMeshComponent(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	PrimaryComponentTick.bCanEverTick = true;
 	PrimaryComponentTick.SetTickFunctionEnable(true);
 	SetAnimInstanceClass(UINSWeaponAnimInstance::StaticClass());
 }
+
 void UINSWeaponMeshComponent::BeginPlay()
 {
 	Super::BeginPlay();

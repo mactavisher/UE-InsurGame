@@ -29,9 +29,9 @@ FString UINSAnimNotify_LeftFootStep::GetNotifyName_Implementation() const
 	}
 }
 
-void UINSAnimNotify_LeftFootStep::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
+void UINSAnimNotify_LeftFootStep::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,const FAnimNotifyEventReference& EventReference)
 {
-
+	Super::Notify(MeshComp, Animation, EventReference);
 	FHitResult LeftFootStepHit(ForceInit);
 	const FVector FootTraceStartLocation = MeshComp->GetSocketLocation(FootSocketName);
 	const float TraceRange = 20.f;
@@ -43,7 +43,7 @@ void UINSAnimNotify_LeftFootStep::Notify(USkeletalMeshComponent* MeshComp, UAnim
 		const FTransform FootStepEffectSpawnTransform(FRotator::ZeroRotator, FootTraceEndLocation, FVector::OneVector);
 		if (FootImpactEffectClass)
 		{
-			AINSImpactEffect* const FootStepImpactEffect = MeshComp->GetWorld()->SpawnActorDeferred<AINSImpactEffect>(FootImpactEffectClass,FootStepEffectSpawnTransform,nullptr,nullptr,ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+			AINSImpactEffect* const FootStepImpactEffect = MeshComp->GetWorld()->SpawnActorDeferred<AINSImpactEffect>(FootImpactEffectClass, FootStepEffectSpawnTransform, nullptr, nullptr, ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 			//set hit result to spawn the right Effects
 			if (FootStepImpactEffect)
 			{

@@ -16,30 +16,30 @@ struct FDrawPlayerKilledInfo
 {
 	GENERATED_USTRUCT_BODY()
 
-		friend class AINSHUDBase;
+	friend class AINSHUDBase;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
-		float LastDrawTime;
+	float LastDrawTime;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
-		float DrawTime;
+	float DrawTime;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
-		float DrawTimeEclapsed;
+	float DrawTimeEclapsed;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
-		uint8 bAvailableforDrawing : 1;
+	uint8 bAvailableforDrawing : 1;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DrawMessage")
-		FString DrawMessage;
+	FString DrawMessage;
 
 public:
 	FDrawPlayerKilledInfo()
 		: LastDrawTime(0.f)
-		, DrawTime(3.f)
-		, DrawTimeEclapsed(0.f)
-		, bAvailableforDrawing(true)
-		, DrawMessage(TEXT("Kill"))
+		  , DrawTime(3.f)
+		  , DrawTimeEclapsed(0.f)
+		  , bAvailableforDrawing(true)
+		  , DrawMessage(TEXT("Kill"))
 	{
 	}
 
@@ -63,82 +63,81 @@ struct FDrawHitFeedBackIndicatorInfo
 {
 	GENERATED_USTRUCT_BODY()
 
-		friend class AINSHUDBase;
+	friend class AINSHUDBase;
 
 	/** center potion of the canvas */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
-		FVector2D CenterScreen;
+	FVector2D CenterScreen;
 
 	/** Left up start part coordinate */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
-		FVector2D LeftUpBegin;
+	FVector2D LeftUpBegin;
 
 	/** Left up end part coordinate */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
-		FVector2D LeftUpEnd;
+	FVector2D LeftUpEnd;
 
 	/** right up start part coordinate */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
-		FVector2D RightUpBegin;
+	FVector2D RightUpBegin;
 
 	/** right end part coordinate */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
-		FVector2D RightUpEnd;
+	FVector2D RightUpEnd;
 
 	/** Left down start part coordinate */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
-		FVector2D LeftDownBegin;
+	FVector2D LeftDownBegin;
 
 	/** Left down end part coordinate */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
-		FVector2D LeftDownEnd;
+	FVector2D LeftDownEnd;
 
 	/** right down start part coordinate */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
-		FVector2D RightDownBegin;
+	FVector2D RightDownBegin;
 
 	/** right down end part coordinate */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
-		FVector2D RightDownEnd;
+	FVector2D RightDownEnd;
 
 	/** time elapsed since last time we active drawing */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
-		float DrawTimeEclapsed;
+	float DrawTimeEclapsed;
 
 	/** Draw Color */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DrawMessage")
-		FLinearColor DrawColor;
+	FLinearColor DrawColor;
 
 	/** line length */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "DrawMessage")
-		float LineLength;
+	float LineLength;
 
 	/** Base off-set value to center of the screen */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "DrawMessage")
-		float BaseLineOffSet;
+	float BaseLineOffSet;
 
 	/** Base off-set value to center of the screen */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "DrawMessage")
-		float LineOffSetInterpSpeed;
+	float LineOffSetInterpSpeed;
 
 	/** is drawing */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Controll")
-		uint8 bShowHitFeedBackIndicator : 1;
+	uint8 bShowHitFeedBackIndicator : 1;
 
 	/** line calculate method,if false, will use rotate line instead of simple add  */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Controll")
-		uint8 bCoordinateSimpleAdd : 1;
+	uint8 bCoordinateSimpleAdd : 1;
 
 public:
-
 	FDrawHitFeedBackIndicatorInfo()
 		: DrawTimeEclapsed(0.f)
-		, DrawColor(FLinearColor::White)
-		, LineLength(6.5f)
-		, BaseLineOffSet(15.f)
-		, LineOffSetInterpSpeed(0.75f)
-		, bShowHitFeedBackIndicator(false)
-		, bCoordinateSimpleAdd(true)
+		  , DrawColor(FLinearColor::White)
+		  , LineLength(6.5f)
+		  , BaseLineOffSet(15.f)
+		  , LineOffSetInterpSpeed(0.75f)
+		  , bShowHitFeedBackIndicator(false)
+		  , bCoordinateSimpleAdd(true)
 	{
 	}
 
@@ -217,34 +216,34 @@ struct FDrawPlayerScoreInfo
 {
 	GENERATED_USTRUCT_BODY()
 
-		friend class AINSHUDBase;
+	friend class AINSHUDBase;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
-		float LastDrawTime;
+	float LastDrawTime;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
-		float DrawTime;
+	float DrawTime;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
-		float DrawTimeEclapsed;
+	float DrawTimeEclapsed;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "TimeControll")
-		float DrawScoreInterpSpeed;
+	float DrawScoreInterpSpeed;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "ScoreToDraw")
-		int32 ScoreToDraw;
+	int32 ScoreToDraw;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "ScoreToDraw")
-		int32 CurrentFrameScoreValue;
+	int32 CurrentFrameScoreValue;
 
 public:
 	FDrawPlayerScoreInfo()
 		: LastDrawTime(0.f)
-		, DrawTime(3.f)
-		, DrawTimeEclapsed(0.f)
-		, DrawScoreInterpSpeed(5.f)
-		, ScoreToDraw(0)
-		, CurrentFrameScoreValue(0)
+		  , DrawTime(3.f)
+		  , DrawTimeEclapsed(0.f)
+		  , DrawScoreInterpSpeed(5.f)
+		  , ScoreToDraw(0)
+		  , CurrentFrameScoreValue(0)
 	{
 	}
 
@@ -258,6 +257,7 @@ public:
 		CurrentFrameScoreValue = 0;
 	}
 };
+
 /**
  *  In Game HUD Class
  */
@@ -265,59 +265,57 @@ UCLASS()
 class INSURGENCY_API AINSHUDBase : public AHUD
 {
 	GENERATED_UCLASS_BODY()
-
-
 	/** stores all the Widget instances that Managed by this HUD for later access purposes */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Widgets")
-		TArray<UINSWidgetBase*> WidgetInstances;
+	TArray<UINSWidgetBase*> WidgetInstances;
 
 	/** each part of cross hair length when drawing cross hair without using widget */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "CrossHair")
-		float CrossHairLineLength;
+	float CrossHairLineLength;
 
 	/** indicates whether or not to use HUD to draw linear color line as cross hair*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "CrossHair")
-		uint8 bUsingHudCrossHair : 1;
+	uint8 bUsingHudCrossHair : 1;
 
 	/** indicate if should update cross hair draw call this frame */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "CrossHair")
-		uint8 bShowCrossHair : 1;
+	uint8 bShowCrossHair : 1;
 
 	/** standard screen size X which default value is based on 1080p(1920*1080) to calculate Hud item scale*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "CrossHair")
-		float StandardSizeX;
+	float StandardSizeX;
 
 	/** standard screen size Y which default value is based on 1080p(1920*1080) to calculate Hud item scale*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "CrossHair")
-		float StandardSizeY;
+	float StandardSizeY;
 
 	/** Gap between each cross hair part */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "CrossHair")
-		float CenterRadius;
+	float CenterRadius;
 
 	/** default cross hair tint color */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "CrossHair")
-		FLinearColor CrossHairCurrentTintColor;
+	FLinearColor CrossHairCurrentTintColor;
 
 	/** default cross hair tint color */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "CrossHair")
-		FLinearColor CrossHairDefaultTintColor;
+	FLinearColor CrossHairDefaultTintColor;
 
 	/** extra effect tint color ,for example , when contact with enemies */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "CrossHair")
-		FLinearColor CrossHairThreatenTintColor;
+	FLinearColor CrossHairThreatenTintColor;
 
 	/** extra effect tint color ,for example , when contact with enemies */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Items")
-		uint8 bShowItemInfo : 1;
+	uint8 bShowItemInfo : 1;
 
 	/** extra effect tint color ,for example , when contact with enemies */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Items")
-		UTexture2D* ItemTexture;
+	UTexture2D* ItemTexture;
 
 	/** extra effect tint color ,for example , when contact with enemies */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Items")
-		uint8 DrawScoreStatus : 1;
+	uint8 DrawScoreStatus : 1;
 
 	/** current weapon the player equipped */
 	TWeakObjectPtr<AINSWeaponBase> CurrentWeapon;
@@ -327,19 +325,19 @@ class INSURGENCY_API AINSHUDBase : public AHUD
 
 	/** tracking killing drawing */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "DrawPlayerKillList")
-		TArray<FDrawPlayerKilledInfo> DrawPlayerKillInfos;
+	TArray<FDrawPlayerKilledInfo> DrawPlayerKillInfos;
 
 	/** tracking drawing a score indicator */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "DrawPlayerKillList")
-		FDrawPlayerScoreInfo DrawScoreInfo;
+	FDrawPlayerScoreInfo DrawScoreInfo;
 
 	/** tracking hit feed back info indicator drawing */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "DrawPlayerKillList")
-		FDrawHitFeedBackIndicatorInfo DrawHitFeedBackInfo;
+	FDrawHitFeedBackIndicatorInfo DrawHitFeedBackInfo;
 
 	/** cache the player contorller of ins type */
-	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="OwningPlayerController")
-	    AINSPlayerController* OwningINSPlayerController;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="OwningPlayerController")
+	AINSPlayerController* OwningINSPlayerController;
 
 
 protected:
@@ -362,12 +360,11 @@ protected:
 	FTimerHandle Timer_ResetCrossHairTintColor;
 
 protected:
-
 	/** called when game starts */
-	virtual void BeginPlay()override;
+	virtual void BeginPlay() override;
 
 	/** draw HUD loop */
-	virtual void DrawHUD()override;
+	virtual void DrawHUD() override;
 
 	virtual void DrawMyTeamInfo();
 
@@ -387,26 +384,25 @@ protected:
 	virtual void DrawPickupItemInfo();
 
 public:
-
 	/** delegate call when weapon aims */
 	UFUNCTION()
-		virtual void OnAimWeapon();
+	virtual void OnAimWeapon();
 
 	/** delegate call when weapon stop aim */
 	UFUNCTION()
-		virtual void OnStopAimWeapon();
+	virtual void OnStopAimWeapon();
 
 	/** delegate call when weapon reload */
 	UFUNCTION()
-		virtual void OnReloadWeapon();
+	virtual void OnReloadWeapon();
 
 	/** delegate call when weapon finishes reload */
 	UFUNCTION()
-		virtual void OnFinishReloadWeapon();
+	virtual void OnFinishReloadWeapon();
 
 	/** reset cross hair tint color to default */
 	UFUNCTION()
-		virtual void ResetCrossHairTintColor();
+	virtual void ResetCrossHairTintColor();
 
 	/** set the cross hair tint with give color type */
 	virtual void SetCrossHairTintColor(FLinearColor NewColor);
@@ -415,10 +411,10 @@ public:
 	virtual void SetLastSeenActor(AActor* NewActor);
 
 	/** return last actor we see */
-	inline virtual AActor* GetLastSeenActor()const { return LastSeenActor.Get(); }
+	inline virtual AActor* GetLastSeenActor() const { return LastSeenActor.Get(); }
 
 	/** return current ref weapon */
-	inline AINSWeaponBase* GetCurrentWeapon()const;
+	inline AINSWeaponBase* GetCurrentWeapon() const;
 
 	/** set current ref weapon */
 	virtual void SetCurrentWeapon(AINSWeaponBase* CurrentNewWeapon);
@@ -449,7 +445,7 @@ public:
 
 	virtual void DrawScore();
 
-	virtual AINSPlayerController* GetINSOwingPlayerController()const { return OwningINSPlayerController; }
+	virtual AINSPlayerController* GetINSOwingPlayerController() const { return OwningINSPlayerController; }
 
 	virtual void DrawWeaponFireMode();
 
@@ -457,8 +453,7 @@ public:
 
 	virtual void DrawImmuneInfo();
 
-	virtual class UCanvas* GetCanvas()const;
+	virtual class UCanvas* GetCanvas() const;
 
 	virtual void DrawPlayerKill(const class APlayerState* Killer, const class APlayerState* Vimtim);
-
 };

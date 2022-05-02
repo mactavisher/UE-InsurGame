@@ -3,7 +3,7 @@
 
 #include "INSDamageTypes/INSDamageType_Falling.h"
 
-UINSDamageType_Falling::UINSDamageType_Falling(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
+UINSDamageType_Falling::UINSDamageType_Falling(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	bCausedByWorld = true;
 }

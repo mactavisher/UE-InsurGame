@@ -28,13 +28,13 @@ public:
 
 	/** actual damage caused */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly)
-		float LastDamageAmount;
+	float LastDamageAmount;
 public:
 	FCachedDamageInfo()
 		: DamageIndicator(nullptr)
-		, DamageCauser(nullptr)
-		, DamageWeapon(nullptr)
-		, LastDamageAmount(0.f)
+		  , DamageCauser(nullptr)
+		  , DamageWeapon(nullptr)
+		  , LastDamageAmount(0.f)
 	{
 	}
 };
@@ -48,19 +48,19 @@ struct FComboKillInfo
 	GENERATED_USTRUCT_BODY()
 public:
 	UPROPERTY()
-		int32 CombokillCount;
+	int32 CombokillCount;
 
 	UPROPERTY()
-		float LastKillTime;
+	float LastKillTime;
 
 	UPROPERTY()
-		float ComboBreakTime;
+	float ComboBreakTime;
 
 public:
 	FComboKillInfo()
 		: CombokillCount(0)
-		, LastKillTime(0.f)
-		, ComboBreakTime(5.f)
+		  , LastKillTime(0.f)
+		  , ComboBreakTime(5.f)
 	{
 	}
 };
@@ -75,76 +75,76 @@ class INSURGENCY_API AINSPlayerStateBase : public APlayerState
 	GENERATED_UCLASS_BODY()
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_TeamInfo, Category = Team)
-		AINSTeamInfo* PlayerTeam;
+	AINSTeamInfo* PlayerTeam;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = PlayerState)
-		float RespawnRemainingTime;
+	float RespawnRemainingTime;
 
 	/** bandwidth save version to replicate  */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_RespawnRemainingTime, Category = PlayerState)
-		uint8 ReplicatedRespawnRemainingTime;
+	uint8 ReplicatedRespawnRemainingTime;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = PlayerState)
-		uint8 bIsWaitingForRespawn : 1;
+	uint8 bIsWaitingForRespawn : 1;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Damage)
-		uint8 CachedDamageInfoMaxSize;
+	uint8 CachedDamageInfoMaxSize;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Damage)
-		TArray<FCachedDamageInfo> CachedDamageInfos;
+	TArray<FCachedDamageInfo> CachedDamageInfos;
 
 	/** indicate how many plays does this player kill */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = "OnRep_Kills", Category = PlayerState)
-		int32 Kills;
+	int32 Kills;
 
 	/** indicate how many player does this player kill by mistake,kill friendlies typically */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = "OnRep_MistakeKill", Category = PlayerState)
-		int32 MissTakeKill;
+	int32 MissTakeKill;
 
 	/** indicate how many death happens on this player */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = "OnRep_Deaths", Category = PlayerState)
-		int32 Deaths;
+	int32 Deaths;
 
 	/** k/d ratio,not this is NOT replicated so client will need to update this it self  */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Category = PlayerState)
-		float KDRatio;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = PlayerState)
+	float KDRatio;
 
 	UPROPERTY()
-	   FComboKillInfo ComboKillInfo;
+	FComboKillInfo ComboKillInfo;
 
 protected:
 	//~ Begin AActor interface
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
-	virtual void BeginPlay()override;
-	virtual void Tick(float DeltaSeconds)override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
 	//~ End AActor interface
 
 	//~ Begin APlayerState interface
-	virtual void OnRep_Score()override;
+	virtual void OnRep_Score() override;
 	//~ End APlayerState interface
 
 	/** rep callbacks */
 	UFUNCTION()
-		virtual void OnRep_TeamInfo();
+	virtual void OnRep_TeamInfo();
 
 	UFUNCTION()
-		virtual void OnRep_Deaths();
+	virtual void OnRep_Deaths();
 
 	UFUNCTION()
-		virtual void OnRep_Kills();
+	virtual void OnRep_Kills();
 
 	UFUNCTION()
-		virtual void OnRep_MistakeKill();
+	virtual void OnRep_MistakeKill();
 
 	UFUNCTION()
-		virtual void OnRep_RespawnRemainingTime();
+	virtual void OnRep_RespawnRemainingTime();
 
 	/** re_spawn timer after kill */
 	FTimerHandle RespawnTimer;
 
 	/** re_spawn timer callback */
 	UFUNCTION()
-		virtual void TickRespawnTime();
+	virtual void TickRespawnTime();
 
 public:
 	/**
@@ -195,30 +195,29 @@ public:
 	inline void AddDeath(const int32 DeathToAdd = 1);
 
 	/** gets the current player team */
-	virtual AINSTeamInfo* GetPlayerTeam()const { return PlayerTeam; }
+	virtual AINSTeamInfo* GetPlayerTeam() const { return PlayerTeam; }
 
 	/** gets the re_spawn remaining time */
-	virtual float GetRespawnRemainingTime()const { return RespawnRemainingTime; }
+	virtual float GetRespawnRemainingTime() const { return RespawnRemainingTime; }
 
 	/** ticking and update the remaining re_spawn time */
 	virtual void UpdateReplicatedRespawnRemainingTime();
 
 	/** get whether this player is waiting for a re_spawn */
-	virtual bool GetIsWaitingForRespawn()const { return bIsWaitingForRespawn; }
+	virtual bool GetIsWaitingForRespawn() const { return bIsWaitingForRespawn; }
 
 	/** gets the replicated re_spawn remaining time */
-	virtual uint8 GetReplicatedRespawnRemainingTime()const { return ReplicatedRespawnRemainingTime; }
+	virtual uint8 GetReplicatedRespawnRemainingTime() const { return ReplicatedRespawnRemainingTime; }
 
 	/** gets the kills of this player */
-	inline int32 GetNumKills()const { return Kills; }
+	inline int32 GetNumKills() const { return Kills; }
 
 	/** gets the deaths of this player */
-	inline int32 GetNumDeaths()const { return Deaths; }
+	inline int32 GetNumDeaths() const { return Deaths; }
 
 	/** returns the current K/D Ratio */
-	inline float GetKDRatio()const { return KDRatio; }
+	inline float GetKDRatio() const { return KDRatio; }
 
 	/** update the k/d ration after kill or death */
 	virtual void UpdateKDRatio();
-
 };

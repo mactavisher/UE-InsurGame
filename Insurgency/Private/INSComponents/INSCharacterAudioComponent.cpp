@@ -34,7 +34,6 @@ void UINSCharacterAudioComponent::OnWeaponReload()
 
 void UINSCharacterAudioComponent::OnManDown()
 {
-
 }
 
 void UINSCharacterAudioComponent::OnDeath()
@@ -47,7 +46,6 @@ void UINSCharacterAudioComponent::OnDeath()
 
 void UINSCharacterAudioComponent::OnLowHeath()
 {
-	
 }
 
 
@@ -84,13 +82,20 @@ class USoundCue* UINSCharacterAudioComponent::GetSoundToPlay(const EVoiceType Ne
 	USoundCue* SoundToPlay = nullptr;
 	switch (NewVoiceType)
 	{
-	case EVoiceType::TAKE_DAMAGE:SoundToPlay = MaleVoiceData->MaleVoiceData.TakeDamageVoice; break;
-	case EVoiceType::DIE:SoundToPlay = MaleVoiceData->MaleVoiceData.DieVoice; break;
-	case EVoiceType::RELOADING:SoundToPlay = MaleVoiceData->MaleVoiceData.ReloadWeapon; break;
-	case EVoiceType::TAKE_TEAM_DAMAGE:SoundToPlay = MaleVoiceData->MaleVoiceData.TeamDamageVoice; break;
-	case EVoiceType::KILL_PLAYER:SoundToPlay = MaleVoiceData->MaleVoiceData.KillEnemy; break;
-	case EVoiceType::CAUSE_FRIENDLY_KILL:SoundToPlay = MaleVoiceData->MaleVoiceData.FriendlyDamage;break;
-	default:SoundToPlay = nullptr; break;
+	case EVoiceType::TAKE_DAMAGE: SoundToPlay = MaleVoiceData->MaleVoiceData.TakeDamageVoice;
+		break;
+	case EVoiceType::DIE: SoundToPlay = MaleVoiceData->MaleVoiceData.DieVoice;
+		break;
+	case EVoiceType::RELOADING: SoundToPlay = MaleVoiceData->MaleVoiceData.ReloadWeapon;
+		break;
+	case EVoiceType::TAKE_TEAM_DAMAGE: SoundToPlay = MaleVoiceData->MaleVoiceData.TeamDamageVoice;
+		break;
+	case EVoiceType::KILL_PLAYER: SoundToPlay = MaleVoiceData->MaleVoiceData.KillEnemy;
+		break;
+	case EVoiceType::CAUSE_FRIENDLY_KILL: SoundToPlay = MaleVoiceData->MaleVoiceData.FriendlyDamage;
+		break;
+	default: SoundToPlay = nullptr;
+		break;
 	}
 	if (SoundToPlay == nullptr)
 	{
@@ -101,7 +106,7 @@ class USoundCue* UINSCharacterAudioComponent::GetSoundToPlay(const EVoiceType Ne
 
 void UINSCharacterAudioComponent::BeginPlay()
 {
-	Super::BeginPlay();
 	SetVoiceType(EVoiceType::NONE);
 	OnAudioFinished.AddDynamic(this, &UINSCharacterAudioComponent::OnSoundFinishPlay);
+	Super::BeginPlay();
 }

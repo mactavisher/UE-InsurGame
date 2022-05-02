@@ -13,5 +13,4 @@ UCLASS()
 class INSURGENCY_API UINSCharSkeletalMeshComponent : public USkeletalMeshComponent
 {
 	GENERATED_UCLASS_BODY()
-	
 };

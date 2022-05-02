@@ -3,6 +3,7 @@
 
 #include "INSCore/INSGameInstance.h"
 #include "INSCore/INSItemManager.h"
+
 UINSGameInstance::UINSGameInstance(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	ItemManagerClass = UINSItemManager::StaticClass();
@@ -12,11 +13,11 @@ UINSGameInstance::UINSGameInstance(const FObjectInitializer& ObjectInitializer) 
 void UINSGameInstance::Init()
 {
 	Super::Init();
-	if(ItemManagerClass)
+	if (ItemManagerClass)
 	{
-		ItemManager = NewObject<UINSItemManager>(this,ItemManagerClass,TEXT("ItemManager"));
+		ItemManager = NewObject<UINSItemManager>(this, ItemManagerClass,TEXT("ItemManager"));
 	}
-	if(ItemManager)
+	if (ItemManager)
 	{
 		ItemManager->SetOwingGameInstance(this);
 		ItemManager->SetItemTable(ItemDataTable);

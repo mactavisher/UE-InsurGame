@@ -8,12 +8,11 @@
 
 UINSAnimNotify_SingleAmmoInsert::UINSAnimNotify_SingleAmmoInsert()
 {
-	
 }
 
-void UINSAnimNotify_SingleAmmoInsert::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
+void UINSAnimNotify_SingleAmmoInsert:: Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference)
 {
-	Super::Notify(MeshComp, Animation);
+	Super::Notify(MeshComp, Animation,EventReference);
 	AActor* Owner = MeshComp->GetOwner();
 	if (!Owner)
 	{

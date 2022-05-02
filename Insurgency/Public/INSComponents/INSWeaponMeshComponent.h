@@ -7,27 +7,27 @@
 #include "INSWeaponMeshComponent.generated.h"
 
 USTRUCT(BlueprintType)
-struct FWeaponSocketNames {
-
+struct FWeaponSocketNames
+{
 	GENERATED_USTRUCT_BODY()
 
-		UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFWeaponMesh|SocketNames")
-		FName MuzzleFlashSocket;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFWeaponMesh|SocketNames")
+	FName MuzzleFlashSocket;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFWeaponMesh|SocketNames")
-		FName ShellEjectSocket;
+	FName ShellEjectSocket;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFWeaponMesh|SocketNames")
-		FName ScopeHolderSocket;
+	FName ScopeHolderSocket;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFWeaponMesh|SocketNames")
-		FName LeftSideAttachSocket;
+	FName LeftSideAttachSocket;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFWeaponMesh|SocketNames")
-		FName RightSideAttachSocket;
+	FName RightSideAttachSocket;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "BFWeaponMesh|SocketNames")
-		FName GripAttachSocket;
+	FName GripAttachSocket;
 
 	/** set default values */
 	FWeaponSocketNames()
@@ -49,40 +49,39 @@ UCLASS()
 class INSURGENCY_API UINSWeaponMeshComponent : public USkeletalMeshComponent
 {
 	GENERATED_UCLASS_BODY()
-
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
-		FWeaponSocketNames WeaponSockets;
+	FWeaponSocketNames WeaponSockets;
 
-// 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
-// 		FWeaponAttachmentSlot ScopeSlot;
-// 
-// 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
-// 		FWeaponAttachmentSlot GripSlot;
-// 
-// 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
-// 		FWeaponAttachmentSlot SilencerSlot;
-// 
-// 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
-// 		FWeaponAttachmentSlot LeftSlot;
-// 
-// 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
-// 		FWeaponAttachmentSlot RightSlot;
-// 
-// 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
-// 		FWeaponAttachmentSlot UnderSlot;
-// 
-// 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
-// 		FWeaponAttachmentSlot IronSightSlot;
+	// 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
+	// 		FWeaponAttachmentSlot ScopeSlot;
+	// 
+	// 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
+	// 		FWeaponAttachmentSlot GripSlot;
+	// 
+	// 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
+	// 		FWeaponAttachmentSlot SilencerSlot;
+	// 
+	// 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
+	// 		FWeaponAttachmentSlot LeftSlot;
+	// 
+	// 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
+	// 		FWeaponAttachmentSlot RightSlot;
+	// 
+	// 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
+	// 		FWeaponAttachmentSlot UnderSlot;
+	// 
+	// 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "WeaponSkeletalMesh|AttachmentSlot")
+	// 		FWeaponAttachmentSlot IronSightSlot;
 protected:
-	virtual void BeginPlay()override;
+	virtual void BeginPlay() override;
 
 public:
-	virtual FWeaponSocketNames GetWeaponSockets()const { return WeaponSockets; }
-	virtual FVector GetMuzzleLocation()const { return GetSocketLocation(WeaponSockets.MuzzleFlashSocket); }
-	virtual FRotator GetMuzzleRotation()const { return GetSocketRotation(WeaponSockets.MuzzleFlashSocket); }
-	virtual FVector GetMuzzleForwardVector()const { return GetMuzzleRotation().Vector(); }
-	virtual FTransform GetMuzzleTransform()const { return GetSocketTransform(WeaponSockets.MuzzleFlashSocket); }
-	virtual FVector GetShellSocketLocation()const { return GetSocketLocation(WeaponSockets.ShellEjectSocket); }
-	virtual FTransform GetShellSpawnTransform()const;
+	virtual FWeaponSocketNames GetWeaponSockets() const { return WeaponSockets; }
+	virtual FVector GetMuzzleLocation() const { return GetSocketLocation(WeaponSockets.MuzzleFlashSocket); }
+	virtual FRotator GetMuzzleRotation() const { return GetSocketRotation(WeaponSockets.MuzzleFlashSocket); }
+	virtual FVector GetMuzzleForwardVector() const { return GetMuzzleRotation().Vector(); }
+	virtual FTransform GetMuzzleTransform() const { return GetSocketTransform(WeaponSockets.MuzzleFlashSocket); }
+	virtual FVector GetShellSocketLocation() const { return GetSocketLocation(WeaponSockets.ShellEjectSocket); }
+	virtual FTransform GetShellSpawnTransform() const;
 };

@@ -112,6 +112,4 @@ void UINSHealthComponent::DisableComponentTick()
 
 void UINSHealthComponent::OnStopRestoreHealth()
 {
-
 }
-

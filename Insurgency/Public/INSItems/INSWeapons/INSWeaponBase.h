@@ -22,7 +22,69 @@ class AINSProjectileShell;
 class UINSStaticAnimData;
 class UINSWeaponFireHandler;
 class UINSCrossHairBase;
+class AINSProjectile_Visual;
+class AINSProjectile_Server;
+class AINSImpactEffect;
 struct FWeaponInfoData;
+
+/** replicate the scan trace shot*/
+USTRUCT()
+struct FRepScanTraceHit
+{
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY()
+	FVector_NetQuantize10 Location;
+
+	UPROPERTY()
+	FRotator Rotation;
+
+	UPROPERTY()
+	uint8 EnsureReplication:1;
+
+	FRepScanTraceHit()
+		: Location(ForceInit)
+		  , Rotation(ForceInit)
+		  , EnsureReplication(false)
+	{
+	}
+
+	bool NetSerialize(FArchive& Ar, class UPackageMap* Map, bool& bOutSuccess)
+	{
+		bOutSuccess = true;
+		bool bOutSuccessLocal = true;
+		// update location, linear velocity
+		Location.NetSerialize(Ar, Map, bOutSuccessLocal);
+		bOutSuccess &= bOutSuccessLocal;
+		Rotation.SerializeCompressed(Ar);
+		bOutSuccess &= bOutSuccessLocal;
+		return true;
+	}
+
+	bool operator==(const FRepScanTraceHit& Other) const
+	{
+		if (Location != Other.Location)
+		{
+			return false;
+		}
+
+		if (Rotation != Other.Rotation)
+		{
+			return false;
+		}
+
+		if (EnsureReplication != Other.EnsureReplication)
+		{
+			return false;
+		}
+		return true;
+	}
+
+	bool operator!=(const FRepScanTraceHit& Other) const
+	{
+		return !(*this == Other);
+	}
+};
 
 INSURGENCY_API DECLARE_LOG_CATEGORY_EXTERN(LogINSWeapon, Log, All);
 
@@ -357,7 +419,7 @@ protected:
 
 	/** if enable ,weapon will reload automatically when current clip ammo hit 0 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_AimWeapon, Category = "Aiming")
-	uint8 bIsAimingWeapon : 1;
+	uint8 bIsAiming : 1;
 
 	/** current weapon state */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Aiming")
@@ -418,6 +480,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Projectile")
 	TSubclassOf<AINSProjectile> ProjectileClass;
 
+	/** projectile class that be fired by this weapon */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Projectile")
+	TSubclassOf<AINSProjectile_Server> ServerProjectileClass;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Projectile")
+	TSubclassOf<AINSProjectile_Visual> VisualProjectileClass;
 	/** pawn that owns this weapon */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing = OnRep_OwnerCharacter, Category = "OwnerCharacter")
 	AINSCharacter* OwnerCharacter;
@@ -436,6 +504,10 @@ protected:
 	/** camera shaking effect class when fires a shot */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Recoil")
 	TSubclassOf<UCameraShakeBase> FireCameraShakingClass;
+
+	/** camera shaking effect class when fires a shot */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Recoil")
+	TSubclassOf<AINSImpactEffect> TraceHitImpactClass;
 
 	/** How big should the query probe sphere be (in unreal units),queries the weapon collision */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = WeaponCollision, meta = (editcondition = "bDoCollisionTest"))
@@ -503,6 +575,9 @@ protected:
 	UPROPERTY()
 	AINSWeaponBase* LocalClientCosmeticWeapon;
 
+	// UPROPERTY( Replicated, ReplicatedUsing = OnRep_ScanTraceHit)
+	// FRepScanTraceHit ScanTraceHit;
+
 	UPROPERTY()
 	uint8 bClientCosmeticWeapon:1;
 
@@ -523,6 +598,7 @@ protected:
 
 
 #if WITH_EDITORONLY_DATA
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="Debug")
 	uint8 bShowDebugTrace : 1;
 #endif
 
@@ -568,6 +644,8 @@ protected:
 
 	virtual void OnWeaponSwitchFireMode();
 
+	// virtual void SetReplicatedScanTraceHit(FRepScanTraceHit& NewScanTraceHit);
+
 	/** called when equip weapon request has been called */
 	virtual void OnWeaponStartEquip();
 
@@ -598,9 +676,6 @@ protected:
 	/** Fire Rep notify */
 	UFUNCTION()
 	virtual void OnRep_WeaponFireCount();
-
-	UFUNCTION()
-	virtual void OnRep_ScanTraceHit();
 
 	/** owner Rep notify */
 	UFUNCTION()
@@ -639,6 +714,9 @@ protected:
 	virtual void OnRep_WeaponInfoData();
 
 	virtual void OnRep_Owner() override;
+
+	// UFUNCTION()
+	// virtual void OnRep_ScanTraceHit();
 
 	virtual void Destroyed() override;
 
@@ -697,6 +775,7 @@ public:
 	/**check if can aim  */
 	virtual bool CheckCanAim();
 
+	/**returns the current weapon ads alpha */
 	virtual float GetWeaponADSAlpha() const { return ADSAlpha; }
 
 	virtual void SetOwner(AActor* NewOwner) override;
@@ -770,15 +849,15 @@ public:
 	 * @param SpawnLoc   World Location to spawn to projectile
 	 * @param SpawnDir   projectile spawn direction
 	 */
-	virtual void FireProjectile(FVector_NetQuantize100 SpawnLoc, FVector_NetQuantize100 SpawnDir);
+	virtual void FireProjectile(FVector_NetQuantize10 SpawnLoc, FVector_NetQuantize10 SpawnDir);
 
 	/**
 	 * @desc  called by autonomous proxy clients to fire a projectile
 	 * @param SpawnLoc   World Location to spawn to projectile
-	 * @param SpawnDir   projectile spawn direction
+	 * @param SpawnRot   projectile spawn direction
 	 */
 	UFUNCTION(Server, Unreliable, WithValidation)
-	virtual void ServerFireProjectile(FVector SpawnLoc, FVector SpawnDir);
+	virtual void ServerFireProjectile(FVector_NetQuantize10 SpawnLoc, FVector_NetQuantize10 SpawnDir);
 
 	/**
 	 * @desc  set the character that own this weapon
@@ -830,7 +909,7 @@ public:
 	/**
 	 * @Desc adjust projectile spawn rotation to hit center of the screen
 	 */
-	virtual void GetFireDir(FVector& OutDir);
+	virtual void GetFireDir(FVector& OutDir, FHitResult& OutHitResult);
 
 	/** adjust projectile make them spread */
 	virtual void ApplyWeaponSpread(FVector& OutSpreadDir, const FVector& BaseDirection);
@@ -840,6 +919,8 @@ public:
 	 * @Param OutBarrelStartLoc produced Barrel Start Location
 	 */
 	virtual void GetBarrelStartLoc(FVector& OutBarrelStartLoc);
+
+	virtual void GetBarrelStartRot(FRotator& OutBarrelRot);
 
 	/**
 	 * returns the bullet muzzle velocity speed value
@@ -974,6 +1055,7 @@ public:
 
 	virtual EWeaponReloadType GetWeaponReloadType() const { return ReloadType; }
 
+	/** return if this reload is dry reload */
 	virtual bool GetIsDryReload() const;
 
 	virtual void NotifyOwnerClipEmpty();
@@ -983,4 +1065,6 @@ public:
 	virtual void OnRep_AttachmentReplication() override;
 
 	virtual bool HasShellLeftInChamber() const { return HasLeftShellInChamber; }
+
+	virtual UClass* GetVisualProjectileClass();
 };

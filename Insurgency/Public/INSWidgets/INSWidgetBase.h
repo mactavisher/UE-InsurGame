@@ -16,14 +16,12 @@ UCLASS()
 class INSURGENCY_API UINSWidgetBase : public UUserWidget
 {
 	GENERATED_UCLASS_BODY()
-
 protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "VisibilityControl")
-		uint8 bShowWidget : 1;
+	uint8 bShowWidget : 1;
 
-	virtual void NativeConstruct()override;
+	virtual void NativeConstruct() override;
 
 public:
-	virtual class  AINSLobbyPlayerController* GetOwningLobbyPlayerController();
-
+	virtual class AINSLobbyPlayerController* GetOwningLobbyPlayerController();
 };

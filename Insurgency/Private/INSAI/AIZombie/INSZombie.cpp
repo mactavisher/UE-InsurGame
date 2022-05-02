@@ -30,7 +30,7 @@ AINSZombie::AINSZombie(const FObjectInitializer& ObjectInitializer) : Super(Obje
 	HeadComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("HeadComp"));
 	TorsoComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("TorsoComp"));
 	ArmComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("ArmComp"));
-    LegComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("LegComp"));
+	LegComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("LegComp"));
 	PelvisComp = ObjectInitializer.CreateDefaultSubobject<USkeletalMeshComponent>(this, TEXT("PelvisComp"));
 	CachedModularSkeletalMeshes.Add(HeadComp);
 	CachedModularSkeletalMeshes.Add(TorsoComp);
@@ -245,14 +245,14 @@ void AINSZombie::OnRep_ZombieAttackMode()
 		}
 		if (!SelectedAttackMontage)
 		{
-			UE_LOG(LogZombiePawn, Warning,TEXT("Zombie trying to play attack montage but no attack montage available"));
+			UE_LOG(LogZombiePawn, Warning, TEXT("Zombie trying to play attack montage but no attack montage available"));
 		}
 	}
 }
 
 void AINSZombie::OnRep_CurrentMoveSpeed()
 {
-	 GetINSCharacterMovement()->MaxWalkSpeed = CurrentMoveSpeed;
+	GetINSCharacterMovement()->MaxWalkSpeed = CurrentMoveSpeed;
 }
 
 void AINSZombie::OnRep_CurrentWalkSpeed()

@@ -8,11 +8,11 @@
 
 UINSAnimNotify_WeaponReady::UINSAnimNotify_WeaponReady()
 {
-
 }
 
-void UINSAnimNotify_WeaponReady::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
+void UINSAnimNotify_WeaponReady::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,const FAnimNotifyEventReference& EventReference)
 {
+	Super::Notify(MeshComp, Animation,EventReference);
 	AActor* Owner = MeshComp->GetOwner();
 	if (!Owner)
 	{

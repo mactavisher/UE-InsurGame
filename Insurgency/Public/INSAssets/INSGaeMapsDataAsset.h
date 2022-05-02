@@ -13,5 +13,4 @@ UCLASS()
 class INSURGENCY_API UINSGaeMapsDataAsset : public UDataAsset
 {
 	GENERATED_BODY()
-	
 };

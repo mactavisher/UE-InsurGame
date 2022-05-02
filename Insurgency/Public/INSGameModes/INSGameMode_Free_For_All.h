@@ -15,8 +15,7 @@ class INSURGENCY_API AINSGameMode_Free_For_All : public AINSGameModeBase
 	GENERATED_BODY()
 
 	virtual void BeginPlay() override;
-	
+
 public:
-	virtual bool GetIsTeamDamage(class AController* DamageInstigator, class AController* Victim)override;
-	
+	virtual bool GetIsTeamDamage(class AController* DamageInstigator, class AController* Victim) override;
 };

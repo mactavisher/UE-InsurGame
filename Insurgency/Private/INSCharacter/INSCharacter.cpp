@@ -232,7 +232,7 @@ void AINSCharacter::Landed(const FHitResult& Hit)
 			{
 				Damage = 90.f;
 			}
-			UE_LOG(LogINSCharacter, Log, TEXT("Character %s is taking land damage falling from high,initial damage taken:%f,landing speed %f"), *GetName(), *UKismetStringLibrary::Conv_FloatToString(Damage), LandZVelocity);
+			UE_LOG(LogINSCharacter, Log, TEXT("Character %s is taking land damage falling from high,initial damage taken:%f,landing speed %f"), *GetName(), *FString::SanitizeFloat(Damage), LandZVelocity);
 			FPointDamageEvent FallingDamageEvent;
 			FallingDamageEvent.DamageTypeClass = UINSDamageType_Falling::StaticClass();
 			FallingDamageEvent.ShotDirection = Hit.ImpactNormal;
@@ -292,7 +292,7 @@ void AINSCharacter::TossCurrentWeapon()
 			WeaponPickup->SetActualWeaponClass(CurrentWeapon->GetClass());
 			WeaponPickup->SetAmmoLeft(CurrentWeapon->GetAmmoLeft());
 			WeaponPickup->SetLootableAmmo(CurrentWeapon->GetCurrentClipAmmo());
-			const FStringAssetReference AssetsRef(CurrentWeapon->GetWeaponStaticMesh());
+			const FSoftObjectPath AssetsRef(CurrentWeapon->GetWeaponStaticMesh());
 			UStaticMesh* WeaponMesh = LoadObject<UStaticMesh>(this, *AssetsRef.ToString());
 			UGameplayStatics::FinishSpawningActor(WeaponPickup, PickupSpawnTransform);
 			FRepPickupInfo RepPickupInfo;
@@ -321,7 +321,6 @@ void AINSCharacter::ReceiveInventoryInitialized()
 
 void AINSCharacter::ReceiveClipAmmoEmpty()
 {
-	
 }
 
 void AINSCharacter::ReceiveSetupWeaponAttachment()
@@ -329,16 +328,16 @@ void AINSCharacter::ReceiveSetupWeaponAttachment()
 }
 
 
-void AINSCharacter::CreateAndEquipItem(int32 ItemId,const uint8 InventorySlotIndex)
+void AINSCharacter::CreateAndEquipItem(int32 ItemId, const uint8 InventorySlotIndex)
 {
 	UINSGameInstance* CurGameInstance = GetWorld()->GetGameInstance<UINSGameInstance>();
-	if(CurGameInstance)
+	if (CurGameInstance)
 	{
 		UINSItemManager* ItemManager = CurGameInstance->GetItemManager();
-		if(ItemManager)
+		if (ItemManager)
 		{
-			AINSWeaponBase* WeaponItemInstance = ItemManager->CreateWeaponItemInstance(ItemId,GetActorTransform(),GetController(),this,InventorySlotIndex);
-			if(WeaponItemInstance)
+			AINSWeaponBase* WeaponItemInstance = ItemManager->CreateWeaponItemInstance(ItemId, GetActorTransform(), GetController(), this, InventorySlotIndex);
+			if (WeaponItemInstance)
 			{
 				SetCurrentWeapon(WeaponItemInstance);
 			}
@@ -382,7 +381,7 @@ float AINSCharacter::CheckDistance(const FVector OtherLocation)
 	return (GetActorLocation() - OtherLocation).Size();
 }
 
-void AINSCharacter::SetupPendingWeaponEquipEvent( const int32 ItemId, const uint8 ItemSlotIdx)
+void AINSCharacter::SetupPendingWeaponEquipEvent(const int32 ItemId, const uint8 ItemSlotIdx)
 {
 	if (!PendingWeaponEquipEvent.bIsEventActive)
 	{
@@ -499,7 +498,6 @@ void AINSCharacter::OnRep_Prone()
 
 void AINSCharacter::OnRep_CurrentWeapon()
 {
-	
 }
 
 void AINSCharacter::OnRep_DamageImmuneTime()
@@ -611,7 +609,7 @@ void AINSCharacter::HandleStopFireRequest()
 
 void AINSCharacter::HandleEquipWeaponRequest()
 {
-	if(PendingWeaponEquipEvent.bIsEventActive)
+	if (PendingWeaponEquipEvent.bIsEventActive)
 	{
 		return;
 	}
@@ -746,12 +744,12 @@ void AINSCharacter::Die()
 	OnRep_Dead();
 }
 
-void AINSCharacter::ServerCreateAndEquipItem_Implementation(int32 ItemId,const uint8 InventorySlotIndex)
+void AINSCharacter::ServerCreateAndEquipItem_Implementation(int32 ItemId, const uint8 InventorySlotIndex)
 {
-	CreateAndEquipItem(ItemId,InventorySlotIndex);
+	CreateAndEquipItem(ItemId, InventorySlotIndex);
 }
 
-bool AINSCharacter::ServerCreateAndEquipItem_Validate(int32 ItemId,const uint8 InventorySlotIndex)
+bool AINSCharacter::ServerCreateAndEquipItem_Validate(int32 ItemId, const uint8 InventorySlotIndex)
 {
 	return true;
 }
@@ -875,7 +873,7 @@ void AINSCharacter::HandleItemFinishUnEquipRequest()
 
 void AINSCharacter::UnEquipItem()
 {
-	if(PendingWeaponEquipEvent.bIsEventActive)
+	if (PendingWeaponEquipEvent.bIsEventActive)
 	{
 		return;
 	}

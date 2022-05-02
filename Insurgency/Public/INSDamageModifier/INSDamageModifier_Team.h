@@ -15,6 +15,5 @@ class INSURGENCY_API UINSDamageModifier_Team : public UINSDamageModifierBase
 	GENERATED_BODY()
 
 protected:
-	virtual void ModifyDamage(float& InDamage, FDamageEvent& DamageEvent, AController* Instigator, class AController* Victim)override;
-	
+	virtual void ModifyDamage(float& InDamage, FDamageEvent& DamageEvent, AController* Instigator, class AController* Victim) override;
 };

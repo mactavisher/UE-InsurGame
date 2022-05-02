@@ -10,18 +10,17 @@
  * defines the main menu table rows
  */
 USTRUCT(BlueprintType)
-struct FMainMenuInfoRow:public FTableRowBase
+struct FMainMenuInfoRow : public FTableRowBase
 {
 	GENERATED_USTRUCT_BODY()
 	/** the menu name*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	FName  MenuName;
+	FName MenuName;
 
 	/** the target widget switch to when the menu is clicked*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
 	FName TargetWidgetName;
 };
-
 
 
 /**
@@ -33,7 +32,7 @@ struct FMainMenuInfo
 	GENERATED_USTRUCT_BODY()
 	/** the menu name*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)
-	FName  MenuName;
+	FName MenuName;
 
 	/** the target widget switch to when the menu is clicked*/
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite)

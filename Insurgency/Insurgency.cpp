@@ -3,4 +3,4 @@
 #include "Insurgency.h"
 #include "Modules/ModuleManager.h"
 
-IMPLEMENT_PRIMARY_GAME_MODULE( FDefaultGameModuleImpl, Insurgency, "Insurgency" );
+IMPLEMENT_PRIMARY_GAME_MODULE(FDefaultGameModuleImpl, Insurgency, "Insurgency");

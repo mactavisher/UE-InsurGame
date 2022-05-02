@@ -26,7 +26,7 @@
 #endif
 DEFINE_LOG_CATEGORY(LogAINSPlayerController);
 
-AINSPlayerController::AINSPlayerController(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
+AINSPlayerController::AINSPlayerController(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	PlayerCameraManagerClass = AINSPlayerCameraManager::StaticClass();
 	bPlayerFiring = false;
@@ -299,7 +299,7 @@ void AINSPlayerController::ReloadWeapon()
 
 void AINSPlayerController::Fire()
 {
-	const AINSGameStateBase* const CurrentGameState  = GetWorld()->GetGameState<AINSGameStateBase>();
+	const AINSGameStateBase* const CurrentGameState = GetWorld()->GetGameState<AINSGameStateBase>();
 	if (GetINSPlayerCharacter() && CurrentGameState && CurrentGameState->GetAllowFire())
 	{
 		GetINSPlayerCharacter()->HandleFireRequest();
@@ -358,10 +358,10 @@ void AINSPlayerController::Sprint()
 
 void AINSPlayerController::Jump()
 {
-		if (GetINSPlayerCharacter())
-		{
-			GetINSPlayerCharacter()->HandleJumpRequest();
-		}
+	if (GetINSPlayerCharacter())
+	{
+		GetINSPlayerCharacter()->HandleJumpRequest();
+	}
 }
 
 
@@ -453,10 +453,9 @@ void AINSPlayerController::SwitchFireMode()
 }
 
 
-
 void AINSPlayerController::PlayerCauseDamage(const FTakeHitInfo& HitInfo)
 {
-	AINSHUDBase* const  PlayerHud = GetHUD<AINSHUDBase>();
+	AINSHUDBase* const PlayerHud = GetHUD<AINSHUDBase>();
 	if (PlayerHud)
 	{
 		if (HitInfo.bIsTeamDamage)
@@ -481,13 +480,12 @@ void AINSPlayerController::PlayerCauseDamage(const FTakeHitInfo& HitInfo)
 
 void AINSPlayerController::InspectWeapon()
 {
-
 }
 
 void AINSPlayerController::ServerInspectWeapon_Implementation()
 {
-	if (HasAuthority()) {
-
+	if (HasAuthority())
+	{
 	}
 	else
 	{
@@ -551,7 +549,7 @@ void AINSPlayerController::EquipWeapon(const uint8 SlotIndex)
 {
 	if (GetINSPlayerCharacter())
 	{
-		GetINSPlayerCharacter()->HandleItemEquipRequest(0,SlotIndex);
+		GetINSPlayerCharacter()->HandleItemEquipRequest(0, SlotIndex);
 	}
 }
 
@@ -596,7 +594,6 @@ void AINSPlayerController::ReceiveEnterPickups(class AINSPickupBase* PickupItem)
 	AINSHUDBase* PlayerHud = GetHUD<AINSHUDBase>();
 	if (PlayerHud)
 	{
-		
 	}
 }
 
@@ -611,12 +608,10 @@ void AINSPlayerController::ReceiveLeavePickups(class AINSPickupBase* PickupItem)
 
 void AINSPlayerController::OnWeaponAmmoLeftEmpty()
 {
-
 }
 
 void AINSPlayerController::OnWeaponClipAmmoLow()
 {
-
 }
 
 void AINSPlayerController::OnWeaponClipEmpty(class AController* WeaponOwnerPlayer)
@@ -645,7 +640,8 @@ AINSPlayerCharacter* AINSPlayerController::GetINSPlayerCharacter()
 
 UClass* AINSPlayerController::GetGameModeRandomWeapon()
 {
-	if (HasAuthority()) {
+	if (HasAuthority())
+	{
 		const AINSGameModeBase* const CurrentGameMode = GetWorld()->GetAuthGameMode<AINSGameModeBase>();
 		if (CurrentGameMode)
 		{
@@ -715,7 +711,6 @@ AINSPlayerStateBase* AINSPlayerController::GetINSPlayerState()
 
 void AINSPlayerController::ReceiveOverlapPickupItems(class AActor* PickupItems)
 {
-
 }
 
 void AINSPlayerController::ReceiveStartRespawn()
@@ -737,13 +732,12 @@ void AINSPlayerController::RespawnPlayer()
 
 void AINSPlayerController::OnPlayerMeshSetupFinished()
 {
-
 }
 
 void AINSPlayerController::OnPossess(APawn* InPawn)
 {
 	PossessedINSCharacter = Cast<AINSPlayerCharacter>(InPawn);
-	if(PossessedINSCharacter)
+	if (PossessedINSCharacter)
 	{
 		GetINSPlayerCharacter()->SetTeamType(PlayerTeam->GetTeamType());
 	}
@@ -752,12 +746,11 @@ void AINSPlayerController::OnPossess(APawn* InPawn)
 
 void AINSPlayerController::OnCharacterDead()
 {
-	if(HasAuthority())
+	if (HasAuthority())
 	{
 		GetINSPlayerState()->OnPawnCharDeath();
 		UnPossess();
 	}
-	
 }
 
 void AINSPlayerController::ReceiveCurrentClipAmmoEmpty()

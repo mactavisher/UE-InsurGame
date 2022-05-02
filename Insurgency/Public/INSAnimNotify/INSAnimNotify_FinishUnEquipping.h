@@ -17,7 +17,6 @@ public:
 	UINSAnimNotify_FinishUnEquipping();
 
 	// Begin UAnimNotify interface
-	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation) override;
+	virtual void Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,const FAnimNotifyEventReference& EventReference) override;
 	// End UAnimNotify interface
-	
 };

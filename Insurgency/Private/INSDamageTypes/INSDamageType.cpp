@@ -3,7 +3,6 @@
 
 #include "INSDamageTypes/INSDamageType.h"
 
-UINSDamageType::UINSDamageType(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
+UINSDamageType::UINSDamageType(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
-
 }

@@ -21,137 +21,134 @@ UCLASS()
 class INSURGENCY_API AINSGameModeBase : public AGameMode
 {
 	GENERATED_UCLASS_BODY()
-
 public:
-
 	/** indicate if this game allow Team Damage */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TeamDamage")
-		uint8 bAllowTeamDamage : 1;
+	uint8 bAllowTeamDamage : 1;
 
 	/** indicates if this game enable a falling damage */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TeamDamage")
-		uint8 bAllowFallingDamage : 1;
+	uint8 bAllowFallingDamage : 1;
 
 	/** indicates if this game enable a falling damage */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TeamDamage")
-		uint8 bAllowInfinitRespawn : 1;
+	uint8 bAllowInfinitRespawn : 1;
 
 	/** indicates if this game enable a falling damage */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TeamDamage")
-		uint8 bIsLobbyGameMode : 1;
+	uint8 bIsLobbyGameMode : 1;
 
 	/** if team damage is enabled ,the damage will need to apply a modifier  */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "TeamDamage")
-		float TeamDamageModifier;
+	float TeamDamageModifier;
 
 	/** player maximum lives that can ReSpawn during a level */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "GameModeConfig")
-		uint8 PlayerMaxLives;
+	uint8 PlayerMaxLives;
 
 	/** player maximum lives that can ReSpawn during a level */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "GameModeConfig")
-		uint8 MaximumPlayerAllowed;
+	uint8 MaximumPlayerAllowed;
 
 	/** indicate if player can re_spawn infinite times when ever they are dead */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "GameModeConfig")
-		uint8 bInfinitRespawn : 1;
+	uint8 bInfinitRespawn : 1;
 
 	/** AI bot class that will be used in this game */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Bot")
-		TSubclassOf<ACharacter> BotCharacterClass;
+	TSubclassOf<ACharacter> BotCharacterClass;
 
 	/** team info class */
 	UPROPERTY(EditAnywhere, NoClear, BlueprintReadOnly, Category = Classes)
-		TSubclassOf<AINSTeamInfo> TeamInfoClass;
+	TSubclassOf<AINSTeamInfo> TeamInfoClass;
 
 	/** indicate if this game need bot to play with */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Config)
-		uint8 bNeedCreateBot : 1;
+	uint8 bNeedCreateBot : 1;
 
 	/** the maximum bot number allowed in the game at a specific game stage or state  */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Bot")
-		int32 MaxBotNum;
+	int32 MaxBotNum;
 
 	/** current bot number in game  */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Bot")
-		int32 CurrentBotNum;
+	int32 CurrentBotNum;
 
 	/** accumulated bot that been killed */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Bot")
-		int32 KilledBotNum;
+	int32 KilledBotNum;
 
 	/** dose this game mode requires a default weapon */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "GameModeConfig")
-		uint8 bDefaultWeaponRequired : 1;
+	uint8 bDefaultWeaponRequired : 1;
 
 	/** dose this game mode requires a default weapon */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "GameModeConfig")
-		uint8 bAllowFire : 1;
+	uint8 bAllowFire : 1;
 
 	/** dose this game mode requires a default weapon */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "GameModeConfig")
-		uint8 bAllowMove : 1;
+	uint8 bAllowMove : 1;
 
 	/** the maximum bot number allowed in the game at a specific game stage or state  */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Bot")
-		uint8 MaxSingleTeamPlayers;
+	uint8 MaxSingleTeamPlayers;
 
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Team")
-		TMap<FString, AINSTeamInfo*> InGameTeams;
+	TMap<FString, AINSTeamInfo*> InGameTeams;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GameModeConfig")
-		EGameType CurrentGameType;
+	EGameType CurrentGameType;
 
 	/** default re_spawn time for a dead player */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "GameModeConfig")
-		float DefaultRestartTime;
+	float DefaultRestartTime;
 
 	/** indicate whether player should drop their weapon as a pick up,will be replicated via game state */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Config)
-		uint8 bShouldDropWeaponWhenPlayerDead : 1;
+	uint8 bShouldDropWeaponWhenPlayerDead : 1;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Team")
-		AINSTeamInfo* TerroristTeam;
+	AINSTeamInfo* TerroristTeam;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Team")
-		AINSTeamInfo* CTTeam;
+	AINSTeamInfo* CTTeam;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GameState")
-		uint8 bIsMatchPrepare : 1;
+	uint8 bIsMatchPrepare : 1;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GameState")
-		uint8 bMatchPreparingFinished : 1;
+	uint8 bMatchPreparingFinished : 1;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "PrepareTime")
-		float MatchPrepareTime;
+	float MatchPrepareTime;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "PreParingTime")
-		float MatchPrepareRemainingTime;
+	float MatchPrepareRemainingTime;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "DamageControl")
-		uint8 bEnablePlayerSpawnDamageImmune : 1;
+	uint8 bEnablePlayerSpawnDamageImmune : 1;
 
 	UPROPERTY()
-		FTimerHandle MatchPrepareTimer;
+	FTimerHandle MatchPrepareTimer;
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="WeaponInfos")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="WeaponInfos")
 	UDataTable* WeaponDataTable;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "TestWeaponClasses")
-		TArray<TSubclassOf< AINSWeaponBase>> GameModeAvailableWeaponsClasses;
+	TArray<TSubclassOf<AINSWeaponBase>> GameModeAvailableWeaponsClasses;
 
-	UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="DamageModifier")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="DamageModifier")
 	TArray<TSubclassOf<UINSDamageModifierBase>> DamageModifiers;
 
 	UPROPERTY()
 	TArray<UINSDamageModifierBase*> DamageModifierInstances;
-	   
+
 
 protected:
-
 	//~ Begin AActor interface
-	virtual void Tick(float DeltaSeconds)override;
-	virtual void PreInitializeComponents()override;
+	virtual void Tick(float DeltaSeconds) override;
+	virtual void PreInitializeComponents() override;
 	//~ end AActor interface
 
 	//~ begin AGameMode interface
@@ -160,7 +157,7 @@ protected:
 	virtual bool HasMatchStarted() const override;
 	virtual void PostLogin(APlayerController* NewPlayer) override;
 	virtual void Logout(AController* Exiting) override;
-	virtual void PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)override;
+	virtual void PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
 	virtual void EndMatchPreparing();
 	/**
 	 * @desc  Override spawns player controller and assign the player team and other attribute if need
@@ -169,14 +166,14 @@ protected:
 	 * @param SpawnRotation Rotation to spawn this controller
 	 * @param InPlayerControllerClass  Player Controller type to spawn
 	 */
-	virtual APlayerController* SpawnPlayerControllerCommon(ENetRole InRemoteRole, FVector const& SpawnLocation, FRotator const& SpawnRotation, TSubclassOf<APlayerController> InPlayerControllerClass)override;
+	virtual APlayerController* SpawnPlayerControllerCommon(ENetRole InRemoteRole, FVector const& SpawnLocation, FRotator const& SpawnRotation, TSubclassOf<APlayerController> InPlayerControllerClass) override;
 
 	/**
 	 * @desc override and find a suitable player start to spawn the player controller
 	 * @param Player
 	 * @param IncomingName
 	 */
-	virtual AActor* FindPlayerStart_Implementation(AController* Player, const FString& IncomingName /* = TEXT("") */)override;
+	virtual AActor* FindPlayerStart_Implementation(AController* Player, const FString& IncomingName /* = TEXT("") */) override;
 	//~ end AGameMode interface
 
 	/**
@@ -195,10 +192,9 @@ protected:
 	virtual void SpawnCounterTerroristTeam();
 
 	UFUNCTION()
-		virtual void CountDownMatchPrepare();
+	virtual void CountDownMatchPrepare();
 
 public:
-
 	/**
 	 * @Desc  Modify damage according to the game rules
 	 * @Param OutDamage out produced damage after damage is modified
@@ -208,7 +204,7 @@ public:
 	 * @Param Damage event associate with this damage
 	 * @Param BoneName The bone that hit with this damage
 	 */
-	virtual float ModifyDamage(float InDamage,class AController* PlayerInstigator, class AController* Victim, const struct FDamageEvent& DamageEvent);
+	virtual float ModifyDamage(float InDamage, class AController* PlayerInstigator, class AController* Victim, const struct FDamageEvent& DamageEvent);
 
 	/**
 	 * @Desc  confirms a player kill
@@ -241,47 +237,47 @@ public:
 	virtual void SetAllowTeamDamage(bool bTeamDamageAllowed) { bAllowTeamDamage = bTeamDamageAllowed; }
 
 	/** allow if this game allows team damage */
-	inline virtual bool GetAllowTeamDamage()const { return bAllowTeamDamage; }
+	inline virtual bool GetAllowTeamDamage() const { return bAllowTeamDamage; }
 
 	/**TeamDamageModifier getter*/
-	inline virtual float GetTeamDamageModifier()const { return TeamDamageModifier; }
+	inline virtual float GetTeamDamageModifier() const { return TeamDamageModifier; }
 
 	/**bAllowFallingDamage getter*/
-	inline virtual bool GetAllowFallingDamage()const { return bAllowFallingDamage; }
+	inline virtual bool GetAllowFallingDamage() const { return bAllowFallingDamage; }
 
 	/**MaxSingleTeamPlayers getter*/
-	inline virtual uint8 GetMaxSingleTeamPlayers()const { return MaxSingleTeamPlayers; }
+	inline virtual uint8 GetMaxSingleTeamPlayers() const { return MaxSingleTeamPlayers; }
 
 	/** return if allow fire */
-	inline virtual bool GetIsAllowFire()const { return bAllowFire; }
+	inline virtual bool GetIsAllowFire() const { return bAllowFire; }
 
 	/** return if allow move */
-	inline virtual bool GetIsAllowMove()const { return bAllowMove; }
+	inline virtual bool GetIsAllowMove() const { return bAllowMove; }
 
-	inline virtual uint8 GetMatchPrepareRemainingTime()const { return MatchPrepareRemainingTime; }
+	inline virtual uint8 GetMatchPrepareRemainingTime() const { return MatchPrepareRemainingTime; }
 
 	virtual void SetMatchPrepareRemainingTime(uint8 PrepareTimeRemaining) { MatchPrepareRemainingTime = PrepareTimeRemaining; }
 
-	inline virtual bool GetIsPreparingMatch()const { return bIsMatchPrepare; }
+	inline virtual bool GetIsPreparingMatch() const { return bIsMatchPrepare; }
 
 	virtual void SetIsPreparingMatch(bool NewState) { bIsMatchPrepare = NewState; }
 
-	inline virtual bool GetIsPreparingStateFinished()const { return bMatchPreparingFinished; }
+	inline virtual bool GetIsPreparingStateFinished() const { return bMatchPreparingFinished; }
 
 	virtual void SetEndPrepringState(bool NewState) { bMatchPreparingFinished = NewState; }
 
-	inline float GetMatchPrepareTime()const { return MatchPrepareTime; }
+	inline float GetMatchPrepareTime() const { return MatchPrepareTime; }
 
-	inline float GetMatchPrepareTimeRemaining()const { return MatchPrepareRemainingTime; }
+	inline float GetMatchPrepareTimeRemaining() const { return MatchPrepareRemainingTime; }
 
 	/** return if a damage is cause by team members */
 	virtual bool GetIsTeamDamage(class AController* DamageInstigator, class AController* Victim);
 
 	/** get if players should drop their weapon after dead */
-	virtual bool GetShouldDropWeaponWhenPlayerDead()const { return bShouldDropWeaponWhenPlayerDead; }
+	virtual bool GetShouldDropWeaponWhenPlayerDead() const { return bShouldDropWeaponWhenPlayerDead; }
 
 	/** get game mode random available weapon class */
-	virtual  UClass* GetRandomGameModeWeaponClass()const;
+	virtual UClass* GetRandomGameModeWeaponClass() const;
 
-	virtual UDataTable* GetWeaponDataTable()const;
+	virtual UDataTable* GetWeaponDataTable() const;
 };

@@ -6,9 +6,8 @@
 #include "Components/Widget.h"
 #include "UMG/Public/Blueprint/WidgetTree.h"
 
-AINSLobbyHUD::AINSLobbyHUD(const FObjectInitializer& ObjectInitializer):Super(ObjectInitializer)
+AINSLobbyHUD::AINSLobbyHUD(const FObjectInitializer& ObjectInitializer): Super(ObjectInitializer)
 {
-	
 }
 
 void AINSLobbyHUD::BeginPlay()
@@ -21,9 +20,9 @@ void AINSLobbyHUD::BeginPlay()
 
 void AINSLobbyHUD::CreateLobbyMainWidget()
 {
-	if(LobbyMainWidgetClass)
+	if (LobbyMainWidgetClass)
 	{
-		LobbyMainWidgetInstance = CreateWidget(OwningLobbyController,LobbyMainWidgetClass,"LobbyMain");
+		LobbyMainWidgetInstance = CreateWidget(OwningLobbyController, LobbyMainWidgetClass, "LobbyMain");
 		LobbyMainWidgetInstance->AddToViewport(0);
 	}
 }
@@ -32,9 +31,9 @@ void AINSLobbyHUD::LoadLobbyMainMenus()
 {
 	TArray<FName> SlotNames;
 	LobbyMainWidgetInstance->GetSlotNames(SlotNames);
-	TArray< UWidget* > AllWidgets;
+	TArray<UWidget*> AllWidgets;
 	LobbyMainWidgetInstance->WidgetTree->GetAllWidgets(AllWidgets);
-//	int index;
+	//	int index;
 	// UPanelWidget* Panel = LobbyMainWidgetInstance->WidgetTree->FindWidgetParent(LobbyMainWidgetInstance, index);
 	// //GEngine->AddOnScreenDebugMessage(-1, 1.0, FColor::Green, Panel->GetName());
 	// //const TArray<UPanelSlot*> PanelSlots = Panel->GetSlots();

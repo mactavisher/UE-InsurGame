@@ -13,27 +13,26 @@ UCLASS()
 class INSURGENCY_API AINSPlayerCameraManager : public APlayerCameraManager
 {
 	GENERATED_UCLASS_BODY()
-
 protected:
-    UPROPERTY(EditDefaultsOnly,BlueprintReadWrite,Category="FOVConfig")
-	    float ADSFov;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category="FOVConfig")
+	float ADSFov;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "FOVConfig")
-		uint8 bWantsToADS;
+	uint8 bWantsToADS;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "FOVConfig")
-		float DefaultFOVBlendTime;
+	float DefaultFOVBlendTime;
 
-	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="FOVConfig")
-	    float FOVBlendSpeed;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="FOVConfig")
+	float FOVBlendSpeed;
 
 	TWeakObjectPtr<class AINSWeaponBase> CurrentWeapon;
 
 
 protected:
-	virtual void LimitViewPitch(FRotator& ViewRotation, float InViewPitchMin, float InViewPitchMax)override;
+	virtual void LimitViewPitch(FRotator& ViewRotation, float InViewPitchMin, float InViewPitchMax) override;
 
-	virtual void UpdateCamera(float DeltaTime)override;
+	virtual void UpdateCamera(float DeltaTime) override;
 public:
 	virtual void OnAim(float AimTime);
 

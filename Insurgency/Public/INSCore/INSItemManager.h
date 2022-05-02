@@ -21,14 +21,13 @@ UCLASS()
 class INSURGENCY_API UINSItemManager : public UObject
 {
 	GENERATED_UCLASS_BODY()
-	
 protected:
 	/** weapon table which stores the weapon data*/
 	UPROPERTY(BlueprintReadOnly)
 	UDataTable* ItemDataTable;
-	
+
 	UPROPERTY(BlueprintReadOnly)
-    UDataTable* WeaponDataTable;
+	UDataTable* WeaponDataTable;
 
 	/** the owing game instance*/
 	UPROPERTY(BlueprintReadOnly)
@@ -46,8 +45,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	virtual UDataTable* GetItemDataTable() const { return ItemDataTable; }
+
 	UFUNCTION(BlueprintCallable)
-	virtual UDataTable* GetWeaponDataTable()const{return WeaponDataTable;}
+	virtual UDataTable* GetWeaponDataTable() const { return WeaponDataTable; }
 
 	/**
 	 * sets the owing game instance
@@ -62,13 +62,13 @@ public:
 	 */
 	virtual void GetWeaponItemById(int32 ItemId, FWeaponInfoData& OutItemInfo);
 
-	virtual void GetItemById(int32 ItemId,FItemInfoData& OutItemInfo);
+	virtual void GetItemById(int32 ItemId, FItemInfoData& OutItemInfo);
 
 	virtual void InitItemData(AINSItems* InItem);
-	
-	virtual AINSItems* CreateItemInstance(int32 ItemId,const FTransform& InitialTransform,AActor* Owner,APawn* Instigator);
 
-	virtual AINSWeaponBase* CreateWeaponItemInstance(int32 ItemId,const FTransform& InitialTransform,AActor* Owner,APawn* Instigator,const uint8 InventorySlotIndex);
+	virtual AINSItems* CreateItemInstance(int32 ItemId, const FTransform& InitialTransform, AActor* Owner, APawn* Instigator);
+
+	virtual AINSWeaponBase* CreateWeaponItemInstance(int32 ItemId, const FTransform& InitialTransform, AActor* Owner, APawn* Instigator, const uint8 InventorySlotIndex);
 
 	virtual void GetAllItemInfos(TArray<FItemInfoData> InItemInfos);
 

@@ -13,5 +13,4 @@ UCLASS()
 class INSURGENCY_API AINSWeapon_BoltRifle : public AINSWeaponBase
 {
 	GENERATED_BODY()
-	
 };

@@ -10,8 +10,9 @@ UINSAnimNotify_ShellEjection::UINSAnimNotify_ShellEjection()
 {
 }
 
-void UINSAnimNotify_ShellEjection::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
+void UINSAnimNotify_ShellEjection::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,const FAnimNotifyEventReference& EventReference)
 {
+	Super::Notify(MeshComp, Animation, EventReference);
 	AActor* Owner = MeshComp->GetOwner();
 	if (!Owner)
 	{

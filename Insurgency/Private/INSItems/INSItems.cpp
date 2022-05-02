@@ -10,7 +10,7 @@
 #include "INSComponents/INSInventoryComponent.h"
 
 // Sets default values
-AINSItems::AINSItems(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
+AINSItems::AINSItems(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	ItemType = EItemType::NONE;
 	bReplicates = true;
@@ -20,7 +20,7 @@ AINSItems::AINSItems(const FObjectInitializer& ObjectInitializer) :Super(ObjectI
 // Called when the game starts or when spawned
 void AINSItems::BeginPlay()
 {
-	Super::BeginPlay();	
+	Super::BeginPlay();
 }
 
 // Called every frame
@@ -58,11 +58,9 @@ void AINSItems::OnRep_Owner()
 
 void AINSItems::InitItemInfoByInventorySlot(const FInventorySlot& InventorySlot)
 {
-	
 }
 
 void AINSItems::SetItemInfo(FItemInfoData& NewItemInfoData)
 {
 	ItemInfoData = NewItemInfoData;
 }
-

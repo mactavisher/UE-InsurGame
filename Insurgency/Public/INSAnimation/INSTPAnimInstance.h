@@ -103,7 +103,7 @@ class INSURGENCY_API UINSTPAnimInstance : public UINSCharacterAimInstance
 	virtual void SetCurrentWeapon(class AINSWeaponBase* NewWeapon) override;
 
 	virtual void SetCurrentWeaponAnimData(UINSStaticAnimData* NewAnimData) override;
-	
+
 	/**
 	 * used for entry state for jog
 	 */
@@ -138,5 +138,5 @@ class INSURGENCY_API UINSTPAnimInstance : public UINSCharacterAimInstance
 	virtual float PlayWeaponEquipAnim() override;
 	virtual float PlayWeaponSwitchFireModeAnim() override;
 	virtual float PlayWeaponUnEquipAnim() override;
-	virtual void SetCurrentStance(ECharacterStance NewStance){CurrentStance = NewStance;}
+	virtual void SetCurrentStance(ECharacterStance NewStance) { CurrentStance = NewStance; }
 };

@@ -4,8 +4,7 @@
 #include "INSComponents/INSCharSkeletalMeshComponent.h"
 #include "INSAnimation/INSCharacterAimInstance.h"
 
-UINSCharSkeletalMeshComponent::UINSCharSkeletalMeshComponent(const FObjectInitializer& ObjectInitializer) :Super(ObjectInitializer)
+UINSCharSkeletalMeshComponent::UINSCharSkeletalMeshComponent(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	SetAnimInstanceClass(UINSCharacterAimInstance::StaticClass());
 }
-

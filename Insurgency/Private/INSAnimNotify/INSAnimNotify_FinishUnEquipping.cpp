@@ -9,12 +9,11 @@
 
 UINSAnimNotify_FinishUnEquipping::UINSAnimNotify_FinishUnEquipping()
 {
-
 }
 
-void UINSAnimNotify_FinishUnEquipping::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
+void UINSAnimNotify_FinishUnEquipping::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation,const FAnimNotifyEventReference& EventReference)
 {
-	Super::Notify(MeshComp, Animation);
+	Super::Notify(MeshComp, Animation,EventReference);
 	AActor* Owner = MeshComp->GetOwner();
 	if (!Owner)
 	{

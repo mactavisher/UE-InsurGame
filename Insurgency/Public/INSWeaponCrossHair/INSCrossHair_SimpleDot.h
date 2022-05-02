@@ -13,10 +13,8 @@ UCLASS()
 class INSURGENCY_API UINSCrossHair_SimpleDot : public UINSCrossHairBase
 {
 	GENERATED_UCLASS_BODY()
-
 public:
 	//~ Begin UINSCrossHairBase Interface
-		virtual void DrawCrossHair(class UCanvas* InCanvas, class AINSWeaponBase* InWeapon, FLinearColor DrawColor)override;
+	virtual void DrawCrossHair(class UCanvas* InCanvas, class AINSWeaponBase* InWeapon, FLinearColor DrawColor) override;
 	//~ End UINSCrossHairBase Interface
-	
 };

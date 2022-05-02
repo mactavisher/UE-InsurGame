@@ -260,7 +260,7 @@ protected:
 	uint8 bInPositionSync : 1;
 
 	/** is this projectile hit by way of scan trace, if true ,we just need to tell client where it flies and no need movement replication or scale the the movement rep interval */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = "Replication")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, ReplicatedUsing= OnRep_ScanTraceCondition, Category = "Replication")
 	uint8 bScanTraceProjectile : 1;
 
 	/** config the velocity and location quantize level,replicated to clients so they know how to unpack the received data */
@@ -295,10 +295,10 @@ protected:
 	uint8 bReachDesiredLoc;
 
 	/** indicate if the scan trace projectile has reach the desire location */
-	UPROPERTY(Replicated,ReplicatedUsing=OnRep_ProjectileHit)
+	UPROPERTY(Replicated, ReplicatedUsing=OnRep_ProjectileHit)
 	FRepINSProjHitInfo ProjectileHitInfo;
 
-	
+
 	/** this used to send a initial replication to relevant client immediately if projectile flies fast */
 	UPROPERTY()
 	FActorTickFunction InitRepTickFunc;
@@ -310,10 +310,13 @@ protected:
 	FVector SpawnLocation;
 
 	UPROPERTY(Replicated)
-	FVector ScanTraceHitLoc;
+	FVector_NetQuantize10 ScanTraceHitLoc;
 
 	UPROPERTY()
 	float ScanTraceTime;
+
+	UPROPERTY()
+	uint8 bScanTraceConditionSet:1;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="LiftTimeInfo")
 	FProjectileLiftTimeData ProjectileLiftTimeData;
@@ -382,6 +385,9 @@ protected:
 
 	/** Checks the Impact hit result and simulate FX */
 	virtual void CheckImpactHit();
+
+	UFUNCTION()
+	virtual void OnRep_ScanTraceCondition();
 
 
 public:

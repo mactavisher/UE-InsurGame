@@ -52,7 +52,7 @@ AINSZombieController::AINSZombieController(const FObjectInitializer& ObjectIniti
 void AINSZombieController::TickActor(float DeltaTime, enum ELevelTick TickType, FActorTickFunction& ThisTickFunction)
 {
 	Super::TickActor(DeltaTime, TickType, ThisTickFunction);
-	if (CurrentTargetEnemy&&CurrentTargetEnemy->GetPawn())
+	if (CurrentTargetEnemy && CurrentTargetEnemy->GetPawn())
 	{
 		TickEnemyVisibility();
 		StimulateLocation = CurrentTargetEnemy->GetPawn()->GetActorLocation();

@@ -13,5 +13,4 @@ UCLASS()
 class INSURGENCY_API UINSCrossHair_Triangle : public UINSCrossHairBase
 {
 	GENERATED_UCLASS_BODY()
-	
 };

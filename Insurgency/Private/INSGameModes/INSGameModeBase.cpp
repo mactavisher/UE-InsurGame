@@ -185,9 +185,9 @@ float AINSGameModeBase::ModifyDamage(float InDamage, class AController* PlayerIn
 	{
 		for (uint8 i = 0; i < NumDamageModifier; i++)
 		{
-			if ( DamageModifierInstances[i])
+			if (DamageModifierInstances[i])
 			{
-				 DamageModifierInstances[i]->ModifyDamage(ActualDamageToApply, (FDamageEvent&)DamageEvent, PlayerInstigator, Victim);
+				DamageModifierInstances[i]->ModifyDamage(ActualDamageToApply, (FDamageEvent&)DamageEvent, PlayerInstigator, Victim);
 			}
 		}
 	}

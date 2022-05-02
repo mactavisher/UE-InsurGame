@@ -13,5 +13,4 @@ UCLASS()
 class INSURGENCY_API UINSDamageType_Falling : public UINSDamageType
 {
 	GENERATED_UCLASS_BODY()
-	
 };

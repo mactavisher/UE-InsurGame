@@ -13,25 +13,24 @@ class UCanvas;
  *  Base class for weapon cross hairs,sub CrossHair types must override DrawCrossHair
  *  To get get work
  */
-UCLASS(abstract,notplaceable,NotBlueprintable)
+UCLASS(abstract, notplaceable, NotBlueprintable)
 class INSURGENCY_API UINSCrossHairBase : public UObject
 {
 	GENERATED_UCLASS_BODY()
-
 	/** Owner Player */
 	UPROPERTY()
-	    APlayerController* OwnerPlayer;
+	APlayerController* OwnerPlayer;
 
 	UPROPERTY()
-	    AINSWeaponBase* OwnerWeapon;
+	AINSWeaponBase* OwnerWeapon;
 
 	/** draw color of this CrossHair */
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "CrossHair")
-		FLinearColor CrossHairCurrentTintColor;
+	FLinearColor CrossHairCurrentTintColor;
 
 	/** base canvas size ,we design everything against 1080p */
 	UPROPERTY()
-		FVector2D BaseSize;
+	FVector2D BaseSize;
 
 	/**
 	 * @Desc   calculate the canvas scale against base size
@@ -58,5 +57,5 @@ public:
 	 * @Param InWeapon weapon this cross hair belongs to
 	 * @Param DrawColor cross hair color to draw
 	 */
-	virtual void DrawCrossHair(class UCanvas* InCanvas,class AINSWeaponBase* InWeapon,FLinearColor DrawColor);
+	virtual void DrawCrossHair(class UCanvas* InCanvas, class AINSWeaponBase* InWeapon, FLinearColor DrawColor);
 };

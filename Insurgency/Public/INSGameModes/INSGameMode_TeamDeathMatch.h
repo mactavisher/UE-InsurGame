@@ -13,5 +13,4 @@ UCLASS()
 class INSURGENCY_API AINSGameMode_TeamDeathMatch : public AINSGameStateBase
 {
 	GENERATED_BODY()
-	
 };

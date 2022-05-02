@@ -9,7 +9,9 @@
 
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLowHealthSignature);
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnReduceHealthSignature);
+
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
 class INSURGENCY_API UINSHealthComponent : public UActorComponent
 {
@@ -21,38 +23,38 @@ public:
 
 	/** character's default health value */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "HealthComponent")
-		uint8 DefaultHealth;
+	uint8 DefaultHealth;
 
 	/** character's maximum health value */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Replicated, Category = "HealthComponent")
-		uint8 MaximunHealth;
+	uint8 MaximunHealth;
 
 	/**low health percentage hit value when character is not in full health  */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "HealthComponent")
-		float LowHealthPercentage;
+	float LowHealthPercentage;
 
 	/**low health percentage hit value when character is not in full health  */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "HealthComponent")
-		float TimeBeforeHealthRestore;
+	float TimeBeforeHealthRestore;
 
 	/** event syntax when character is in low health state */
 	UPROPERTY(BlueprintAssignable, Category = "Events")
-		FOnLowHealthSignature OnLowHealth;
+	FOnLowHealthSignature OnLowHealth;
 
 	/** event syntax when character health value reduced */
 	UPROPERTY(BlueprintAssignable, Category = "Events")
-		FOnReduceHealthSignature OnHealthReduced;
+	FOnReduceHealthSignature OnHealthReduced;
 
 protected:
 	/** current health value,changes in run time */
 	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Replicated, Category = "HealthComponent")
-		float CurrentHealth;
+	float CurrentHealth;
 
 	UPROPERTY()
-		FTimerHandle HealthRestoreTimerHandle;
+	FTimerHandle HealthRestoreTimerHandle;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Owner")
-		class AINSCharacter* OwnerCharacter;
+	class AINSCharacter* OwnerCharacter;
 
 
 	//~begin AActorComponent interface
@@ -60,7 +62,7 @@ protected:
 	/**
 	 * @override  component begin play event
 	 */
-	virtual void BeginPlay()override;
+	virtual void BeginPlay() override;
 
 	/**
 	 * @override component tick logic here
@@ -68,7 +70,7 @@ protected:
 	 * @params     TickType               level tick type                       ELevelTick
 	 * @params     ThisTickFunction       tick function                         FActorComponentTickFunction*
 	 */
-	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)override;
+	virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	//~end AActorComponent interface
 
@@ -78,14 +80,14 @@ public:
 	 * @return  default health value              float
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "HealthComponent")
-		virtual  float GetDefaultHealth()const { return CurrentHealth; }
+	virtual float GetDefaultHealth() const { return CurrentHealth; }
 
 	/**
 	 * @desc getter for current health value
 	 * @return current health value              float
 	 */
 	UFUNCTION(BlueprintCallable, BlueprintPure, Category = "HealthComponent")
-		virtual  float GetCurrentHealth()const;
+	virtual float GetCurrentHealth() const;
 
 	/**
 	 * @desc health reduce logic here
@@ -93,21 +95,21 @@ public:
 	 * @Return whether this damage will cause the player dead        bool
 	 */
 	UFUNCTION(BlueprintCallable, Category = "HealthComponent")
-		virtual bool OnTakingDamage(float ReduceAmount, class AActor* DamageCauser, class AController* DamageInstigator);
+	virtual bool OnTakingDamage(float ReduceAmount, class AActor* DamageCauser, class AController* DamageInstigator);
 
 	/**
 	 * @desc restore current health value
 	 * @param  GenerateAmount       how much health to restore        float
 	 */
 	UFUNCTION(BlueprintCallable, Category = "HealthComponent")
-		virtual void ReGenerateHealth();
+	virtual void ReGenerateHealth();
 
 	/**
 	 * @desc getter for low low health percentage
 	 * @return  LowHealthPercentage     LowHealthPercentage        float
 	 */
 	UFUNCTION(BlueprintCallable, Category = "HealthComponent")
-		virtual float GetLowHealthPercentage()const { return LowHealthPercentage; }
+	virtual float GetLowHealthPercentage() const { return LowHealthPercentage; }
 
 
 	/**
@@ -115,11 +117,11 @@ public:
 	 * @return  health percentage     owner character current health percentage        float
 	 */
 	UFUNCTION(BlueprintCallable, Category = "HealthComponent")
-		virtual float GetHealthPercentage();
+	virtual float GetHealthPercentage();
 	/**
 	 * @override function support replication
 	 */
-	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps)const override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 	/**
 	 * @desc check to see if current health hit low health percentage
@@ -138,9 +140,9 @@ public:
 	virtual void DisableComponentTick();
 
 	UFUNCTION()
-		virtual void OnStopRestoreHealth();
+	virtual void OnStopRestoreHealth();
 
 	inline virtual class AINSCharacter* GetOwnerCharacter() { return CastChecked<AINSCharacter>(GetOwner()); }
 public:
-	virtual void SetOwnerCharacter(AINSCharacter* NewOwnerCharacter){OwnerCharacter = NewOwnerCharacter;}
+	virtual void SetOwnerCharacter(AINSCharacter* NewOwnerCharacter) { OwnerCharacter = NewOwnerCharacter; }
 };
